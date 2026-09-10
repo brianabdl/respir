@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, ClipboardList, FolderGit2, LayoutGrid, Stethoscope } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -13,16 +13,34 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { consult, dashboard } from '@/routes';
+import { index as consultationsIndex } from '@/routes/doctor/consultations';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const mainNavItems = (isDoctor: boolean): NavItem[] => {
+    const items: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Consult',
+            href: consult(),
+            icon: Stethoscope,
+        },
+    ];
+
+    if (isDoctor) {
+        items.push({
+            title: 'Doctor Console',
+            href: consultationsIndex(),
+            icon: ClipboardList,
+        });
+    }
+
+    return items;
+};
 
 const footerNavItems: NavItem[] = [
     {
@@ -53,7 +71,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={mainNavItems(usePage().props.auth.user.role === 'doctor')} />
             </SidebarContent>
 
             <SidebarFooter>

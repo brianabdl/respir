@@ -1,0 +1,154 @@
+import type { GeminiLiveClient } from './gemini-live';
+
+function base64ToInt16(base64: string): Int16Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return new Int16Array(bytes.buffer);
+}
+
+function floatToInt16(input: Float32Array): Int16Array {
+    const output = new Int16Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    return output;
+}
+
+function int16ToBase64(samples: Int16Array): string {
+    const bytes = new Uint8Array(samples.buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+/**
+ * Captures the microphone at 16 kHz and forwards PCM16 chunks
+ * to the Live API as base64 realtimeInput frames.
+ */
+export class LiveMic {
+    private context: AudioContext | null = null;
+    private processor: ScriptProcessorNode | null = null;
+    private source: MediaStreamAudioSourceNode | null = null;
+
+    start(stream: MediaStream, live: GeminiLiveClient): void {
+        this.context = new AudioContext({ sampleRate: 16000 });
+        this.source = this.context.createMediaStreamSource(stream);
+        this.processor = this.context.createScriptProcessor(4096, 1, 1);
+
+        this.processor.onaudioprocess = (event) => {
+            if (!live.isReady()) return;
+
+            const chunk = floatToInt16(event.inputBuffer.getChannelData(0));
+
+            if (chunk.length > 0) {
+                live.sendAudioChunk(int16ToBase64(chunk));
+            }
+        };
+
+        this.source.connect(this.processor);
+        this.processor.connect(this.context.destination);
+    }
+
+    stop(): void {
+        this.processor?.disconnect();
+        this.source?.disconnect();
+        void this.context?.close();
+        this.processor = null;
+        this.source = null;
+        this.context = null;
+    }
+}
+
+/**
+ * Queues 24 kHz PCM16 reply chunks from the Live API and plays them
+ * seamlessly in order. interrupt() drops the queue (barge-in).
+ */
+export class LiveSpeaker {
+    private context: AudioContext | null = null;
+    private queue: Array<{ buffer: AudioBuffer; time: number }> = [];
+    private nextTime = 0;
+    private current: AudioBufferSourceNode | null = null;
+    private playing = false;
+
+    private ensureContext(): AudioContext {
+        this.context ??= new AudioContext({ sampleRate: 24000 });
+        return this.context;
+    }
+
+    async enqueue(base64: string): Promise<void> {
+        const samples = base64ToInt16(base64);
+        const context = this.ensureContext();
+
+        if (context.state === 'suspended') void context.resume();
+
+        const buffer = context.createBuffer(1, samples.length, 24000);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < samples.length; i++) {
+            channel[i] = samples[i] / 32768;
+        }
+
+        this.queue.push({ buffer, time: 0 });
+        await this.drain();
+    }
+
+    private async drain(): Promise<void> {
+        if (this.playing) return;
+        this.playing = true;
+
+        const context = this.ensureContext();
+
+        while (this.queue.length > 0) {
+            const item = this.queue.shift();
+            if (!item) break;
+
+            const source = context.createBufferSource();
+            source.buffer = item.buffer;
+            source.connect(context.destination);
+
+            const now = Math.max(context.currentTime, this.nextTime);
+            source.start(now);
+            source.onended = () => {
+                if (this.queue.length === 0 && context.currentTime >= now + item.buffer.duration) {
+                    this.playing = false;
+                    this.nextTime = 0;
+                }
+            };
+            this.nextTime = now + item.buffer.duration;
+
+            await new Promise<void>((resolve) => {
+                source.onended = () => resolve();
+                source.start(now);
+            });
+        }
+
+        this.playing = false;
+        this.nextTime = 0;
+    }
+
+    /** Drop the pending queue and stop current playback (barge-in). */
+    interrupt(): void {
+        this.queue = [];
+        this.current?.stop();
+        this.current = null;
+        this.nextTime = 0;
+    }
+
+    isSpeaking(): boolean {
+        return this.playing;
+    }
+
+    reset(): void {
+        this.interrupt();
+        void this.context?.close();
+        this.context = null;
+        this.queue = [];
+        this.nextTime = 0;
+        this.playing = false;
+    }
+}

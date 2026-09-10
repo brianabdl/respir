@@ -218,6 +218,87 @@ registerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 register.form = registerForm
 
 /**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+export const consult = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: consult.url(options),
+    method: 'get',
+})
+
+consult.definition = {
+    methods: ["get","head"],
+    url: '/consult',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+consult.url = (options?: RouteQueryOptions) => {
+    return consult.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+consult.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: consult.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+consult.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: consult.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+const consultForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: consult.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+consultForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: consult.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Consult\ConsultationController::consult
+* @see app/Http/Controllers/Consult/ConsultationController.php:33
+* @route '/consult'
+*/
+consultForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: consult.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+consult.form = consultForm
+
+/**
 * @see \Inertia\Controller::__invoke
 * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
 * @route '/'

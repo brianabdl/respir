@@ -3,23 +3,28 @@
 namespace App\Http\Controllers\Consult;
 
 use App\Ai\Agents\ConsultAgent;
-use App\Ai\Agents\CoughAnalysisAgent;
+use App\Domain\Audit\AuditLogger;
+use App\Domain\Audit\Enums\AuditAction;
+use App\Domain\Consult\Actions\RecordCoughSample;
+use App\Domain\Consult\Actions\SaveSessionTranscript;
+use App\Domain\Consult\Actions\StartConsultation;
+use App\Domain\Consult\DTOs\VoiceTurnResult;
+use App\Domain\Consult\Jobs\AnalyseCough;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Consult\CaptureRequest;
 use App\Http\Requests\Consult\ChatMessageRequest;
+use App\Http\Requests\Consult\ConsentRequest;
 use App\Http\Requests\Consult\CoughSampleRequest;
 use App\Http\Requests\Consult\VoiceRequest;
 use App\Models\Consultation;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Response;
 use Laravel\Ai\Audio;
-use Laravel\Ai\Files\Base64Audio;
-use Laravel\Ai\Responses\StructuredAgentResponse;
 use Laravel\Ai\Streaming\Events\StreamEnd;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Transcription;
@@ -27,15 +32,22 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ConsultationController extends Controller
 {
+    public function __construct(
+        private StartConsultation $startConsultation,
+        private SaveSessionTranscript $saveSessionTranscript,
+        private RecordCoughSample $recordCoughSample,
+        private AuditLogger $auditLogger,
+    ) {}
+
     /**
      * Show the consult page for a user, creating a consultation on first use.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $consultation = $this->currentConsultation();
+        $consultation = $this->startConsultation->forUser($request->user());
 
         return inertia('consult', [
-            'consultation' => $consultation->only(['id', 'status', 'report', 'cough_analysis', 'cough_risk']),
+            'consultation' => $consultation->only(['id', 'status', 'report', 'cough_analysis', 'cough_risk', 'consented_at']),
             'captures' => $consultation->captures()->get(['id', 'type', 'path', 'mime_type']),
         ]);
     }
@@ -43,11 +55,32 @@ class ConsultationController extends Controller
     /**
      * Start a new consultation.
      */
-    public function store(): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $consultation = $this->currentConsultation();
+        $consultation = $this->startConsultation->forUser($request->user());
 
         return redirect()->route('consult', $consultation);
+    }
+
+    /**
+     * Record the patient's informed consent for AI processing.
+     */
+    public function consent(ConsentRequest $request, Consultation $consultation): JsonResponse
+    {
+        $consultation->forceFill([
+            'consented_at' => $consultation->consented_at ?? now(),
+        ])->save();
+
+        $this->auditLogger->record(
+            AuditAction::ConsentRecorded,
+            actor: $request->user(),
+            subject: $consultation,
+            context: ['consented_at' => $consultation->consented_at?->toIso8601String()],
+        );
+
+        return response()->json([
+            'consented_at' => $consultation->consented_at?->toIso8601String(),
+        ]);
     }
 
     /**
@@ -101,6 +134,8 @@ class ConsultationController extends Controller
      */
     public function voice(VoiceRequest $request, Consultation $consultation): JsonResponse
     {
+        abort_unless($consultation->consented_at !== null, 403, 'Consent is required before a voice session.');
+
         $file = $request->file('audio');
         $message = $request->validated('message');
         $internalInstruction = false;
@@ -142,13 +177,15 @@ class ConsultationController extends Controller
                 ?? $consultation->agent_conversation_id,
         ])->save();
 
-        return response()->json([
-            'transcript' => $internalInstruction ? null : (string) $message,
-            'reply' => $reply,
-            'audio' => $this->speak($reply),
-            'mime' => 'audio/wav',
-            'request_cough' => str_contains($reply, "I'm ready to record"),
-        ]);
+        $turn = new VoiceTurnResult(
+            transcript: $internalInstruction ? null : (string) $message,
+            reply: $reply,
+            audio: $this->speak($reply),
+            mime: 'audio/wav',
+            requestCough: str_contains($reply, "I'm ready to record"),
+        );
+
+        return response()->json($turn->toArray());
     }
 
     /**
@@ -169,53 +206,26 @@ class ConsultationController extends Controller
             'ended' => ['nullable', 'boolean'],
         ]);
 
-        $log = $consultation->sessionLogs()->firstOrNew([
-            'agent_conversation_id' => $validated['session_id'],
-        ]);
-
-        $log->forceFill([
-            'agent_conversation_id' => $validated['session_id'],
-            'turns' => array_map(fn (array $turn): array => [
-                'role' => $turn['role'],
-                'text' => $turn['text'],
-            ], $validated['turns']),
-            'started_at' => $log->exists ? $log->started_at : ($validated['started_at'] ?? now()),
-            'ended_at' => ($validated['ended'] ?? false) ? now() : null,
-        ])->save();
+        $this->saveSessionTranscript->upsert($consultation, $validated);
 
         return response()->json(['saved' => true], 201);
     }
 
     /**
-     * Save the recorded cough sample and analyse it.
+     * Save the recorded cough sample and queue it for analysis.
      */
     public function cough(CoughSampleRequest $request, Consultation $consultation): JsonResponse
     {
-        $file = $request->file('audio');
+        abort_unless($consultation->consented_at !== null, 403, 'Consent is required before recording a cough.');
 
-        $path = $file->store('captures', 'local');
+        $capture = $this->recordCoughSample->store($consultation, $request->file('audio'));
 
-        $consultation->captures()->create([
-            'type' => 'audio',
-            'path' => $path,
-            'disk' => 'local',
-            'mime_type' => (string) $file->getMimeType(),
-            'captured_at' => now(),
-        ]);
-
-        $analysis = $this->runCoughAnalysis($consultation, $file);
-
-        $consultation->forceFill([
-            'cough_analysis' => $analysis,
-            'cough_risk' => $analysis['risk_level'] ?? null,
-        ])->save();
-
-        $consultation->refresh();
+        AnalyseCough::dispatch($consultation->id, $capture->id);
 
         return response()->json([
-            'cough_analysis' => $consultation->cough_analysis,
-            'cough_risk' => $consultation->cough_risk,
-        ]);
+            'status' => 'processing',
+            'capture_id' => $capture->id,
+        ], 202);
     }
 
     /**
@@ -246,9 +256,21 @@ class ConsultationController extends Controller
      */
     public function captureDownload(Consultation $consultation, string $capture): StreamedResponse|JsonResponse
     {
+        abort_unless(
+            request()->user()?->id === $consultation->user_id || request()->user()?->isDoctor(),
+            403,
+        );
+
         $capture = $consultation->captures()->findOrFail($capture);
 
         abort_if(! Storage::disk($capture->disk)->exists($capture->path), 404);
+
+        $this->auditLogger->record(
+            AuditAction::CaptureDownloaded,
+            actor: request()->user(),
+            subject: $capture,
+            context: ['consultation_id' => $consultation->id],
+        );
 
         return Storage::disk($capture->disk)->download($capture->path);
     }
@@ -260,6 +282,8 @@ class ConsultationController extends Controller
     public function liveToken(Consultation $consultation): JsonResponse
     {
         $this->authorizeConsultation($consultation, $consultation->user);
+
+        abort_unless($consultation->consented_at !== null, 403, 'Consent is required before a live voice session.');
 
         $key = (string) config('ai.providers.gemini.key');
 
@@ -290,6 +314,13 @@ class ConsultationController extends Controller
             return response()->json(['error' => 'token_provision_failed'], 503);
         }
 
+        $this->auditLogger->record(
+            AuditAction::LiveSessionStarted,
+            actor: $consultation->user,
+            subject: $consultation,
+            destination: 'gemini',
+        );
+
         return response()->json([
             'token' => (string) $response->json('name'),
             'model' => (string) config('ai.live.model', 'models/gemini-2.0-flash-live-001'),
@@ -317,18 +348,6 @@ class ConsultationController extends Controller
                 .'patient that only a doctor can diagnose anything.',
             'Then say exactly: "I\'m ready to record. Please cough toward the microphone twice."',
         ]);
-    }
-
-    /**
-     * Get or create the user's in-progress consultation.
-     */
-    private function currentConsultation(): Consultation
-    {
-        $user = request()->user();
-
-        $consultation = $user->consultations()->where('status', 'chatting')->latest()->first();
-
-        return $consultation ?? $user->consultations()->create();
     }
 
     /**
@@ -376,33 +395,6 @@ class ConsultationController extends Controller
             report($exception);
 
             return null;
-        }
-    }
-
-    /**
-     * Run the structured cough analysis against the uploaded file.
-     *
-     * @return array{risk_level?: string, findings?: string, recommendation?: string}
-     */
-    private function runCoughAnalysis(Consultation $consultation, UploadedFile $file): array
-    {
-        try {
-            $response = CoughAnalysisAgent::make()->prompt(
-                'Analyse this patient cough recording.',
-                attachments: [Base64Audio::fromUpload($file)],
-            );
-
-            return $response instanceof StructuredAgentResponse
-                ? $response->structured
-                : [];
-        } catch (\Throwable $exception) {
-            report($exception);
-
-            return [
-                'risk_level' => 'unclear',
-                'findings' => 'The cough sample could not be analysed.',
-                'recommendation' => 'Please try recording again, or discuss your cough with the doctor in person.',
-            ];
         }
     }
 }

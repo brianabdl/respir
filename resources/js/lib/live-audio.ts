@@ -114,7 +114,10 @@ export class LiveSpeaker {
             const now = Math.max(context.currentTime, this.nextTime);
             source.start(now);
             source.onended = () => {
-                if (this.queue.length === 0 && context.currentTime >= now + item.buffer.duration) {
+                if (
+                    this.queue.length === 0 &&
+                    context.currentTime >= now + item.buffer.duration
+                ) {
                     this.playing = false;
                     this.nextTime = 0;
                 }

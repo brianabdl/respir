@@ -1,5 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, FolderGit2, LayoutGrid, Stethoscope } from 'lucide-react';
+import {
+    BookOpen,
+    ClipboardList,
+    FolderGit2,
+    LayoutGrid,
+    Stethoscope,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -71,7 +77,11 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems(usePage().props.auth.user.role === 'doctor')} />
+                <NavMain
+                    items={mainNavItems(
+                        usePage().props.auth.user.role === 'doctor',
+                    )}
+                />
             </SidebarContent>
 
             <SidebarFooter>

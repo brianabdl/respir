@@ -25,7 +25,15 @@ Homestead.json
 
 /public/build
 /storage/pail
+/storage/backups
 .env.backup
 .env.production
 .phpactor.json
 auth.json
+
+# Python ai-service
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+ai-service/models/

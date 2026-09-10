@@ -1,10 +1,11 @@
 <?php
 
 use App\Ai\Agents\ConsultAgent;
-use App\Ai\Agents\CoughAnalysisAgent;
+use App\Domain\Consult\Jobs\AnalyseCough;
 use App\Models\Consultation;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Audio;
 use Laravel\Ai\Transcription;
 
@@ -88,30 +89,25 @@ test('cough analysis is denied when the user does not own the consultation', fun
         ->assertForbidden();
 });
 
-test('cough analysis stores the audio and returns the structured result', function () {
-    CoughAnalysisAgent::fake([
-        ['risk_level' => 'high', 'findings' => 'Harsh', 'recommendation' => 'See doctor'],
-    ]);
+test('cough analysis stores the audio and queues analysis', function () {
+    Queue::fake();
 
     $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create();
+    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
     $this->actingAs($user);
 
     $file = UploadedFile::fake()->createWithContent('cough.mp3', 'fake-cough-audio-bytes');
 
     $this->post(route('consult.cough', $consultation), ['audio' => $file])
-        ->assertOk()
-        ->assertJsonPath('cough_risk', 'high')
-        ->assertJsonPath('cough_analysis.findings', 'Harsh');
+        ->assertStatus(202)
+        ->assertJsonPath('status', 'processing');
 
-    $consultation->refresh();
-
-    expect($consultation->cough_risk)->toBe('high');
     expect($consultation->captures()->where('type', 'audio')->count())->toBe(1);
+
+    Queue::assertPushed(AnalyseCough::class);
 });
 
 test('cough analysis rejects non-audio uploads', function () {
-    CoughAnalysisAgent::fake();
     $user = User::factory()->create();
     $consultation = Consultation::factory()->for($user)->create();
     $this->actingAs($user);
@@ -120,6 +116,28 @@ test('cough analysis rejects non-audio uploads', function () {
 
     $this->post(route('consult.cough', $consultation), ['audio' => $file])
         ->assertSessionHasErrors('audio');
+});
+
+test('consent is recorded for the consultation owner', function () {
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create();
+    $this->actingAs($user);
+
+    $this->post(route('consult.consent', $consultation))
+        ->assertOk()
+        ->assertJsonPath('consented_at', fn (string $value) => $value !== '');
+
+    expect($consultation->refresh()->consented_at)->not->toBeNull();
+});
+
+test('consent is denied when the user does not own the consultation', function () {
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->create();
+    $this->actingAs($user);
+
+    $this->post(route('consult.consent', $consultation))->assertForbidden();
+
+    expect($consultation->refresh()->consented_at)->toBeNull();
 });
 
 test('camera capture stores the media file', function () {
@@ -153,7 +171,7 @@ test('voice turn starts with a greeting when no input is given', function () {
     Audio::fake(['fake-wav-bytes']);
 
     $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create();
+    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
     $this->actingAs($user);
 
     $this->post(route('consult.voice', $consultation))
@@ -167,7 +185,7 @@ test('voice turn transcribes, replies and returns agent speech', function () {
     Audio::fake(['fake-wav-bytes']);
 
     $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create();
+    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
     $this->actingAs($user);
 
     $file = UploadedFile::fake()->createWithContent('speech.mp3', 'fake-speech-bytes');
@@ -188,7 +206,7 @@ test('voice turn flags the cough request when the agent asks for a sample', func
     Audio::fake(['fake-wav-bytes']);
 
     $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create();
+    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
     $this->actingAs($user);
 
     $this->post(route('consult.voice', $consultation), ['message' => 'ok'])
@@ -204,4 +222,30 @@ test('voice turn is denied when the user does not own the consultation', functio
     $this->post(route('consult.voice', $consultation), [
         'audio' => UploadedFile::fake()->createWithContent('speech.mp3', 'x'),
     ])->assertForbidden();
+});
+
+test('voice turn is blocked without recorded consent', function () {
+    ConsultAgent::fake();
+
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create();
+    $this->actingAs($user);
+
+    $this->post(route('consult.voice', $consultation))->assertForbidden();
+});
+
+test('cough analysis is blocked without recorded consent', function () {
+    Queue::fake();
+
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create();
+    $this->actingAs($user);
+
+    $file = UploadedFile::fake()->createWithContent('cough.mp3', 'fake-cough-audio-bytes');
+
+    $this->post(route('consult.cough', $consultation), ['audio' => $file])->assertForbidden();
+
+    expect($consultation->captures()->count())->toBe(0);
+
+    Queue::assertNothingPushed();
 });

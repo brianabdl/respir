@@ -1,7 +1,9 @@
 import { Mic, SendHorizontal, Video } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useEcho } from '@laravel/echo-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ConsentGate from '@/components/consent-gate';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import ConsultationController from '@/actions/App/Http/Controllers/Consult/ConsultationController';
@@ -9,26 +11,56 @@ import { GeminiLiveClient } from '@/lib/gemini-live';
 import { LiveMic, LiveSpeaker } from '@/lib/live-audio';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
-type CoughAnalysis = { risk_level?: string; findings?: string; recommendation?: string } | null;
-type Capture = { id: number; type: string; path: string; mime_type?: string } | null;
+type CoughAnalysis = {
+    risk_level?: string;
+    findings?: string;
+    recommendation?: string;
+} | null;
+type Capture = {
+    id: number;
+    type: string;
+    path: string;
+    mime_type?: string;
+} | null;
 
 export default function Consult({
     consultation,
     messages = [],
     captures = [],
 }: {
-    consultation: { id: number; status: string; cough_analysis: CoughAnalysis; cough_risk?: string | null };
+    consultation: {
+        id: number;
+        status: string;
+        cough_analysis: CoughAnalysis;
+        cough_risk?: string | null;
+        consented_at?: string | null;
+    };
     messages?: ChatMessage[];
-    captures?: Array<{ id: number; type: string; path: string; mime_type?: string }>;
+    captures?: Array<{
+        id: number;
+        type: string;
+        path: string;
+        mime_type?: string;
+    }>;
 }) {
     const [chat, setChat] = useState<ChatMessage[]>(messages);
     const [message, setMessage] = useState('');
     const [streaming, setStreaming] = useState(false);
-    const [analysis, setAnalysis] = useState<CoughAnalysis>(consultation.cough_analysis);
+    const [analysis, setAnalysis] = useState<CoughAnalysis>(
+        consultation.cough_analysis,
+    );
     const [recordingCough, setRecordingCough] = useState(false);
     const [awaitingCough, setAwaitingCough] = useState(false);
     const [sessionStarted, setSessionStarted] = useState(false);
     const [cameraOn, setCameraOn] = useState(false);
+    const [consented, setConsented] = useState(
+        Boolean(consultation.consented_at),
+    );
+    const [consentOpen, setConsentOpen] = useState(false);
+    const [coughRisk, setCoughRisk] = useState<string | null>(
+        consultation.cough_risk ?? null,
+    );
+    const [analysisPending, setAnalysisPending] = useState(false);
 
     // Live-voice channel state: the transcript shows what is happening.
     const [connected, setConnected] = useState(false);
@@ -36,7 +68,9 @@ export default function Consult({
     const [generating, setGenerating] = useState(false);
     const [assistantLive, setAssistantLive] = useState('');
     const [userLive, setUserLive] = useState('');
-    const [voiceHint, setVoiceHint] = useState('Tap to start the voice consult');
+    const [voiceHint, setVoiceHint] = useState(
+        'Tap to start the voice consult',
+    );
     const [useFallbackLoop, setUseFallbackLoop] = useState(false);
 
     const chatRef = useRef<HTMLDivElement>(null);
@@ -50,8 +84,43 @@ export default function Consult({
     const assistantBufferRef = useRef('');
     const userBufferRef = useRef('');
     const coughStartedRef = useRef(false);
-    const sessionTurnsRef = useRef<Array<{ role: 'user' | 'assistant'; text: string }>>([]);
+    const sessionTurnsRef = useRef<
+        Array<{ role: 'user' | 'assistant'; text: string }>
+    >([]);
     const sessionIdRef = useRef<string>('');
+
+    useEcho<{
+        consultation_id: number;
+        risk_level?: string;
+        cough_risk?: string | null;
+        cough_analysis?: CoughAnalysis;
+    }>(
+        `consultation.${consultation.id}`,
+        'cough.analysis',
+        (payload) => {
+            if (payload.cough_analysis) {
+                setAnalysis(payload.cough_analysis);
+            }
+
+            setCoughRisk(payload.cough_risk ?? payload.risk_level ?? null);
+            setAnalysisPending(false);
+            setAwaitingCough(false);
+
+            const live = liveRef.current;
+
+            if (live?.isReady()) {
+                const risk = payload.risk_level ?? 'unclear';
+                const findings =
+                    payload.cough_analysis?.findings ?? 'not available';
+
+                live.sendText(
+                    `The cough sample was recorded and analysed. Risk level: ${risk}. Findings: ${findings}. Comment on this and continue the pre-visit conversation with the patient.`,
+                );
+                void restartLiveMic();
+            }
+        },
+        [consultation.id],
+    );
 
     useEffect(() => {
         chatRef.current?.scrollTo({
@@ -67,10 +136,12 @@ export default function Consult({
             micRef.current = null;
             speakerRef.current?.reset();
             speakerRef.current = null;
-            mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+            mediaStreamRef.current
+                ?.getTracks()
+                .forEach((track) => track.stop());
             mediaStreamRef.current = null;
         },
-        []
+        [],
     );
 
     function flushLiveTranscript() {
@@ -81,7 +152,10 @@ export default function Consult({
             });
             setChat((prev) => [
                 ...prev,
-                { role: 'assistant', content: assistantBufferRef.current.trim() },
+                {
+                    role: 'assistant',
+                    content: assistantBufferRef.current.trim(),
+                },
             ]);
         }
         assistantBufferRef.current = '';
@@ -119,7 +193,7 @@ export default function Consult({
                         turns: sessionTurnsRef.current,
                         ended: ended,
                     }),
-                }
+                },
             );
         } catch (error) {
             console.error('Could not save session log', error);
@@ -136,7 +210,7 @@ export default function Consult({
         try {
             const response = await fetch(
                 ConsultationController.liveToken.url(consultation.id),
-                { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+                { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
             );
 
             if (!response.ok) {
@@ -198,7 +272,9 @@ export default function Consult({
                     void saveSessionLog(true);
                     teardownLiveSession();
                     setUseFallbackLoop(true);
-                    setVoiceHint('Live voice unavailable — using turn-based voice');
+                    setVoiceHint(
+                        'Live voice unavailable — using turn-based voice',
+                    );
                 },
                 onClose: () => {
                     setConnected(false);
@@ -267,8 +343,11 @@ export default function Consult({
                     'X-Requested-With': 'XMLHttpRequest',
                     Accept: 'text/event-stream',
                 },
-                body: JSON.stringify({ message: text, new_session: !sessionStarted }),
-            }
+                body: JSON.stringify({
+                    message: text,
+                    new_session: !sessionStarted,
+                }),
+            },
         );
 
         if (!response.ok) {
@@ -300,7 +379,8 @@ export default function Consult({
                             copy[copy.length - 1] = {
                                 role: 'assistant',
                                 content:
-                                    copy[copy.length - 1].content + (event.delta ?? ''),
+                                    copy[copy.length - 1].content +
+                                    (event.delta ?? ''),
                             };
                             return copy;
                         });
@@ -342,7 +422,9 @@ export default function Consult({
         micRef.current?.stop();
         micRef.current = null;
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+        });
         setRecordingCough(true);
 
         const recorder = new MediaRecorder(stream);
@@ -357,16 +439,7 @@ export default function Consult({
             const blob = new Blob(chunks, { type: recorder.mimeType });
             stream.getTracks().forEach((track) => track.stop());
             setRecordingCough(false);
-            const analysisResult = await analyzeCough(blob);
-
-            if (connected && liveRef.current?.isReady()) {
-                const risk = analysisResult?.risk_level ?? 'unclear';
-                const findings = analysisResult?.findings ?? 'not available';
-                liveRef.current.sendText(
-                    `The cough sample was recorded and analysed. Risk level: ${risk}. Findings: ${findings}. Comment on this and continue the pre-visit conversation with the patient.`
-                );
-                void restartLiveMic();
-            }
+            await analyzeCough(blob);
         };
 
         recorder.start();
@@ -388,24 +461,32 @@ export default function Consult({
         micRef.current.start(stream, live);
     }
 
-    async function analyzeCough(blob: Blob): Promise<CoughAnalysis> {
-        const formData = new FormData();
-        formData.append('audio', blob, 'cough.webm');
-        const response = await fetch(
-            ConsultationController.cough.url(consultation.id),
-            {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: formData,
-            }
-        );
-        const { cough_analysis } = await response.json();
-        setAnalysis(cough_analysis);
-        setAwaitingCough(false);
+    async function analyzeCough(blob: Blob): Promise<void> {
+        setAnalysisPending(true);
 
-        return cough_analysis as CoughAnalysis;
+        try {
+            const formData = new FormData();
+            formData.append('audio', blob, 'cough.webm');
+            const response = await fetch(
+                ConsultationController.cough.url(consultation.id),
+                {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                },
+            );
+
+            if (!response.ok) {
+                throw new Error('Cough upload failed');
+            }
+
+            setAwaitingCough(false);
+        } catch (error) {
+            console.error('Could not send the cough sample', error);
+            setAnalysisPending(false);
+        }
     }
 
     async function capturePhoto() {
@@ -415,7 +496,7 @@ export default function Consult({
         canvas.height = videoRef.current.videoHeight;
         canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
         const blob = await new Promise<Blob | null>((resolve) =>
-            canvas.toBlob(resolve, 'image/png')
+            canvas.toBlob(resolve, 'image/png'),
         );
         if (!blob) return;
 
@@ -432,50 +513,18 @@ export default function Consult({
         });
     }
 
-    async function recordVideo() {
-        if (!videoRef.current?.srcObject) {
-            console.warn('Camera not active');
-            return;
-        }
-        const stream = mediaStreamRef.current;
-        if (!stream) return;
-
-        const recorder = new MediaRecorder(stream);
-        const chunks: BlobPart[] = [];
-        recorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                chunks.push(event.data);
-            }
-        };
-        recorder.onstop = async () => {
-            const blob = new Blob(chunks, { type: recorder.mimeType });
-            const formData = new FormData();
-            formData.append('type', 'video');
-            formData.append('media', blob, 'capture.webm');
-
-            await fetch(ConsultationController.capture.url(consultation.id), {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: formData,
-            });
-        };
-
-        void startCough_recordingGuardsNone();
-
-        recorder.start();
-        setTimeout(() => {
-            if (recorder.state === 'recording') {
-                recorder.stop();
-            }
-        }, 5000);
-    }
-
-    function startCough_recordingGuardsNone() {}
-
     return (
         <div className="grid h-full grid-cols-1 gap-4 p-4 lg:grid-cols-3">
+            {consentOpen && (
+                <ConsentGate
+                    consultationId={consultation.id}
+                    onConsented={() => {
+                        setConsented(true);
+                        setConsentOpen(false);
+                        void startVoiceConsult();
+                    }}
+                />
+            )}
             <div className="relative col-span-1 flex flex-col overflow-hidden rounded-xl border bg-black lg:col-span-2">
                 <video
                     ref={videoRef}
@@ -499,7 +548,9 @@ export default function Consult({
                             </Badge>
                         )}
                         {connected && !speaking && !generating && (
-                            <Badge className="bg-primary/80 text-white">listening</Badge>
+                            <Badge className="bg-primary/80 text-white">
+                                listening
+                            </Badge>
                         )}
                     </div>
                     <Badge className="bg-black/50 text-white">
@@ -511,15 +562,30 @@ export default function Consult({
                     <Button variant="outline" size="sm" onClick={toggleCamera}>
                         {cameraOn ? 'Stop Camera' : 'Start Camera'}
                     </Button>
+                    {cameraOn && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void capturePhoto()}
+                        >
+                            Save Photo
+                        </Button>
+                    )}
                     {awaitingCough && !recordingCough && (
                         <Button size="sm" onClick={() => void startCough()}>
                             Record & Send Cough
                         </Button>
                     )}
+                    {sessionStarted && voiceHint && (
+                        <span className="text-xs text-white/80">
+                            {voiceHint}
+                        </span>
+                    )}
                     {captures.length > 0 && (
                         <span className="ml-auto text-xs text-white/80">
                             {captures.length} capture
-                            {captures.length === 1 ? '' : 's'} saved for the doctor
+                            {captures.length === 1 ? '' : 's'} saved for the
+                            doctor
                         </span>
                     )}
                 </div>
@@ -527,10 +593,20 @@ export default function Consult({
                 {!sessionStarted && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-sm">
                         <p className="max-w-sm text-center text-sm text-white">
-                            Sage, your voice assistant, will greet you live — like
-                            a real conversation. Tap to start, mics on.
+                            Sage, your voice assistant, will greet you live —
+                            like a real conversation. Tap to start, mics on.
                         </p>
-                        <Button className="size-12" onClick={() => void startVoiceConsult()} size="lg">
+                        <Button
+                            className="size-12"
+                            onClick={() => {
+                                if (consented) {
+                                    void startVoiceConsult();
+                                } else {
+                                    setConsentOpen(true);
+                                }
+                            }}
+                            size="lg"
+                        >
                             <Mic className="size-5" />
                             Start Voice Consult
                         </Button>
@@ -555,12 +631,12 @@ export default function Consult({
                             {speaking
                                 ? 'Sage is speaking… (talk over it to interrupt)'
                                 : generating
-                                    ? 'Generating reply…'
-                                    : connected
-                                        ? 'Listening… turn-taking is automatic'
-                                        : useFallbackLoop
-                                            ? 'Turn-based voice mode — speak or type to reply'
-                                            : 'Not connected'}
+                                  ? 'Generating reply…'
+                                  : connected
+                                    ? 'Listening… turn-taking is automatic'
+                                    : useFallbackLoop
+                                      ? 'Turn-based voice mode — speak or type to reply'
+                                      : 'Not connected'}
                         </p>
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col">
@@ -568,38 +644,40 @@ export default function Consult({
                             ref={chatRef}
                             className="flex max-h-72 flex-1 flex-col gap-2 overflow-y-auto"
                         >
-                            {chat.length === 0 && !assistantLive && !userLive && (
-                                <p className="text-sm text-neutral-500">
-                                    The conversation transcript appears here, word
-                                    by word as it is spoken.
-                                </p>
-                            )}
+                            {chat.length === 0 &&
+                                !assistantLive &&
+                                !userLive && (
+                                    <p className="text-sm text-neutral-500">
+                                        The conversation transcript appears
+                                        here, word by word as it is spoken.
+                                    </p>
+                                )}
                             {chat.map((msg, i) => (
                                 <div
                                     key={i}
                                     className={
                                         msg.role === 'user'
-                                            ? 'max-w-[95%] self-end rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground'
-                                            : 'max-w-[95%] self-start rounded-lg bg-muted px-3 py-2 text-sm'
+                                            ? 'bg-primary text-primary-foreground max-w-[95%] self-end rounded-lg px-3 py-2 text-sm'
+                                            : 'bg-muted max-w-[95%] self-start rounded-lg px-3 py-2 text-sm'
                                     }
                                 >
                                     {msg.content}
                                 </div>
                             ))}
                             {userLive && (
-                                <div className="max-w-[95%] self-end rounded-lg bg-primary/40 px-3 py-2 text-sm text-primary-foreground italic">
+                                <div className="bg-primary/40 text-primary-foreground max-w-[95%] self-end rounded-lg px-3 py-2 text-sm italic">
                                     {userLive}
                                 </div>
                             )}
                             {speaking && (
                                 <div className="flex items-center gap-1 self-start px-2 py-1">
-                                    <span className="animate-bounce rounded-full bg-muted size-2" />
-                                    <span className="animate-bounce-1 rounded-full bg-muted size-2" />
-                                    <span className="animate-bounce-2 rounded-full bg-muted size-2" />
+                                    <span className="bg-muted size-2 animate-bounce rounded-full" />
+                                    <span className="animate-bounce-1 bg-muted size-2 rounded-full" />
+                                    <span className="animate-bounce-2 bg-muted size-2 rounded-full" />
                                 </div>
                             )}
                             {assistantLive && (
-                                <div className="max-w-[95%] self-start rounded-lg bg-muted px-3 py-2 text-sm">
+                                <div className="bg-muted max-w-[95%] self-start rounded-lg px-3 py-2 text-sm">
                                     {assistantLive}
                                 </div>
                             )}
@@ -615,9 +693,9 @@ export default function Consult({
                         >
                             <textarea
                                 value={message}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                                    setMessage(e.target.value)
-                                }
+                                onChange={(
+                                    e: React.ChangeEvent<HTMLTextAreaElement>,
+                                ) => setMessage(e.target.value)}
                                 placeholder="Type here — replies stream the same way…"
                                 disabled={streaming}
                                 className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex-1 resize-none rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
@@ -646,33 +724,46 @@ export default function Consult({
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between">
                             Cough Assessment
-                            {consultation.cough_risk && (
-                                <Badge
-                                    variant={
-                                        consultation.cough_risk === 'high'
-                                            ? 'destructive'
-                                            : 'secondary'
-                                    }
-                                >
-                                    {consultation.cough_risk}
-                                </Badge>
+                            {analysisPending ? (
+                                <Badge variant="secondary">analysing…</Badge>
+                            ) : (
+                                coughRisk && (
+                                    <Badge
+                                        variant={
+                                            coughRisk === 'high'
+                                                ? 'destructive'
+                                                : 'secondary'
+                                        }
+                                    >
+                                        {coughRisk}
+                                    </Badge>
+                                )
                             )}
                         </CardTitle>
                     </CardHeader>
 
-                    {analysis && (
-                        <CardContent className="text-sm space-y-2 text-neutral-600 dark:text-neutral-300">
+                    {analysisPending && (
+                        <CardContent className="text-sm text-neutral-500">
+                            The cough sample is being analysed. This page
+                            updates automatically.
+                        </CardContent>
+                    )}
+
+                    {analysis && !analysisPending && (
+                        <CardContent className="space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
                             <p>
                                 <span className="font-medium">Findings:</span>{' '}
                                 {analysis.findings}
                             </p>
                             <p>
-                                <span className="font-medium">Recommendation:</span>{' '}
+                                <span className="font-medium">
+                                    Recommendation:
+                                </span>{' '}
                                 {analysis.recommendation}
                             </p>
                             <p className="text-xs italic">
-                                This is not a diagnosis. Please see a doctor for a
-                                clinical assessment.
+                                This is not a diagnosis. Please see a doctor for
+                                a clinical assessment.
                             </p>
                         </CardContent>
                     )}
@@ -695,10 +786,14 @@ export default function Consult({
                         >
                             <Mic
                                 className={
-                                    recordingCough ? 'animate-pulse size-4' : 'size-4'
+                                    recordingCough
+                                        ? 'size-4 animate-pulse'
+                                        : 'size-4'
                                 }
                             />
-                            {recordingCough ? 'Recording…' : 'Record & Send Cough'}
+                            {recordingCough
+                                ? 'Recording…'
+                                : 'Record & Send Cough'}
                         </Button>
                     </CardContent>
                 </Card>

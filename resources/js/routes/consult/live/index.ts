@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 export const token = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ token.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 token.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ token.url = (args: { consultation: number | { id: number } } | [consultation: nu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 token.get = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -59,7 +59,7 @@ token.get = (args: { consultation: number | { id: number } } | [consultation: nu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 token.head = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -69,7 +69,7 @@ token.head = (args: { consultation: number | { id: number } } | [consultation: n
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 const tokenForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ const tokenForm = (args: { consultation: number | { id: number } } | [consultati
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 tokenForm.get = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -89,7 +89,7 @@ tokenForm.get = (args: { consultation: number | { id: number } } | [consultation
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::token
-* @see app/Http/Controllers/Consult/ConsultationController.php:260
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/live/token'
 */
 tokenForm.head = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

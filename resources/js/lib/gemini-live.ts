@@ -36,7 +36,7 @@ export class GeminiLiveClient {
 
     connect(): void {
         const socket = new WebSocket(
-            `${WS_URL}?access_token=${encodeURIComponent(this.options.setup.token)}`
+            `${WS_URL}?access_token=${encodeURIComponent(this.options.setup.token)}`,
         );
         this.socket = socket;
 
@@ -77,7 +77,11 @@ export class GeminiLiveClient {
                 turns: [
                     {
                         role: 'user',
-                        parts: [{ text: 'Open the conversation now with your greeting turn.' }],
+                        parts: [
+                            {
+                                text: 'Open the conversation now with your greeting turn.',
+                            },
+                        ],
                     },
                 ],
                 turnComplete: true,
@@ -115,6 +119,7 @@ export class GeminiLiveClient {
     private async handle(data: Blob): Promise<void> {
         const json = JSON.parse(await data.text()) as {
             setupComplete?: unknown;
+            interrupted?: boolean;
             serverContent?: {
                 modelTurn?: {
                     parts?: Array<{
@@ -168,7 +173,10 @@ export class GeminiLiveClient {
         }
 
         if (json.serverOutputTranscription?.text) {
-            this.options.onAssistantTranscript(json.serverOutputTranscription.text, true);
+            this.options.onAssistantTranscript(
+                json.serverOutputTranscription.text,
+                true,
+            );
         }
 
         if (json.goAway) {

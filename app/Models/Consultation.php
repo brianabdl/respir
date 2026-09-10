@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\ConsultationFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,12 +21,14 @@ use Laravel\Ai\Models\Conversation;
  * @property array<string, mixed>|null $report
  * @property array<string, mixed>|null $cough_analysis
  * @property string|null $cough_risk
+ * @property Carbon|null $consented_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
  * @property-read Collection<int, ConsultCapture> $captures
  * @property-read Collection<int, Conversation> $conversations
  */
+#[Fillable(['status'])]
 class Consultation extends Model
 {
     /** @use HasFactory<ConsultationFactory> */
@@ -36,6 +39,7 @@ class Consultation extends Model
         return [
             'report' => 'array',
             'cough_analysis' => 'array',
+            'consented_at' => 'datetime',
         ];
     }
 

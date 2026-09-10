@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'ai_service' => [
+        'url' => env('AI_SERVICE_URL', 'http://127.0.0.1:9000'),
+        'token' => env('AI_SERVICE_TOKEN'),
+        'timeout' => (int) env('AI_SERVICE_TIMEOUT', 300),
+        'retries' => (int) env('AI_SERVICE_RETRIES', 2),
+    ],
+
 ];

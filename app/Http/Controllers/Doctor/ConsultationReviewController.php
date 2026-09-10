@@ -2,17 +2,31 @@
 
 namespace App\Http\Controllers\Doctor;
 
+use App\Domain\Audit\AuditLogger;
+use App\Domain\Audit\Enums\AuditAction;
+use App\Domain\Consult\Actions\FindSimilarCoughs;
+use App\Domain\Consult\Jobs\GenerateClinicianBriefing;
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Inertia\Response;
 
 class ConsultationReviewController extends Controller
 {
+    public function __construct(private AuditLogger $auditLogger) {}
+
     /**
      * List every patient consultation for the reviewing doctor.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $this->auditLogger->record(
+            AuditAction::ConsultationListViewed,
+            actor: $request->user(),
+        );
+
         $consultations = Consultation::query()
             ->with(['user:id,name,email', 'sessionLogs'])
             ->latest()
@@ -39,8 +53,14 @@ class ConsultationReviewController extends Controller
     /**
      * A consultation's full history: session transcripts, captures and coughs.
      */
-    public function show(Consultation $consultation): Response
+    public function show(Request $request, Consultation $consultation): Response
     {
+        $this->auditLogger->record(
+            AuditAction::ConsultationViewed,
+            actor: $request->user(),
+            subject: $consultation,
+        );
+
         return inertia('doctor/show', [
             'consultation' => [
                 'id' => $consultation->id,
@@ -61,12 +81,43 @@ class ConsultationReviewController extends Controller
                     ]),
                 'captures' => $consultation->captures()->get()->map(fn ($capture) => [
                     ...$capture->only(['id', 'type', 'mime_type']),
-                    'download' => route('consult.captures.download', [
-                        'consultation' => $consultation->id,
-                        'capture' => $capture->id,
-                    ]),
+                    'download' => URL::temporarySignedRoute(
+                        'consult.captures.download',
+                        now()->addMinutes(30),
+                        [
+                            'consultation' => $consultation->id,
+                            'capture' => $capture->id,
+                        ],
+                    ),
                 ]),
             ],
+        ]);
+    }
+
+    /**
+     * Queue (re)generation of the clinician briefing for a consultation.
+     */
+    public function briefing(Request $request, Consultation $consultation): JsonResponse
+    {
+        $this->auditLogger->record(
+            AuditAction::BriefingRequested,
+            actor: $request->user(),
+            subject: $consultation,
+            destination: 'ai-service',
+        );
+
+        GenerateClinicianBriefing::dispatch($consultation->id);
+
+        return response()->json(['status' => 'processing'], 202);
+    }
+
+    /**
+     * List coughs acoustically similar to this consultation's sample.
+     */
+    public function similar(Consultation $consultation, FindSimilarCoughs $findSimilarCoughs): JsonResponse
+    {
+        return response()->json([
+            'similar' => $findSimilarCoughs->forConsultation($consultation),
         ]);
     }
 }

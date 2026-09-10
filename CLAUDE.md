@@ -1,3 +1,42 @@
+# Agent Guide — hybrid clinical AI repo
+
+Repo-specific facts that are easy to miss. Product/architecture context lives in
+`README.md`, `OVERVIEW.md`, and `MIGRATION_PLAN.md` (decisions + runbook).
+
+## Architecture (do not violate)
+
+- Hybrid: **Gemini Live is interaction-only** (voice, camera presence, fallback chat). Cough analysis, clinical reasoning, and briefings must never route to Gemini.
+- Clinical AI is `ai-service/` (Python FastAPI): HeAR + TB dual-head + EmbeddingGemma locally; MedGemma on Vertex AI. Vertex is optional at runtime — without `VERTEX_ENDPOINT_ID` the service uses a fake transport (`/v1/health` reports `vertex.mode: "fake"`).
+- Cough analysis is async: `POST /consult/{id}/cough` returns `202`, a job runs on the `ai` queue, and the result arrives via Reverb event `cough.analysis`. Never read analysis from the HTTP response.
+- Direct identifiers must not reach external models. `BriefingPayloadBuilder` scrubs names/emails; the Python `BriefingRequest` rejects identifying fields (`extra="forbid"`).
+
+## Run the app (no systemd)
+
+- `composer run dev` starts serve, pail, vite, reverb, and `queue:listen --queue=ai,default` (AI queue registered in `AppServiceProvider` via `DevCommands`). Do not add a separate default-only queue listener.
+- `cd ai-service && uv run uvicorn app.main:app --host 127.0.0.1 --port 9000`.
+- Python setup: `uv sync` → `uv sync --extra ml --extra vertex` for real inference → `HF_TOKEN=... uv run scripts/download_models.py` (gated HeAR). `AI_SERVICE_TOKEN` must match the root `.env`.
+- One-time pgvector (superuser): create the `vector` extension on `agen_gemma` **and** on the test database literally named `:memory:`.
+
+## Verify changes
+
+- Pest needs pgsql and runs against a real Postgres database named `:memory:` (not sqlite): `DB_CONNECTION=pgsql php artisan test --compact` (add a path or `--filter=`).
+- Full gate: `composer test` (= Pint + PHPStan + Pest). PHPStan needs `--memory-limit=1G`; plain `vendor/bin/phpstan analyse` OOMs at the 128M worker limit.
+- Python: `cd ai-service && uv run pytest && uv run ruff check .`.
+- Live HTTP contract test: `AI_SERVICE_INTEGRATION=1 DB_CONNECTION=pgsql php artisan test tests/Feature/Consult/AiServiceIntegrationTest.php` (service must be running).
+- Frontend: `bun run types:check`, `bun run check` (`vp check`, warnings fail), `bun run check:fix` to format.
+- Wayfinder is generated with `formVariants: true`: always `php artisan wayfinder:generate --with-form`, then `bun run check:fix`. The plain command removes `.form` variants and breaks auth/settings pages.
+
+## Repo conventions
+
+- Jobs join the `ai` queue with `$this->onQueue('ai')` in the constructor. Never add a typed `public string $queue` property — `Illuminate\Bus\Queueable` defines an untyped `$queue` and PHP fatals on the conflict.
+- Consent is enforced server-side: voice, cough, and live-token abort 403 unless `consultations.consented_at` is set. Tests for those endpoints must create consultations with `['consented_at' => now()]`.
+- Capture downloads sit outside `EnsurePatient` (doctors need them), use the `signed` middleware, and are authorized owner-or-doctor in the controller.
+- Record every patient-data access and external AI call with `AuditLogger::record(...)` and an `AuditAction` case; audit context must never contain clinical content.
+- Named rate limiters `consult-voice` (20/min), `consult-chat` (30/min), `consult-cough` (10/min) are defined in `AppServiceProvider`.
+- Models use the Laravel 13 `#[Fillable([...])]` attribute, not a `$fillable` property.
+- Local queue/cache is Valkey; Laravel's `redis` driver and `REDIS_*` env names are intentional and must not be renamed.
+- Committed rules live in `.ai/rules/` (see `.ai/rules/index.md`); add new durable rules with Boost `record-rule`, never ad-hoc notes.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

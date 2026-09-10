@@ -44,6 +44,7 @@ def build_briefing_prompt(request: BriefingRequest) -> str:
         "risk_factors": request.risk_factors,
         "transcript": [turn.model_dump() for turn in request.transcript],
         "cough": request.cough.model_dump() if request.cough is not None else None,
+        "anemia": [item.model_dump() for item in request.anemia],
     }
 
     redacted = redact_identifiers(json.dumps(payload, ensure_ascii=True))
@@ -55,7 +56,8 @@ def build_briefing_prompt(request: BriefingRequest) -> str:
         f"De-identified consultation data:\n{redacted}\n\n"
         "Return JSON only with exactly these fields:\n"
         '{"chief_complaint": str, "history": str, "risk_factors": [str], '
-        '"cough_findings": str, "suggested_questions": [str], "red_flags": [str], '
+        '"cough_findings": str, "anemia_findings": str, "suggested_questions": [str], '
+        '"red_flags": [str], '
         f'"disclaimer": "{DISCLAIMER}"}}'
     )
 
@@ -210,6 +212,7 @@ class VertexMedGemma:
             history=str(data.get("history", "")),
             risk_factors=[str(item) for item in data.get("risk_factors", [])],
             cough_findings=str(data.get("cough_findings", "")),
+            anemia_findings=str(data.get("anemia_findings", "")),
             suggested_questions=[str(item) for item in data.get("suggested_questions", [])],
             red_flags=[str(item) for item in data.get("red_flags", [])],
             disclaimer=str(data.get("disclaimer", DISCLAIMER)),

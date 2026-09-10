@@ -35,3 +35,22 @@ def test_briefing_request_schema_forbids_identity_fields():
         assert "name" in str(exc)
     else:
         raise AssertionError("BriefingRequest accepted an identifying field")
+
+
+def test_briefing_request_schema_forbids_identity_fields_inside_anemia():
+    try:
+        BriefingRequest(  # type: ignore[call-arg]
+            subject_token="PATIENT_A",
+            anemia=[
+                {
+                    "part": "palm",
+                    "risk_level": "low",
+                    "findings": "No pallor",
+                    "email": "jane.doe@example.com",
+                }
+            ],
+        )
+    except Exception as exc:
+        assert "email" in str(exc)
+    else:
+        raise AssertionError("BriefingRequest accepted an identifying anemia field")

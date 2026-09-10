@@ -79,17 +79,22 @@ class ConsultationReviewController extends Controller
                         'ended_at' => $log->ended_at?->toDateTimeString(),
                         'turns' => $log->turns ?? [],
                     ]),
-                'captures' => $consultation->captures()->get()->map(fn ($capture) => [
-                    ...$capture->only(['id', 'type', 'mime_type']),
-                    'download' => URL::temporarySignedRoute(
-                        'consult.captures.download',
-                        now()->addMinutes(30),
-                        [
-                            'consultation' => $consultation->id,
-                            'capture' => $capture->id,
-                        ],
-                    ),
-                ]),
+                'captures' => $consultation->captures()
+                    ->orderBy('captured_at')
+                    ->get()
+                    ->map(fn ($capture) => [
+                        ...$capture->only(['id', 'type', 'mime_type', 'analysis', 'risk_level']),
+                        'analyzed_at' => $capture->analyzed_at?->toDateTimeString(),
+                        'captured_at' => $capture->captured_at->toDateTimeString(),
+                        'download' => URL::temporarySignedRoute(
+                            'consult.captures.download',
+                            now()->addMinutes(30),
+                            [
+                                'consultation' => $consultation->id,
+                                'capture' => $capture->id,
+                            ],
+                        ),
+                    ]),
             ],
         ]);
     }

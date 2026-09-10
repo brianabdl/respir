@@ -1,4 +1,4 @@
-from app.schemas.models import BriefingRequest, BriefingResponse, RiskLevel
+from app.schemas.models import AnemiaPart, BriefingRequest, BriefingResponse, RiskLevel
 
 DISCLAIMER = (
     "This summary is generated to support, not replace, a clinician assessment. "
@@ -34,6 +34,39 @@ def fallback_explanation(risk_level: RiskLevel) -> tuple[str, str]:
     return FALLBACK_EXPLANATIONS.get(risk_level, FALLBACK_EXPLANATIONS["unclear"])
 
 
+ANEMIA_LABELS: dict[AnemiaPart, str] = {
+    "palm": "palm",
+    "eye": "lower-eyelid",
+    "nail": "fingernail",
+}
+
+
+def fallback_anemia_explanation(part: AnemiaPart, positive: bool | None) -> tuple[str, str]:
+    region = ANEMIA_LABELS.get(part, part)
+
+    if positive is None:
+        return (
+            f"The {region} image could not be analysed, so no screening conclusion was drawn.",
+            "Try capturing the image again in bright, even light, and mention any fatigue or "
+            "pallor to the doctor.",
+        )
+
+    if positive:
+        return (
+            f"The {region} image showed colour features that the screening model associates "
+            "with low haemoglobin.",
+            "Confirm with a blood test (haemoglobin or haematocrit) and a clinical review. "
+            "Screening alone cannot diagnose anaemia.",
+        )
+
+    return (
+        f"The {region} image did not show colour features associated with anaemia in the "
+        "screening model.",
+        "Screening alone cannot rule out anaemia — mention any fatigue, dizziness or pallor "
+        "to the doctor.",
+    )
+
+
 def template_briefing(request: BriefingRequest, generated_by: str = "template") -> BriefingResponse:
     first_user_turn = next(
         (turn.text for turn in request.transcript if turn.role == "user"),
@@ -44,6 +77,14 @@ def template_briefing(request: BriefingRequest, generated_by: str = "template") 
         request.cough.findings if request.cough is not None else "No cough sample was recorded."
     )
 
+    anemia_findings = (
+        "; ".join(
+            f"{item.part}: {item.risk_level} ({item.findings})" for item in request.anemia
+        )
+        if request.anemia
+        else "No anemia screening images were captured."
+    )
+
     return BriefingResponse(
         chief_complaint=first_user_turn[:280],
         history=(
@@ -52,6 +93,7 @@ def template_briefing(request: BriefingRequest, generated_by: str = "template") 
         ),
         risk_factors=list(request.risk_factors),
         cough_findings=cough_findings,
+        anemia_findings=anemia_findings,
         suggested_questions=[
             "Ask the patient to describe the cough and its duration.",
             "Clarify fever, night sweats, weight loss, and fatigue.",

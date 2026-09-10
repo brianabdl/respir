@@ -19,6 +19,14 @@ BRIEFING_PAYLOAD = {
         "findings": "Harsh cough",
         "recommendation": "See doctor",
     },
+    "anemia": [
+        {
+            "part": "palm",
+            "risk_level": "high",
+            "risk_score": 0.82,
+            "findings": "Pallor pattern detected",
+        }
+    ],
 }
 
 
@@ -45,6 +53,8 @@ def test_briefing_degrades_when_medgemma_is_unavailable():
     assert payload["degraded"] is True
     assert payload["generated_by"] == "template"
     assert payload["cough_findings"] == "Harsh cough"
+    assert "palm" in payload["anemia_findings"]
+    assert "Pallor pattern detected" in payload["anemia_findings"]
 
 
 def test_briefing_rejects_identifying_fields():

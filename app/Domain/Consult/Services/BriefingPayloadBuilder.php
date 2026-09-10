@@ -23,6 +23,7 @@ class BriefingPayloadBuilder
             'risk_factors' => [],
             'transcript' => $this->transcript($consultation, $subjectToken),
             'cough' => $this->cough($consultation),
+            'anemia' => $this->anemia($consultation),
         ];
     }
 
@@ -78,5 +79,27 @@ class BriefingPayloadBuilder
             'findings' => (string) ($consultation->cough_analysis['findings'] ?? ''),
             'recommendation' => (string) ($consultation->cough_analysis['recommendation'] ?? ''),
         ];
+    }
+
+    /**
+     * @return array<int, array{part: string, risk_level: string, risk_score: float|null, findings: string}>
+     */
+    private function anemia(Consultation $consultation): array
+    {
+        return $consultation->captures()
+            ->whereIn('type', ['palm', 'eye', 'nail'])
+            ->whereNotNull('analysis')
+            ->orderBy('captured_at')
+            ->get()
+            ->map(fn ($capture) => [
+                'part' => (string) $capture->type,
+                'risk_level' => (string) ($capture->risk_level ?? 'unclear'),
+                'risk_score' => isset($capture->analysis['risk_score'])
+                    ? (float) $capture->analysis['risk_score']
+                    : null,
+                'findings' => (string) ($capture->analysis['findings'] ?? ''),
+            ])
+            ->values()
+            ->all();
     }
 }

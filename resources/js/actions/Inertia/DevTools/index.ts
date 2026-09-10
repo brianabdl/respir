@@ -1,7 +1,7 @@
-import Http from './Http'
+import Http from './Http';
 
 const DevTools = {
     Http: Object.assign(Http, Http),
-}
+};
 
-export default DevTools
+export default DevTools;

@@ -23,6 +23,7 @@ function briefingServicePayload(): array
         'history' => 'Progressive cough with night sweats',
         'risk_factors' => ['close TB contact'],
         'cough_findings' => 'Harsh cough',
+        'anemia_findings' => 'Palm: high risk (pallor pattern detected)',
         'suggested_questions' => ['Ask about fever'],
         'red_flags' => [],
         'disclaimer' => 'Not a diagnosis.',
@@ -86,4 +87,41 @@ test('briefing job stores a degraded fallback when the service fails', function 
         ->and($consultation->report['generated_by'])->toBe('laravel-fallback');
 
     Event::assertDispatched(ConsultationUpdated::class);
+});
+
+test('briefing payload includes analysed anemia captures', function () {
+    Event::fake([ConsultationUpdated::class]);
+    Http::fake(['*/v1/briefing' => Http::response(briefingServicePayload())]);
+
+    $consultation = Consultation::factory()->create();
+
+    $capture = $consultation->captures()->create([
+        'type' => 'palm',
+        'path' => 'captures/palm.png',
+        'disk' => 'local',
+        'mime_type' => 'image/png',
+        'captured_at' => now(),
+    ]);
+
+    $capture->forceFill([
+        'risk_level' => 'high',
+        'analyzed_at' => now(),
+        'analysis' => [
+            'part' => 'palm',
+            'risk_level' => 'high',
+            'risk_score' => 0.82,
+            'findings' => 'Pallor pattern detected',
+        ],
+    ])->save();
+
+    (new GenerateClinicianBriefing($consultation->id))
+        ->handle(app(PythonAiClient::class), app(BriefingPayloadBuilder::class), app(AuditLogger::class));
+
+    Http::assertSent(function ($request) {
+        $body = json_encode($request->data());
+
+        return str_contains($body, '"anemia"')
+            && str_contains($body, 'Pallor pattern detected')
+            && str_contains($body, '"part":"palm"');
+    });
 });

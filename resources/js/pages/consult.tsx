@@ -16,12 +16,34 @@ type CoughAnalysis = {
     findings?: string;
     recommendation?: string;
 } | null;
+type AnemiaPart = 'palm' | 'eye' | 'nail';
+type AnemiaAnalysis = {
+    part?: string;
+    risk_level?: string;
+    risk_score?: number | null;
+    prediction?: string;
+    findings?: string;
+    recommendation?: string;
+} | null;
 type Capture = {
     id: number;
     type: string;
     path: string;
     mime_type?: string;
+    analysis?: AnemiaAnalysis;
+    risk_level?: string | null;
 } | null;
+
+const ANEMIA_PARTS: AnemiaPart[] = ['palm', 'eye', 'nail'];
+const ANEMIA_CUE =
+    /ready to capture[\s\S]*?\b(palm|eye|eyelid|fingernail|nail)\b/i;
+
+function normalizeAnemiaPart(raw: string): AnemiaPart {
+    if (raw === 'eyelid') return 'eye';
+    if (raw === 'fingernail') return 'nail';
+
+    return raw as AnemiaPart;
+}
 
 export default function Consult({
     consultation,
@@ -41,6 +63,8 @@ export default function Consult({
         type: string;
         path: string;
         mime_type?: string;
+        analysis?: AnemiaAnalysis;
+        risk_level?: string | null;
     }>;
 }) {
     const [chat, setChat] = useState<ChatMessage[]>(messages);
@@ -61,6 +85,35 @@ export default function Consult({
         consultation.cough_risk ?? null,
     );
     const [analysisPending, setAnalysisPending] = useState(false);
+    const [anemia, setAnemia] = useState<Record<AnemiaPart, AnemiaAnalysis>>(
+        () => {
+            const initial: Record<AnemiaPart, AnemiaAnalysis> = {
+                palm: null,
+                eye: null,
+                nail: null,
+            };
+
+            captures.forEach((capture) => {
+                if (
+                    (capture.type === 'palm' ||
+                        capture.type === 'eye' ||
+                        capture.type === 'nail') &&
+                    capture.analysis
+                ) {
+                    initial[capture.type] = capture.analysis;
+                }
+            });
+
+            return initial;
+        },
+    );
+    const [anemiaPending, setAnemiaPending] = useState<
+        Record<AnemiaPart, boolean>
+    >({
+        palm: false,
+        eye: false,
+        nail: false,
+    });
 
     // Live-voice channel state: the transcript shows what is happening.
     const [connected, setConnected] = useState(false);
@@ -84,6 +137,8 @@ export default function Consult({
     const assistantBufferRef = useRef('');
     const userBufferRef = useRef('');
     const coughStartedRef = useRef(false);
+    const anemiaCueRef = useRef('');
+    const anemiaInFlightRef = useRef<AnemiaPart | null>(null);
     const sessionTurnsRef = useRef<
         Array<{ role: 'user' | 'assistant'; text: string }>
     >([]);
@@ -117,6 +172,45 @@ export default function Consult({
                     `The cough sample was recorded and analysed. Risk level: ${risk}. Findings: ${findings}. Comment on this and continue the pre-visit conversation with the patient.`,
                 );
                 void restartLiveMic();
+            }
+        },
+        [consultation.id],
+    );
+
+    useEcho<{
+        consultation_id: number;
+        part?: AnemiaPart;
+        risk_level?: string;
+        anemia_analysis?: AnemiaAnalysis;
+    }>(
+        `consultation.${consultation.id}`,
+        'anemia.analysis',
+        (payload) => {
+            const part = payload.part;
+
+            if (!part) return;
+
+            if (payload.anemia_analysis) {
+                setAnemia((prev) => ({
+                    ...prev,
+                    [part]: payload.anemia_analysis ?? null,
+                }));
+            }
+
+            setAnemiaPending((prev) => ({ ...prev, [part]: false }));
+            anemiaInFlightRef.current = null;
+            anemiaCueRef.current = '';
+
+            const live = liveRef.current;
+
+            if (live?.isReady()) {
+                const risk = payload.risk_level ?? 'unclear';
+                const findings =
+                    payload.anemia_analysis?.findings ?? 'not available';
+
+                live.sendText(
+                    `The ${part} anemia screening image was analysed. Risk level: ${risk}. Findings: ${findings}. Comment on this briefly, then offer the next anemia check or continue the pre-visit conversation.`,
+                );
             }
         },
         [consultation.id],
@@ -263,6 +357,25 @@ export default function Consult({
                     ) {
                         setVoiceHint('Cough toward the microphone twice now');
                         coughStartedRef.current = true;
+                    }
+
+                    const anemiaMatch = said.match(ANEMIA_CUE);
+
+                    if (anemiaMatch && !anemiaInFlightRef.current) {
+                        const part = normalizeAnemiaPart(
+                            anemiaMatch[1].toLowerCase(),
+                        );
+                        const cueKey = `${part}:${said}`;
+
+                        if (anemiaCueRef.current !== cueKey) {
+                            anemiaCueRef.current = cueKey;
+                            setVoiceHint(
+                                `Capturing your ${part} — hold still in the camera`,
+                            );
+                            window.setTimeout(() => {
+                                void captureAnemia(part);
+                            }, 1800);
+                        }
                     }
 
                     flushLiveTranscript();
@@ -511,6 +624,65 @@ export default function Consult({
             },
             body: formData,
         });
+    }
+
+    async function captureAnemia(part: AnemiaPart): Promise<void> {
+        const video = videoRef.current;
+
+        if (!video || video.videoWidth === 0) {
+            anemiaCueRef.current = '';
+            setVoiceHint(
+                'Start the camera so Sage can screen your anemia risk',
+            );
+            return;
+        }
+
+        if (anemiaInFlightRef.current) return;
+
+        anemiaInFlightRef.current = part;
+        setAnemiaPending((prev) => ({ ...prev, [part]: true }));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0);
+
+        const blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, 'image/png'),
+        );
+
+        if (!blob) {
+            anemiaInFlightRef.current = null;
+            anemiaCueRef.current = '';
+            setAnemiaPending((prev) => ({ ...prev, [part]: false }));
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('part', part);
+        formData.append('image', blob, `${part}.png`);
+
+        try {
+            const response = await fetch(
+                ConsultationController.anemia.url(consultation.id),
+                {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                },
+            );
+
+            if (!response.ok) {
+                throw new Error('anemia upload failed');
+            }
+        } catch (error) {
+            console.error('Could not send the anemia capture', error);
+            anemiaInFlightRef.current = null;
+            anemiaCueRef.current = '';
+            setAnemiaPending((prev) => ({ ...prev, [part]: false }));
+        }
     }
 
     return (
@@ -771,6 +943,95 @@ export default function Consult({
 
                 <Card>
                     <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            Anemia Screening
+                            <Badge variant={cameraOn ? 'secondary' : 'outline'}>
+                                {cameraOn ? 'camera ready' : 'camera off'}
+                            </Badge>
+                        </CardTitle>
+                        <p className="text-sm text-neutral-500">
+                            Sage asks you to show your palm, lower eyelid and
+                            fingernail. The camera captures each image
+                            automatically when she is ready. You can also
+                            capture manually.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                        {ANEMIA_PARTS.map((part) => {
+                            const result = anemia[part];
+                            const pending = anemiaPending[part];
+                            const positive = result?.risk_level === 'high';
+
+                            return (
+                                <div
+                                    key={part}
+                                    className="rounded-lg border p-3"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium capitalize">
+                                            {part === 'eye'
+                                                ? 'Lower eyelid'
+                                                : part === 'nail'
+                                                  ? 'Fingernail'
+                                                  : 'Palm'}
+                                        </span>
+                                        {pending ? (
+                                            <Badge variant="secondary">
+                                                analysing…
+                                            </Badge>
+                                        ) : (
+                                            result?.risk_level && (
+                                                <Badge
+                                                    variant={
+                                                        positive
+                                                            ? 'destructive'
+                                                            : 'secondary'
+                                                    }
+                                                >
+                                                    {positive
+                                                        ? 'screen positive'
+                                                        : 'screen negative'}
+                                                </Badge>
+                                            )
+                                        )}
+                                    </div>
+
+                                    {result?.findings && !pending && (
+                                        <p className="mt-1 text-neutral-600 dark:text-neutral-300">
+                                            {result.findings}
+                                        </p>
+                                    )}
+
+                                    {result?.risk_score != null && !pending && (
+                                        <p className="mt-1 text-xs text-neutral-500">
+                                            Score{' '}
+                                            {Number(result.risk_score).toFixed(
+                                                3,
+                                            )}
+                                        </p>
+                                    )}
+
+                                    <Button
+                                        className="mt-2"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={!cameraOn || pending}
+                                        onClick={() => void captureAnemia(part)}
+                                    >
+                                        Capture {part}
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                        <p className="text-xs italic">
+                            Screening only — anaemia is confirmed with a blood
+                            test.
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
                         <CardTitle>Cough Sample</CardTitle>
                         <p className="text-sm text-neutral-500">
                             {awaitingCough && !recordingCough
@@ -810,4 +1071,4 @@ Consult.layout = {
     ],
 };
 
-export type { CoughAnalysis, ChatMessage, Capture };
+export type { CoughAnalysis, ChatMessage, Capture, AnemiaAnalysis, AnemiaPart };

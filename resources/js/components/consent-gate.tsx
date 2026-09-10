@@ -64,8 +64,10 @@ export default function ConsentGate({
                             session only. It is not stored externally.
                         </li>
                         <li>
-                            Your cough recording is analysed locally on the
-                            clinic&apos;s own AI service.
+                            Your cough recording, and any palm, lower-eyelid or
+                            fingernail photos captured during the screening, are
+                            analysed locally on the clinic&apos;s own AI
+                            service.
                         </li>
                         <li>
                             Cough findings and de-identified clinical notes are

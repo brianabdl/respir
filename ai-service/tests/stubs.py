@@ -2,6 +2,7 @@ import numpy as np
 
 from app.errors import MedGemmaUnavailable, ModelNotAvailable
 from app.schemas.models import ModelState
+from app.services.anemia import AnemiaPrediction
 from app.services.explanations import template_briefing
 
 
@@ -45,11 +46,44 @@ class StubEmbedder:
         return [[0.5] * 768 for _ in texts]
 
 
+class StubAnemia:
+    name = "anemia"
+    is_loaded = True
+
+    def load(self) -> None:
+        pass
+
+    def predict(self, part: str, image) -> AnemiaPrediction:
+        return AnemiaPrediction(
+            part=part,  # type: ignore[arg-type]
+            probability=0.8,
+            threshold=0.3,
+            label="Anemia",
+            risk_level="high",
+            model_name=f"stub-{part}",
+            model_version="stub-1",
+        )
+
+    def model_name(self, part: str) -> str:
+        return f"stub-{part}"
+
+    def model_version(self, part: str) -> str:
+        return "stub-1"
+
+
+class UnavailableAnemia(StubAnemia):
+    is_loaded = False
+
+    def predict(self, part: str, image) -> AnemiaPrediction:
+        raise ModelNotAvailable(f"anemia_{part}", "weights are not present")
+
+
 class StubRegistry:
-    def __init__(self, hear: StubHear | None = None) -> None:
+    def __init__(self, hear: StubHear | None = None, anemia: StubAnemia | None = None) -> None:
         self._hear = hear or StubHear()
         self._classifier = StubClassifier()
         self._embeddings = StubEmbedder()
+        self._anemia = anemia or StubAnemia()
 
     def device(self) -> str:
         return "cpu"
@@ -63,6 +97,9 @@ class StubRegistry:
     def text_embeddings(self) -> StubEmbedder:
         return self._embeddings
 
+    def anemia(self) -> StubAnemia:
+        return self._anemia
+
     def load(self, name: str) -> None:
         pass
 
@@ -71,6 +108,7 @@ class StubRegistry:
             "hear": ModelState(name="hear", loaded=self._hear.is_loaded),
             "classifier": ModelState(name="classifier", loaded=True),
             "embeddings": ModelState(name="embeddings", loaded=True),
+            "anemia": ModelState(name="anemia", loaded=self._anemia.is_loaded),
         }
 
 

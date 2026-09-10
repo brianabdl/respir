@@ -15,6 +15,8 @@ class ErrorEnvelope(BaseModel):
 
 RiskLevel = Literal["low", "medium", "high", "unclear"]
 
+AnemiaPart = Literal["palm", "eye", "nail"]
+
 
 class TranscriptTurn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -45,6 +47,32 @@ class CoughAnalysisResponse(BaseModel):
     duration_s: float
 
 
+class AnemiaModelInfo(BaseModel):
+    name: str
+    version: str
+    available: bool = True
+
+
+class AnemiaAnalysisResponse(BaseModel):
+    part: AnemiaPart
+    risk_level: RiskLevel
+    risk_score: float | None
+    prediction: str
+    threshold: float | None
+    findings: str
+    recommendation: str
+    model: AnemiaModelInfo
+
+
+class AnemiaSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    part: AnemiaPart
+    risk_level: RiskLevel
+    risk_score: float | None = None
+    findings: str
+
+
 class BriefingRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -54,6 +82,7 @@ class BriefingRequest(BaseModel):
     risk_factors: list[str] = []
     transcript: list[TranscriptTurn] = []
     cough: CoughSummary | None = None
+    anemia: list[AnemiaSummary] = []
 
 
 class BriefingResponse(BaseModel):
@@ -61,6 +90,7 @@ class BriefingResponse(BaseModel):
     history: str
     risk_factors: list[str]
     cough_findings: str
+    anemia_findings: str = ""
     suggested_questions: list[str]
     red_flags: list[str]
     disclaimer: str

@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Consult;
 use App\Ai\Agents\ConsultAgent;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\AuditAction;
+use App\Domain\Consult\Actions\RecordAnemiaCapture;
 use App\Domain\Consult\Actions\RecordCoughSample;
 use App\Domain\Consult\Actions\SaveSessionTranscript;
 use App\Domain\Consult\Actions\StartConsultation;
 use App\Domain\Consult\DTOs\VoiceTurnResult;
+use App\Domain\Consult\Jobs\AnalyseAnemia;
 use App\Domain\Consult\Jobs\AnalyseCough;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Consult\AnemiaCaptureRequest;
 use App\Http\Requests\Consult\CaptureRequest;
 use App\Http\Requests\Consult\ChatMessageRequest;
 use App\Http\Requests\Consult\ConsentRequest;
@@ -36,6 +39,7 @@ class ConsultationController extends Controller
         private StartConsultation $startConsultation,
         private SaveSessionTranscript $saveSessionTranscript,
         private RecordCoughSample $recordCoughSample,
+        private RecordAnemiaCapture $recordAnemiaCapture,
         private AuditLogger $auditLogger,
     ) {}
 
@@ -48,7 +52,9 @@ class ConsultationController extends Controller
 
         return inertia('consult', [
             'consultation' => $consultation->only(['id', 'status', 'report', 'cough_analysis', 'cough_risk', 'consented_at']),
-            'captures' => $consultation->captures()->get(['id', 'type', 'path', 'mime_type']),
+            'captures' => $consultation->captures()->get([
+                'id', 'type', 'path', 'mime_type', 'analysis', 'risk_level', 'analyzed_at', 'captured_at',
+            ]),
         ]);
     }
 
@@ -229,6 +235,28 @@ class ConsultationController extends Controller
     }
 
     /**
+     * Save a palm/eye/fingernail capture and queue anemia screening.
+     */
+    public function anemia(AnemiaCaptureRequest $request, Consultation $consultation): JsonResponse
+    {
+        abort_unless($consultation->consented_at !== null, 403, 'Consent is required before capturing screening images.');
+
+        $capture = $this->recordAnemiaCapture->store(
+            $consultation,
+            $request->file('image'),
+            (string) $request->validated('part'),
+        );
+
+        AnalyseAnemia::dispatch($consultation->id, $capture->id);
+
+        return response()->json([
+            'status' => 'processing',
+            'capture_id' => $capture->id,
+            'part' => $capture->type,
+        ], 202);
+    }
+
+    /**
      * Save captured patient media (camera).
      */
     public function capture(CaptureRequest $request, Consultation $consultation): JsonResponse
@@ -347,6 +375,15 @@ class ConsultationController extends Controller
             'When everything is covered, give a warm summary of symptoms and risk factors and remind the '
                 .'patient that only a doctor can diagnose anything.',
             'Then say exactly: "I\'m ready to record. Please cough toward the microphone twice."',
+            'After the cough, offer the anemia screening: explain that a palm, lower-eyelid and '
+                .'fingernail photo can be checked for anemia. Only proceed after the patient agrees.',
+            'Screen one area at a time, starting with the palm. Ask the patient to hold it steady in '
+                .'the camera and say ready. Then say exactly: "I\'m ready to capture. Hold your palm '
+                .'steady toward the camera."',
+            'Once the result message arrives, comment on it briefly and offer the next area. Use '
+                .'exactly: "I\'m ready to capture. Pull your lower eyelid down gently toward the '
+                .'camera." for the eye, and "I\'m ready to capture. Hold one fingernail close to the '
+                .'camera." for the nail. Never give a diagnosis or say a disease is confirmed.',
         ]);
     }
 

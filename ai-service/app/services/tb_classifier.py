@@ -5,76 +5,67 @@ from app.schemas.models import RiskLevel
 HIGH_THRESHOLD = 0.66
 MEDIUM_THRESHOLD = 0.33
 
+JOBLIB_FILENAME = "hear_tb_prize_domain_aware.joblib"
+
 
 class TbClassifier:
     name = "tb_classifier"
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._model = None
-        self._device = "cpu"
+        self._package: dict | None = None
 
     @property
     def is_loaded(self) -> bool:
-        return self._model is not None
+        return self._package is not None
 
     def load(self) -> None:
         try:
-            from transformers import AutoModelForSequenceClassification
+            import joblib
+            from huggingface_hub import hf_hub_download
         except ImportError as exc:
             raise ModelNotAvailable(
                 "tb_classifier", "install the ml extras with: uv sync --extra ml"
             ) from exc
 
-        from app.ml.device import detect_device
+        kwargs: dict = {"token": self._settings.hf_token or None}
+
+        if self._settings.model_cache_dir:
+            kwargs["cache_dir"] = self._settings.model_cache_dir
 
         try:
-            self._device = detect_device(self._settings.ai_device)
-
-            kwargs: dict = {"trust_remote_code": True}
-
-            if self._settings.hf_token:
-                kwargs["token"] = self._settings.hf_token
-
-            if self._settings.model_cache_dir:
-                kwargs["cache_dir"] = self._settings.model_cache_dir
-
-            self._model = (
-                AutoModelForSequenceClassification.from_pretrained(
-                    self._settings.tb_classifier_model, **kwargs
-                )
-                .to(self._device)
-                .eval()
+            path = hf_hub_download(
+                self._settings.tb_classifier_model,
+                JOBLIB_FILENAME,
+                **kwargs,
             )
+            self._package = joblib.load(path)
         except Exception as exc:
-            self._model = None
+            self._package = None
             raise ModelNotAvailable("tb_classifier", str(exc)[:300]) from exc
 
     def predict(self, embedding: list[float]) -> tuple[RiskLevel, float]:
-        if self._model is None:
+        if self._package is None:
             self.load()
 
-        import torch
-
-        tensor = torch.tensor([embedding], dtype=torch.float32).to(self._device)
-
-        with torch.no_grad():
-            logits = self._model(tensor).logits.squeeze(0)
-
-        score = self._score(logits)
+        vector = self._vectors(embedding)
+        scores = [
+            self._score(self._package["model_p"], self._package["scaler_p"], vector),
+            self._score(self._package["model_f"], self._package["scaler_f"], vector),
+        ]
+        score = float(sum(scores) / len(scores))
 
         return self._risk(score), score
 
     @staticmethod
-    def _score(logits) -> float:
-        import torch
+    def _vectors(embedding: list[float]):
+        import numpy as np
 
-        if logits.numel() == 1:
-            return float(torch.sigmoid(logits).item())
+        return np.asarray(embedding, dtype=np.float32).reshape(1, -1)
 
-        probabilities = torch.softmax(logits, dim=-1)
-
-        return float(probabilities[-1].item())
+    @staticmethod
+    def _score(model, scaler, vector) -> float:
+        return float(model.predict_proba(scaler.transform(vector))[0, 1])
 
     @staticmethod
     def _risk(score: float) -> RiskLevel:
@@ -87,4 +78,4 @@ class TbClassifier:
         return "low"
 
     def close(self) -> None:
-        self._model = None
+        self._package = None

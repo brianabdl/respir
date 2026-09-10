@@ -3,6 +3,8 @@ import numpy as np
 from app.config import Settings
 from app.errors import ModelNotAvailable
 
+CLIP_SAMPLES = 32000
+
 
 class HearEmbedder:
     name = "hear"
@@ -29,7 +31,7 @@ class HearEmbedder:
         try:
             self._device = detect_device(self._settings.ai_device)
 
-            kwargs: dict = {"trust_remote_code": True}
+            kwargs: dict = {}
 
             if self._settings.hf_token:
                 kwargs["token"] = self._settings.hf_token
@@ -52,20 +54,40 @@ class HearEmbedder:
 
         import torch
 
-        tensor = torch.from_numpy(np.asarray(waveform, dtype=np.float32)).unsqueeze(0)
-        tensor = tensor.to(self._device)
+        from app.services.hear_preprocess import preprocess_audio
 
-        with torch.no_grad():
-            output = self._model(tensor)
+        samples = np.asarray(waveform, dtype=np.float32).reshape(-1)
 
-        hidden = getattr(output, "last_hidden_state", output)
+        if samples.size == 0:
+            return []
 
-        if hasattr(hidden, "dim") and hidden.dim() == 3:
-            hidden = hidden.mean(dim=1)
+        vectors: list[np.ndarray] = []
 
-        vector = hidden.squeeze(0).detach().cpu().numpy().astype("float32")
+        for start in range(0, samples.size, CLIP_SAMPLES):
+            window = samples[start : start + CLIP_SAMPLES]
 
-        return [float(value) for value in vector]
+            if window.size < CLIP_SAMPLES:
+                window = np.pad(window, (0, CLIP_SAMPLES - window.size))
+
+            tensor = torch.from_numpy(window).unsqueeze(0).to(self._device)
+
+            with torch.no_grad():
+                output = self._model(
+                    preprocess_audio(tensor),
+                    return_dict=True,
+                    output_hidden_states=True,
+                )
+
+            pooled = getattr(output, "pooler_output", None)
+
+            if pooled is None:
+                raise ModelNotAvailable("hear", "model returned no pooled output")
+
+            vectors.append(pooled.squeeze(0).float().cpu().numpy())
+
+        mean = np.stack(vectors).mean(axis=0)
+
+        return [float(value) for value in mean]
 
     def close(self) -> None:
         self._model = None

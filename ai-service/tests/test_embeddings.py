@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.config import get_settings
 from tests.conftest import build_client
 
 TOKEN_HEADERS = {"X-Internal-Token": "test-token"}
@@ -42,7 +43,7 @@ def test_audio_embeddings_returns_hear_vector(wav_bytes):
 
     assert payload["dim"] == 512
     assert len(payload["embedding"]) == 512
-    assert payload["model"] == "google/hear"
+    assert payload["model"] == get_settings().hear_model
 
 
 def test_vision_endpoint_is_not_implemented():

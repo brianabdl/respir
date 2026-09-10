@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_dir: str = ""
     hf_token: str = ""
 
-    hear_model: str = "google/hear"
+    hear_model: str = "google/hear-pytorch"
     tb_classifier_model: str = "sach3v/Domain_aware_dual_head_HEar"
     embedding_model: str = "google/embeddinggemma-300m"
     anemia_palm_model: str = "Sidharth1743/palm-medsiglip-linear-probe"

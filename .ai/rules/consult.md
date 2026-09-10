@@ -16,3 +16,6 @@ Primary UX is hands-free voice: POST consult.voice accepts optional FormData aud
 
 ## Each session starts a fresh conversation
 Consultations are never "continued" across page loads: index() returns no stored history, and voice()/chat() only resume an agent conversation when agent_conversation_id is set from the current browser session. voice() treats greeting (no audio+no message) or new_session boolean as fresh; /chat falls back same way via new_session. Live API WS sessions are always brand new (Browser session context is its own). Stored agent_conversation_id persists only within a session for the turn-based fallback chain.
+
+## Doctors blocked from consult flow via EnsurePatient
+All /consult* routes run EnsurePatient middleware — doctors (users.role=doctor) get 403. Patient-side counterpart to EnsureDoctor on /doctor/* routes. Test: doctors cannot access the consult flow (ConsultationFlowTest).

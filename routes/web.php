@@ -3,9 +3,10 @@
 use App\Http\Controllers\Consult\ConsultationController;
 use App\Http\Controllers\Doctor\ConsultationReviewController;
 use App\Http\Middleware\EnsureDoctor;
+use App\Http\Middleware\EnsurePatient;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', EnsurePatient::class])->group(function () {
     Route::get('consult', [ConsultationController::class, 'index'])->name('consult');
     Route::post('consult', [ConsultationController::class, 'store'])->name('consult.store');
     Route::post('consult/{consultation}/chat', [ConsultationController::class, 'chat'])->name('consult.chat');

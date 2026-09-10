@@ -12,6 +12,14 @@ test('guests are redirected to the login page', function () {
     $this->get(route('consult'))->assertRedirect(route('login'));
 });
 
+test('doctors cannot access the consult flow', function () {
+    $doctor = User::factory()->create(['role' => 'doctor']);
+    $this->actingAs($doctor);
+
+    $this->get(route('consult'))->assertForbidden();
+    $this->post(route('consult.store'))->assertForbidden();
+});
+
 test('first visit creates a consultation and shows the consult page', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

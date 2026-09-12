@@ -626,6 +626,8 @@ export default function Consult({
     const awaitingCough = coughPhase === 'prompted';
     const recordingCough = coughPhase === 'recording';
     const analysisPending = coughPhase === 'processing';
+    const showingPreviousAssessment =
+        !sessionStarted && Boolean(consultation.cough_analysis);
 
     return (
         <div className="grid h-full grid-cols-1 gap-4 p-4 lg:grid-cols-3">
@@ -899,6 +901,12 @@ export default function Consult({
                                 )
                             )}
                         </CardTitle>
+                        {showingPreviousAssessment && (
+                            <p className="text-sm text-neutral-500">
+                                Previous session result. Start a new voice
+                                consult to record a fresh sample.
+                            </p>
+                        )}
                     </CardHeader>
 
                     {analysisPending && (

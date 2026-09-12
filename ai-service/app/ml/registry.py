@@ -1,7 +1,6 @@
 from app.config import Settings
 from app.ml.device import detect_device
 from app.schemas.models import ModelState
-from app.services.anemia import AnemiaClassifier
 from app.services.hear import HearEmbedder
 from app.services.tb_classifier import TbClassifier
 from app.services.text_embeddings import TextEmbedder
@@ -15,7 +14,6 @@ class ModelRegistry:
             "hear": HearEmbedder(settings),
             "classifier": TbClassifier(settings),
             "embeddings": TextEmbedder(settings),
-            "anemia": AnemiaClassifier(settings),
         }
 
     def device(self) -> str:
@@ -29,9 +27,6 @@ class ModelRegistry:
 
     def text_embeddings(self) -> TextEmbedder:
         return self._adapters["embeddings"]
-
-    def anemia(self) -> AnemiaClassifier:
-        return self._adapters["anemia"]
 
     def load(self, name: str) -> None:
         adapter = self._adapters.get(name)

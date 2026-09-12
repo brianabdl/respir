@@ -9,7 +9,6 @@ inference and mediates all MedGemma calls to Google Vertex AI.
 | --------------------------- | --------------------------------------------------------- |
 | `GET /v1/health`            | Adapter states, device, Vertex mode                       |
 | `POST /v1/cough/analyze`    | HeAR embedding + TB dual-head risk + MedGemma explanation |
-| `POST /v1/vision/anemia`    | Palm / eye / fingernail anemia screening (local models)   |
 | `POST /v1/briefing`         | De-identified clinician briefing via Vertex MedGemma      |
 | `POST /v1/embeddings/audio` | HeAR audio embedding                                      |
 | `POST /v1/embeddings/text`  | EmbeddingGemma text embedding                             |
@@ -47,7 +46,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 9000
 ```
 
 Everything degrades gracefully: without `ml` extras or weights, `/cough/analyze`
-and `/v1/vision/anemia` return `risk_level: "unclear"`; without
+returns `risk_level: "unclear"`; without
 `VERTEX_ENDPOINT_ID`, MedGemma runs in fake mode and `/health` reports
 `vertex.mode: "fake"`.
 

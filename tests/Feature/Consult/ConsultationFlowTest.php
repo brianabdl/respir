@@ -1,11 +1,11 @@
 <?php
 
 use App\Ai\Agents\ConsultAgent;
-use App\Domain\Consult\Jobs\AnalyseAnemia;
 use App\Domain\Consult\Jobs\AnalyseCough;
 use App\Models\Consultation;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Audio;
 use Laravel\Ai\Transcription;
@@ -157,6 +157,28 @@ test('consent is denied when the user does not own the consultation', function (
     expect($consultation->refresh()->consented_at)->toBeNull();
 });
 
+test('live voice instruction requires clarification before advancing', function () {
+    Http::fake([
+        'https://generativelanguage.googleapis.com/v1beta/auth_tokens' => Http::response([
+            'name' => 'test-live-token',
+        ]),
+    ]);
+    config(['ai.providers.gemini.key' => 'test-key']);
+
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
+    $this->actingAs($user);
+
+    $this->get(route('consult.live.token', $consultation))
+        ->assertOk()
+        ->assertJsonPath(
+            'system_instruction',
+            fn (string $instruction): bool => str_contains($instruction, 'repeat or rephrase the same question')
+                && str_contains($instruction, 'Never use a checklist in one reply.')
+                && ! str_contains($instruction, 'only a doctor can diagnose anything'),
+        );
+});
+
 test('camera capture stores the media file', function () {
     $user = User::factory()->create();
     $consultation = Consultation::factory()->for($user)->create();
@@ -265,73 +287,4 @@ test('cough analysis is blocked without recorded consent', function () {
     expect($consultation->captures()->count())->toBe(0);
 
     Queue::assertNothingPushed();
-});
-
-test('anemia capture stores the image and queues screening', function () {
-    Queue::fake();
-
-    $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
-    $this->actingAs($user);
-
-    $file = UploadedFile::fake()->create('palm.png', 8, 'image/png');
-
-    $this->post(route('consult.anemia', $consultation), ['part' => 'palm', 'image' => $file])
-        ->assertStatus(202)
-        ->assertJsonPath('status', 'processing')
-        ->assertJsonPath('part', 'palm');
-
-    expect($consultation->captures()->where('type', 'palm')->count())->toBe(1);
-
-    Queue::assertPushed(AnalyseAnemia::class);
-});
-
-test('anemia capture rejects unknown body parts', function () {
-    $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
-    $this->actingAs($user);
-
-    $file = UploadedFile::fake()->create('palm.png', 8, 'image/png');
-
-    $this->post(route('consult.anemia', $consultation), ['part' => 'beard', 'image' => $file])
-        ->assertSessionHasErrors('part');
-});
-
-test('anemia capture rejects non-image uploads', function () {
-    $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
-    $this->actingAs($user);
-
-    $file = UploadedFile::fake()->createWithContent('audio.webm', 'not-an-image');
-
-    $this->post(route('consult.anemia', $consultation), ['part' => 'eye', 'image' => $file])
-        ->assertSessionHasErrors('image');
-});
-
-test('anemia capture is blocked without recorded consent', function () {
-    Queue::fake();
-
-    $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create();
-    $this->actingAs($user);
-
-    $file = UploadedFile::fake()->create('nail.png', 8, 'image/png');
-
-    $this->post(route('consult.anemia', $consultation), ['part' => 'nail', 'image' => $file])
-        ->assertForbidden();
-
-    expect($consultation->captures()->count())->toBe(0);
-
-    Queue::assertNothingPushed();
-});
-
-test('anemia capture is denied when the user does not own the consultation', function () {
-    $user = User::factory()->create();
-    $consultation = Consultation::factory()->create(['consented_at' => now()]);
-    $this->actingAs($user);
-
-    $this->post(route('consult.anemia', $consultation), [
-        'part' => 'palm',
-        'image' => UploadedFile::fake()->create('palm.png', 8, 'image/png'),
-    ])->assertForbidden();
 });

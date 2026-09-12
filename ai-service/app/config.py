@@ -15,12 +15,6 @@ class Settings(BaseSettings):
     hear_model: str = "google/hear-pytorch"
     tb_classifier_model: str = "sach3v/Domain_aware_dual_head_HEar"
     embedding_model: str = "google/embeddinggemma-300m"
-    anemia_palm_model: str = "Sidharth1743/palm-medsiglip-linear-probe"
-    anemia_eye_model: str = "Sidharth1743/eye-medsiglip-linear-probe"
-    anemia_nail_model: str = "JetX-GT/nail-anemia-detector"
-    anemia_palm_threshold: float = 0.03
-    anemia_eye_threshold: float = 0.31
-    anemia_nail_threshold: float = 0.10
     max_upload_mb: int = 25
 
     vertex_project: str = ""

@@ -14,9 +14,6 @@ use Illuminate\Support\Carbon;
  * @property string $path
  * @property string $disk
  * @property string $mime_type
- * @property array<string, mixed>|null $analysis
- * @property string|null $risk_level
- * @property Carbon|null $analyzed_at
  * @property Carbon $captured_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -25,17 +22,6 @@ use Illuminate\Support\Carbon;
 #[Fillable(['type', 'path', 'disk', 'mime_type', 'captured_at'])]
 class ConsultCapture extends Model
 {
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'analysis' => 'array',
-            'analyzed_at' => 'datetime',
-        ];
-    }
-
     /**
      * The consultation this capture belongs to.
      *

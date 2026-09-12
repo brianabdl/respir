@@ -11,6 +11,5 @@ enum AuditAction: string
     case ConsentRecorded = 'consultation.consent_recorded';
     case LiveSessionStarted = 'consultation.live_session_started';
     case CoughAnalysed = 'cough.analysed';
-    case AnemiaAnalysed = 'anemia.analysed';
     case BriefingGenerated = 'briefing.generated';
 }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { briefing as briefingRoute } from '@/actions/App/Http/Controllers/Doctor/ConsultationReviewController';
 import { dashboard } from '@/routes';
 import { index as doctorIndexRoute } from '@/routes/doctor/consultations';
-import type { CoughAnalysis, AnemiaAnalysis } from '@/pages/consult';
+import type { CoughAnalysis } from '@/pages/consult';
 
 type Turn = { role: string; text: string };
 
@@ -61,9 +61,6 @@ export default function DoctorConsultationShow({
             id: number;
             type: string;
             mime_type: string;
-            analysis?: AnemiaAnalysis;
-            risk_level?: string | null;
-            analyzed_at?: string | null;
             captured_at?: string | null;
             download: string;
         }>;
@@ -260,93 +257,6 @@ export default function DoctorConsultationShow({
                             </div>
                         </div>
                     ))}
-                </section>
-
-                <section className="flex flex-col gap-2">
-                    <h2 className="font-medium">Anemia screening</h2>
-                    {consultation.captures.filter((capture) =>
-                        ['palm', 'eye', 'nail'].includes(capture.type),
-                    ).length === 0 ? (
-                        <p className="text-sm text-neutral-500">
-                            No anemia screening images captured.
-                        </p>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            {consultation.captures
-                                .filter((capture) =>
-                                    ['palm', 'eye', 'nail'].includes(
-                                        capture.type,
-                                    ),
-                                )
-                                .map((capture) => (
-                                    <div
-                                        key={capture.id}
-                                        className="rounded-xl border p-4 text-sm"
-                                    >
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <span className="font-medium capitalize">
-                                                {capture.type}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                {capture.risk_level && (
-                                                    <Badge
-                                                        variant={
-                                                            capture.risk_level ===
-                                                            'high'
-                                                                ? 'destructive'
-                                                                : 'secondary'
-                                                        }
-                                                    >
-                                                        {capture.risk_level}
-                                                    </Badge>
-                                                )}
-                                                <a
-                                                    href={capture.download}
-                                                    className="text-xs underline"
-                                                >
-                                                    Download image
-                                                </a>
-                                            </div>
-                                        </div>
-                                        {capture.analysis?.findings ? (
-                                            <p className="mt-2">
-                                                <span className="font-medium">
-                                                    Findings:
-                                                </span>{' '}
-                                                {capture.analysis.findings}
-                                            </p>
-                                        ) : (
-                                            <p className="mt-2 text-neutral-500">
-                                                Not analysed yet.
-                                            </p>
-                                        )}
-                                        {capture.analysis?.recommendation && (
-                                            <p className="mt-1">
-                                                <span className="font-medium">
-                                                    Recommendation:
-                                                </span>{' '}
-                                                {
-                                                    capture.analysis
-                                                        .recommendation
-                                                }
-                                            </p>
-                                        )}
-                                        {capture.analysis?.risk_score !=
-                                            null && (
-                                            <p className="mt-1 text-xs text-neutral-500">
-                                                Model score{' '}
-                                                {Number(
-                                                    capture.analysis.risk_score,
-                                                ).toFixed(3)}
-                                                {capture.analyzed_at
-                                                    ? ` · analysed ${capture.analyzed_at}`
-                                                    : ''}
-                                            </p>
-                                        )}
-                                    </div>
-                                ))}
-                        </div>
-                    )}
                 </section>
 
                 <section className="flex flex-col gap-2">

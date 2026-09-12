@@ -21,9 +21,6 @@ Route::middleware(['auth', 'verified', EnsurePatient::class])->group(function ()
     Route::post('consult/{consultation}/cough', [ConsultationController::class, 'cough'])
         ->middleware('throttle:consult-cough')
         ->name('consult.cough');
-    Route::post('consult/{consultation}/anemia', [ConsultationController::class, 'anemia'])
-        ->middleware('throttle:consult-anemia')
-        ->name('consult.anemia');
     Route::post('consult/{consultation}/captures', [ConsultationController::class, 'capture'])->name('consult.captures.store');
 });
 

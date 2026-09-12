@@ -2,7 +2,6 @@
 
 namespace App\Domain\Consult\Services;
 
-use App\Domain\Consult\DTOs\AnemiaAnalysisResult;
 use App\Domain\Consult\DTOs\ClinicianBriefing;
 use App\Domain\Consult\DTOs\CoughAnalysisResult;
 use App\Domain\Consult\Exceptions\AiServiceUnavailable;
@@ -24,20 +23,6 @@ class PythonAiClient
         $this->ensureSuccessful($response, 'cough analysis');
 
         return CoughAnalysisResult::fromServicePayload($response->json());
-    }
-
-    /**
-     * Send a palm/eye/fingernail image to the Python service for anemia screening.
-     */
-    public function analyzeAnemia(string $contents, string $filename, string $mimeType, string $part): AnemiaAnalysisResult
-    {
-        $response = $this->request()
-            ->attach('image', $contents, $filename, ['Content-Type' => $mimeType])
-            ->post('/v1/vision/anemia', ['part' => $part]);
-
-        $this->ensureSuccessful($response, 'anemia analysis');
-
-        return AnemiaAnalysisResult::fromServicePayload($response->json());
     }
 
     /**

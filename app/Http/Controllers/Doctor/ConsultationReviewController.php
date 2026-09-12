@@ -83,8 +83,7 @@ class ConsultationReviewController extends Controller
                     ->orderBy('captured_at')
                     ->get()
                     ->map(fn ($capture) => [
-                        ...$capture->only(['id', 'type', 'mime_type', 'analysis', 'risk_level']),
-                        'analyzed_at' => $capture->analyzed_at?->toDateTimeString(),
+                        ...$capture->only(['id', 'type', 'mime_type']),
                         'captured_at' => $capture->captured_at->toDateTimeString(),
                         'download' => URL::temporarySignedRoute(
                             'consult.captures.download',

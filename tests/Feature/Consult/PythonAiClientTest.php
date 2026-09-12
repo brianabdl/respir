@@ -43,43 +43,6 @@ test('client throws a domain exception when the service fails', function () {
         ->toThrow(AiServiceUnavailable::class);
 });
 
-test('anemia analysis maps the service response into a DTO', function () {
-    Http::fake([
-        '*/v1/vision/anemia' => Http::response([
-            'part' => 'eye',
-            'risk_level' => 'low',
-            'risk_score' => 0.04,
-            'prediction' => 'Non-Anemia',
-            'threshold' => 0.31,
-            'findings' => 'No pallor detected.',
-            'recommendation' => 'Mention any fatigue to the doctor.',
-            'model' => ['name' => 'eye-probe', 'version' => 'medsiglip', 'available' => true],
-        ]),
-    ]);
-
-    $result = app(PythonAiClient::class)->analyzeAnemia('bytes', 'eye.png', 'image/png', 'eye');
-
-    expect($result->part)->toBe('eye')
-        ->and($result->riskLevel->value)->toBe('low')
-        ->and($result->riskScore)->toBe(0.04)
-        ->and($result->prediction)->toBe('Non-Anemia')
-        ->and($result->threshold)->toBe(0.31)
-        ->and($result->findings)->toBe('No pallor detected.')
-        ->and($result->toArray()['part'])->toBe('eye');
-
-    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/v1/vision/anemia')
-        && str_contains($request->body(), 'name="part"')
-        && str_contains($request->body(), 'eye')
-        && $request->hasFile('image'));
-});
-
-test('client throws a domain exception when anemia screening fails', function () {
-    Http::fake(['*/v1/vision/anemia' => Http::response(['error' => ['code' => 'x']], 500)]);
-
-    expect(fn () => app(PythonAiClient::class)->analyzeAnemia('bytes', 'palm.png', 'image/png', 'palm'))
-        ->toThrow(AiServiceUnavailable::class);
-});
-
 test('briefing maps the structured service payload', function () {
     Http::fake([
         '*/v1/briefing' => Http::response([
@@ -87,7 +50,6 @@ test('briefing maps the structured service payload', function () {
             'history' => 'Progressive cough',
             'risk_factors' => ['smoking'],
             'cough_findings' => 'Harsh',
-            'anemia_findings' => 'Palm: pallor pattern detected',
             'suggested_questions' => ['Ask about fever'],
             'red_flags' => ['haemoptysis'],
             'disclaimer' => 'Not a diagnosis.',
@@ -100,7 +62,6 @@ test('briefing maps the structured service payload', function () {
 
     expect($briefing->chiefComplaint)->toBe('Cough for three weeks')
         ->and($briefing->riskFactors)->toBe(['smoking'])
-        ->and($briefing->anemiaFindings)->toBe('Palm: pallor pattern detected')
         ->and($briefing->redFlags)->toBe(['haemoptysis'])
         ->and($briefing->degraded)->toBeFalse()
         ->and($briefing->generatedBy)->toBe('medgemma-4b-it');

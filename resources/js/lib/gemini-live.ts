@@ -161,14 +161,6 @@ export class GeminiLiveClient {
             }
         }
 
-        if (json.serverContent?.turnComplete) {
-            this.options.onTurnComplete();
-        }
-
-        if (json.serverContent?.generationComplete) {
-            this.options.onTurnComplete();
-        }
-
         if (json.serverContent?.inputTranscription?.text) {
             this.options.onUserTranscript(
                 json.serverContent.inputTranscription.text,
@@ -188,6 +180,15 @@ export class GeminiLiveClient {
                 json.serverContent.outputTranscription.text,
                 false,
             );
+        }
+
+        // Gemini may send both flags for one response. Notify consumers once,
+        // after final transcriptions have been delivered.
+        if (
+            json.serverContent?.turnComplete ||
+            json.serverContent?.generationComplete
+        ) {
+            this.options.onTurnComplete();
         }
 
         if (json.goAway) {

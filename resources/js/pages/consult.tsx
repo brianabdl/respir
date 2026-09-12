@@ -134,8 +134,7 @@ export default function Consult({
     const liveRef = useRef<GeminiLiveClient | null>(null);
     const micRef = useRef<LiveMic | null>(null);
     const speakerRef = useRef<LiveSpeaker | null>(null);
-    const assistantBufferRef = useRef('');
-    const userBufferRef = useRef('');
+    const lastAssistantFinalRef = useRef('');
     const coughStartedRef = useRef(false);
     const anemiaCueRef = useRef('');
     const anemiaInFlightRef = useRef<AnemiaPart | null>(null);
@@ -238,34 +237,35 @@ export default function Consult({
         [],
     );
 
-    function flushLiveTranscript() {
-        if (assistantBufferRef.current.trim().length > 0) {
-            sessionTurnsRef.current.push({
-                role: 'assistant',
-                text: assistantBufferRef.current.trim(),
-            });
-            setChat((prev) => [
-                ...prev,
-                {
-                    role: 'assistant',
-                    content: assistantBufferRef.current.trim(),
-                },
-            ]);
+    function handleAssistantCue(said: string) {
+        if (
+            !coughStartedRef.current &&
+            said.toLowerCase().includes('ready to record')
+        ) {
+            setVoiceHint('Cough toward the microphone twice now');
+            coughStartedRef.current = true;
         }
-        assistantBufferRef.current = '';
-        setAssistantLive('');
 
-        if (userBufferRef.current.trim().length > 0) {
-            sessionTurnsRef.current.push({
-                role: 'user',
-                text: userBufferRef.current.trim(),
-            });
-            setChat((prev) => [
-                ...prev,
-                { role: 'user', content: userBufferRef.current.trim() },
-            ]);
+        const anemiaMatch = said.match(ANEMIA_CUE);
+
+        if (anemiaMatch && !anemiaInFlightRef.current) {
+            const part = normalizeAnemiaPart(anemiaMatch[1].toLowerCase());
+            const cueKey = `${part}:${said}`;
+
+            if (anemiaCueRef.current !== cueKey) {
+                anemiaCueRef.current = cueKey;
+                setVoiceHint(
+                    `Capturing your ${part} — hold still in the camera`,
+                );
+                window.setTimeout(() => {
+                    void captureAnemia(part);
+                }, 1800);
+            }
         }
-        userBufferRef.current = '';
+    }
+
+    function clearLiveTranscript() {
+        setAssistantLive('');
         setUserLive('');
     }
 
@@ -330,14 +330,45 @@ export default function Consult({
                     setVoiceHint('Listening — just speak naturally');
                     void startLiveMic(live);
                 },
-                onUserTranscript: (text) => {
-                    userBufferRef.current += text;
-                    setUserLive(userBufferRef.current);
+                onUserTranscript: (text, isFinal) => {
+                    setUserLive(text);
+
+                    if (isFinal && text.trim().length > 0) {
+                        sessionTurnsRef.current.push({
+                            role: 'user',
+                            text: text.trim(),
+                        });
+                        setChat((prev) => [
+                            ...prev,
+                            { role: 'user', content: text.trim() },
+                        ]);
+                        setUserLive('');
+                    }
                 },
-                onAssistantTranscript: (text) => {
-                    assistantBufferRef.current += text;
-                    setAssistantLive(assistantBufferRef.current);
+                onAssistantTranscript: (text, isFinal) => {
+                    setAssistantLive(text);
                     setGenerating(true);
+
+                    const final = text.trim();
+
+                    if (
+                        isFinal &&
+                        final.length > 0 &&
+                        final !== lastAssistantFinalRef.current
+                    ) {
+                        lastAssistantFinalRef.current = final;
+                        sessionTurnsRef.current.push({
+                            role: 'assistant',
+                            text: final,
+                        });
+                        setChat((prev) => [
+                            ...prev,
+                            { role: 'assistant', content: final },
+                        ]);
+                        setAssistantLive('');
+                        setGenerating(false);
+                        handleAssistantCue(final);
+                    }
                 },
                 onAudioChunk: (chunk) => {
                     setSpeaking(true);
@@ -349,36 +380,7 @@ export default function Consult({
                 },
                 onTurnComplete: () => {
                     setGenerating(false);
-                    const said = assistantBufferRef.current;
-
-                    if (
-                        !coughStartedRef.current &&
-                        said.toLowerCase().includes('ready to record')
-                    ) {
-                        setVoiceHint('Cough toward the microphone twice now');
-                        coughStartedRef.current = true;
-                    }
-
-                    const anemiaMatch = said.match(ANEMIA_CUE);
-
-                    if (anemiaMatch && !anemiaInFlightRef.current) {
-                        const part = normalizeAnemiaPart(
-                            anemiaMatch[1].toLowerCase(),
-                        );
-                        const cueKey = `${part}:${said}`;
-
-                        if (anemiaCueRef.current !== cueKey) {
-                            anemiaCueRef.current = cueKey;
-                            setVoiceHint(
-                                `Capturing your ${part} — hold still in the camera`,
-                            );
-                            window.setTimeout(() => {
-                                void captureAnemia(part);
-                            }, 1800);
-                        }
-                    }
-
-                    flushLiveTranscript();
+                    setSpeaking(false);
                 },
                 onError: (error) => {
                     console.error('Live session error', error);
@@ -432,7 +434,7 @@ export default function Consult({
         setConnected(false);
         setSpeaking(false);
         setGenerating(false);
-        flushLiveTranscript();
+        clearLiveTranscript();
     }
 
     async function send(text: string) {

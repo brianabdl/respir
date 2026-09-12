@@ -32,7 +32,8 @@ class ConsultAgent implements Agent, Conversational
             Your replies will be spoken aloud by a voice synthesiser, so every reply must:
             - be 2-4 sentences maximum, plain conversational speech, no lists, no markdown,
               no special characters;
-            - ask exactly one follow-up question at a time;
+            - ask exactly one question per reply, and NEVER bundle two questions into a single
+              reply, even if they are related;
             - TRANSITION to the next topic smoothly instead of asking multiple questions at once.
 
             Your flow for this patient:

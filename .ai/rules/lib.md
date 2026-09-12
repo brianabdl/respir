@@ -10,3 +10,6 @@ Browser-direct Live voice uses the WS endpoint wss://generativelanguage.googleap
 
 ## realtimeInput audio payload shape
 Mic audio must be sent as `realtimeInput.audio = { data: base64, mimeType: "audio/pcm;rate=16000" }` — NOT `audio: { audioChunks: [...] }`. The `audioChunks` wrapper is from an old API version and the server closes the socket with 1007 "Unknown name audioChunks at realtime_input.audio". Symptom: greeting plays, session dies the moment the user speaks.
+
+## Gemini Live transcription fields + commit timing
+Live API sends transcriptions under serverContent: inputTranscription (final user text), interimInputTranscription (partial, frequent updates), outputTranscription (final assistant text). There is NO guaranteed ordering between these and turnComplete — outputTranscription can arrive AFTER turnComplete. So never commit the transcript on turnComplete; commit on the final transcription message instead (inputTranscription/outputTranscription), and treat interimInputTranscription as live preview only.

@@ -130,9 +130,10 @@ export class GeminiLiveClient {
                 turnComplete?: boolean;
                 generationComplete?: boolean;
                 interrupted?: boolean;
+                inputTranscription?: { text: string };
+                interimInputTranscription?: { text: string };
+                outputTranscription?: { text: string };
             };
-            inputTranscription?: { text: string };
-            serverOutputTranscription?: { text: string };
             goAway?: unknown;
         };
 
@@ -168,13 +169,23 @@ export class GeminiLiveClient {
             this.options.onTurnComplete();
         }
 
-        if (json.inputTranscription?.text) {
-            this.options.onUserTranscript(json.inputTranscription.text, false);
+        if (json.serverContent?.inputTranscription?.text) {
+            this.options.onUserTranscript(
+                json.serverContent.inputTranscription.text,
+                true,
+            );
         }
 
-        if (json.serverOutputTranscription?.text) {
+        if (json.serverContent?.interimInputTranscription?.text) {
+            this.options.onUserTranscript(
+                json.serverContent.interimInputTranscription.text,
+                false,
+            );
+        }
+
+        if (json.serverContent?.outputTranscription?.text) {
             this.options.onAssistantTranscript(
-                json.serverOutputTranscription.text,
+                json.serverContent.outputTranscription.text,
                 true,
             );
         }

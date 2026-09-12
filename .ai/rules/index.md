@@ -12,6 +12,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Doctor/** | .ai/rules/doctor.md |
 | app/Domain/Consult/** | .ai/rules/domain-consult.md |
 | package.json | .ai/rules/general.md |
+| resources/js/lib/gemini-live.ts | .ai/rules/lib.md |
 | database/migrations/** | .ai/rules/migrations.md |
 | resources/js/pages/consult.tsx | .ai/rules/pages.md |
 | routes/web.php | .ai/rules/routes.md |

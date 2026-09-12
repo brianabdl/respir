@@ -71,10 +71,11 @@ export class LiveMic {
  */
 export class LiveSpeaker {
     private context: AudioContext | null = null;
-    private queue: Array<{ buffer: AudioBuffer; time: number }> = [];
+    private queue: AudioBuffer[] = [];
     private nextTime = 0;
     private current: AudioBufferSourceNode | null = null;
     private playing = false;
+    private epoch = 0;
 
     private ensureContext(): AudioContext {
         this.context ??= new AudioContext({ sampleRate: 24000 });
@@ -93,7 +94,7 @@ export class LiveSpeaker {
             channel[i] = samples[i] / 32768;
         }
 
-        this.queue.push({ buffer, time: 0 });
+        this.queue.push(buffer);
         await this.drain();
     }
 
@@ -101,45 +102,41 @@ export class LiveSpeaker {
         if (this.playing) return;
         this.playing = true;
 
+        const epoch = this.epoch;
         const context = this.ensureContext();
 
-        while (this.queue.length > 0) {
-            const item = this.queue.shift();
-            if (!item) break;
+        while (this.queue.length > 0 && this.epoch === epoch) {
+            const buffer = this.queue.shift();
+            if (!buffer) break;
 
             const source = context.createBufferSource();
-            source.buffer = item.buffer;
+            source.buffer = buffer;
             source.connect(context.destination);
+            this.current = source;
 
-            const now = Math.max(context.currentTime, this.nextTime);
-            source.start(now);
-            source.onended = () => {
-                if (
-                    this.queue.length === 0 &&
-                    context.currentTime >= now + item.buffer.duration
-                ) {
-                    this.playing = false;
-                    this.nextTime = 0;
-                }
-            };
-            this.nextTime = now + item.buffer.duration;
+            const startTime = Math.max(context.currentTime, this.nextTime);
+            this.nextTime = startTime + buffer.duration;
 
             await new Promise<void>((resolve) => {
                 source.onended = () => resolve();
-                source.start(now);
+                source.start(startTime);
             });
         }
 
-        this.playing = false;
-        this.nextTime = 0;
+        if (this.epoch === epoch) {
+            this.playing = false;
+            this.nextTime = 0;
+        }
     }
 
     /** Drop the pending queue and stop current playback (barge-in). */
     interrupt(): void {
+        this.epoch += 1;
         this.queue = [];
         this.current?.stop();
         this.current = null;
         this.nextTime = 0;
+        this.playing = false;
     }
 
     isSpeaking(): boolean {

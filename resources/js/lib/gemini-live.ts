@@ -19,7 +19,7 @@ export type LiveOptions = {
 };
 
 const WS_URL =
-    'wss://generativelanguage.googleapis.com/v1alpha/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
+    'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained';
 
 /**
  * Thin browser client for the Gemini Live API (BidiGenerateContent).
@@ -95,7 +95,7 @@ export class GeminiLiveClient {
 
         this.sendJson({
             realtimeInput: {
-                audio: { audioChunks: [{ data: base64, mimeType }] },
+                audio: { data: base64, mimeType },
             },
         });
     }

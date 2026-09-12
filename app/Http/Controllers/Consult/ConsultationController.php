@@ -325,7 +325,7 @@ class ConsultationController extends Controller
         try {
             $response = Http::withHeaders([
                 'x-goog-api-key' => $key,
-            ])->post('https://generativelanguage.googleapis.com/v1alpha/auth_tokens', [
+            ])->post('https://generativelanguage.googleapis.com/v1beta/auth_tokens', [
                 'uses' => 1,
                 'expireTime' => $expire,
                 'newSessionExpireTime' => $newSessionExpire,
@@ -351,7 +351,7 @@ class ConsultationController extends Controller
 
         return response()->json([
             'token' => (string) $response->json('name'),
-            'model' => (string) config('ai.live.model', 'models/gemini-2.0-flash-live-001'),
+            'model' => (string) config('ai.live.model'),
             'system_instruction' => $this->liveSystemInstruction($consultation),
         ]);
     }

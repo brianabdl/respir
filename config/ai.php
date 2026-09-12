@@ -22,6 +22,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Live Voice Session
+    |--------------------------------------------------------------------------
+    |
+    | The model used for browser-direct Gemini Live (voice) sessions. The
+    | Live API requires the fully-qualified resource name (models/{model}).
+    |
+    */
+
+    'live' => [
+        'model' => env('AI_LIVE_MODEL', 'models/gemini-3.1-flash-live-preview'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Caching
     |--------------------------------------------------------------------------
     |

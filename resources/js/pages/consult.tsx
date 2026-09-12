@@ -134,7 +134,7 @@ export default function Consult({
     const liveRef = useRef<GeminiLiveClient | null>(null);
     const micRef = useRef<LiveMic | null>(null);
     const speakerRef = useRef<LiveSpeaker | null>(null);
-    const lastAssistantFinalRef = useRef('');
+    const assistantBufferRef = useRef('');
     const coughStartedRef = useRef(false);
     const anemiaCueRef = useRef('');
     const anemiaInFlightRef = useRef<AnemiaPart | null>(null);
@@ -265,6 +265,7 @@ export default function Consult({
     }
 
     function clearLiveTranscript() {
+        assistantBufferRef.current = '';
         setAssistantLive('');
         setUserLive('');
     }
@@ -345,30 +346,10 @@ export default function Consult({
                         setUserLive('');
                     }
                 },
-                onAssistantTranscript: (text, isFinal) => {
-                    setAssistantLive(text);
+                onAssistantTranscript: (text) => {
+                    assistantBufferRef.current += text;
+                    setAssistantLive(assistantBufferRef.current);
                     setGenerating(true);
-
-                    const final = text.trim();
-
-                    if (
-                        isFinal &&
-                        final.length > 0 &&
-                        final !== lastAssistantFinalRef.current
-                    ) {
-                        lastAssistantFinalRef.current = final;
-                        sessionTurnsRef.current.push({
-                            role: 'assistant',
-                            text: final,
-                        });
-                        setChat((prev) => [
-                            ...prev,
-                            { role: 'assistant', content: final },
-                        ]);
-                        setAssistantLive('');
-                        setGenerating(false);
-                        handleAssistantCue(final);
-                    }
                 },
                 onAudioChunk: (chunk) => {
                     setSpeaking(true);
@@ -381,6 +362,23 @@ export default function Consult({
                 onTurnComplete: () => {
                     setGenerating(false);
                     setSpeaking(false);
+
+                    const said = assistantBufferRef.current.trim();
+
+                    if (said.length > 0) {
+                        sessionTurnsRef.current.push({
+                            role: 'assistant',
+                            text: said,
+                        });
+                        setChat((prev) => [
+                            ...prev,
+                            { role: 'assistant', content: said },
+                        ]);
+                        handleAssistantCue(said);
+                    }
+
+                    assistantBufferRef.current = '';
+                    setAssistantLive('');
                 },
                 onError: (error) => {
                     console.error('Live session error', error);

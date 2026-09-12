@@ -186,7 +186,7 @@ export class GeminiLiveClient {
         if (json.serverContent?.outputTranscription?.text) {
             this.options.onAssistantTranscript(
                 json.serverContent.outputTranscription.text,
-                true,
+                false,
             );
         }
 

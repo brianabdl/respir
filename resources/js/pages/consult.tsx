@@ -1,4 +1,4 @@
-import { Mic, SendHorizontal, Video } from 'lucide-react';
+import { LoaderCircle, Mic, SendHorizontal, Video } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,13 @@ type CoughAnalysis = {
     findings?: string;
     recommendation?: string;
 } | null;
+type CoughPhase =
+    | 'idle'
+    | 'prompted'
+    | 'recording'
+    | 'processing'
+    | 'complete'
+    | 'error';
 type AnemiaPart = 'palm' | 'eye' | 'nail';
 type AnemiaAnalysis = {
     part?: string;
@@ -73,8 +80,9 @@ export default function Consult({
     const [analysis, setAnalysis] = useState<CoughAnalysis>(
         consultation.cough_analysis,
     );
-    const [recordingCough, setRecordingCough] = useState(false);
-    const [awaitingCough, setAwaitingCough] = useState(false);
+    const [coughPhase, setCoughPhase] = useState<CoughPhase>(
+        consultation.cough_analysis ? 'complete' : 'idle',
+    );
     const [sessionStarted, setSessionStarted] = useState(false);
     const [cameraOn, setCameraOn] = useState(false);
     const [consented, setConsented] = useState(
@@ -84,7 +92,6 @@ export default function Consult({
     const [coughRisk, setCoughRisk] = useState<string | null>(
         consultation.cough_risk ?? null,
     );
-    const [analysisPending, setAnalysisPending] = useState(false);
     const [anemia, setAnemia] = useState<Record<AnemiaPart, AnemiaAnalysis>>(
         () => {
             const initial: Record<AnemiaPart, AnemiaAnalysis> = {
@@ -135,7 +142,9 @@ export default function Consult({
     const micRef = useRef<LiveMic | null>(null);
     const speakerRef = useRef<LiveSpeaker | null>(null);
     const assistantBufferRef = useRef('');
+    const assistantPlaybackTokenRef = useRef(0);
     const coughStartedRef = useRef(false);
+    const coughTimerRef = useRef<number | null>(null);
     const anemiaCueRef = useRef('');
     const anemiaInFlightRef = useRef<AnemiaPart | null>(null);
     const sessionTurnsRef = useRef<
@@ -157,18 +166,14 @@ export default function Consult({
             }
 
             setCoughRisk(payload.cough_risk ?? payload.risk_level ?? null);
-            setAnalysisPending(false);
-            setAwaitingCough(false);
+            setCoughPhase('complete');
+            setVoiceHint('Cough sample analysed — continuing the consult');
 
             const live = liveRef.current;
 
             if (live?.isReady()) {
-                const risk = payload.risk_level ?? 'unclear';
-                const findings =
-                    payload.cough_analysis?.findings ?? 'not available';
-
                 live.sendText(
-                    `The cough sample was recorded and analysed. Risk level: ${risk}. Findings: ${findings}. Comment on this and continue the pre-visit conversation with the patient.`,
+                    'The cough sample has been recorded and processed. Acknowledge that the sample is complete without interpreting or summarising medical findings, then continue the pre-visit conversation with the patient.',
                 );
                 void restartLiveMic();
             }
@@ -233,6 +238,10 @@ export default function Consult({
                 ?.getTracks()
                 .forEach((track) => track.stop());
             mediaStreamRef.current = null;
+            if (coughTimerRef.current !== null) {
+                window.clearTimeout(coughTimerRef.current);
+                coughTimerRef.current = null;
+            }
         },
         [],
     );
@@ -242,8 +251,16 @@ export default function Consult({
             !coughStartedRef.current &&
             said.toLowerCase().includes('ready to record')
         ) {
-            setVoiceHint('Cough toward the microphone twice now');
+            setCoughPhase('prompted');
+            setVoiceHint('Get ready — recording your cough sample next');
             coughStartedRef.current = true;
+            micRef.current?.stop();
+            micRef.current = null;
+            speakerRef.current?.interrupt();
+            coughTimerRef.current = window.setTimeout(() => {
+                coughTimerRef.current = null;
+                void startCough();
+            }, 900);
         }
 
         const anemiaMatch = said.match(ANEMIA_CUE);
@@ -268,6 +285,31 @@ export default function Consult({
         assistantBufferRef.current = '';
         setAssistantLive('');
         setUserLive('');
+    }
+
+    async function finishAssistantTurn(
+        said: string,
+        speaker: LiveSpeaker,
+        token: number,
+    ): Promise<void> {
+        // Gemini can signal turn completion before queued PCM finishes playing.
+        // Wait for playback so cough and camera cues never interrupt Sage.
+        await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 100);
+        });
+
+        const deadline = Date.now() + 15_000;
+
+        while (speaker.isSpeaking() && Date.now() < deadline) {
+            await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, 50);
+            });
+        }
+
+        if (token !== assistantPlaybackTokenRef.current) return;
+
+        setSpeaking(false);
+        handleAssistantCue(said);
     }
 
     /** Persist the running transcript for the doctor's review console. */
@@ -356,12 +398,13 @@ export default function Consult({
                     void speaker.enqueue(chunk);
                 },
                 onInterrupted: () => {
+                    assistantPlaybackTokenRef.current += 1;
                     speaker.interrupt();
                     setSpeaking(false);
                 },
                 onTurnComplete: () => {
                     setGenerating(false);
-                    setSpeaking(false);
+                    const playbackToken = ++assistantPlaybackTokenRef.current;
 
                     const said = assistantBufferRef.current.trim();
 
@@ -374,7 +417,9 @@ export default function Consult({
                             ...prev,
                             { role: 'assistant', content: said },
                         ]);
-                        handleAssistantCue(said);
+                        void finishAssistantTurn(said, speaker, playbackToken);
+                    } else {
+                        setSpeaking(false);
                     }
 
                     assistantBufferRef.current = '';
@@ -390,6 +435,7 @@ export default function Consult({
                     );
                 },
                 onClose: () => {
+                    assistantPlaybackTokenRef.current += 1;
                     setConnected(false);
                     void saveSessionLog(true);
                     setVoiceHint('Voice session ended — tap to restart');
@@ -426,6 +472,7 @@ export default function Consult({
         speakerRef.current = null;
         liveRef.current?.disconnect();
         liveRef.current = null;
+        assistantPlaybackTokenRef.current += 1;
         mediaStreamRef.current?.getTracks().forEach((track) => {
             if (track.kind === 'audio') track.stop();
         });
@@ -532,17 +579,62 @@ export default function Consult({
     }
 
     async function startCough() {
+        if (coughPhase === 'recording' || coughPhase === 'processing') return;
+
+        coughStartedRef.current = true;
+
+        if (coughTimerRef.current !== null) {
+            window.clearTimeout(coughTimerRef.current);
+            coughTimerRef.current = null;
+        }
+
         micRef.current?.stop();
         micRef.current = null;
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-        });
-        setRecordingCough(true);
+        let stream: MediaStream;
 
-        const recorder = new MediaRecorder(stream);
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                },
+            });
+        } catch (error) {
+            console.error('Cough microphone access error', error);
+            setCoughPhase('error');
+            setVoiceHint('Microphone access failed — try recording again');
+            return;
+        }
+
+        setCoughPhase('recording');
+        setVoiceHint('Recording — cough twice toward the microphone');
+
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : 'audio/webm';
+        let recorder: MediaRecorder;
+
+        try {
+            recorder = new MediaRecorder(stream, { mimeType });
+        } catch (error) {
+            console.error('Could not start cough recorder', error);
+            stream.getTracks().forEach((track) => track.stop());
+            setCoughPhase('error');
+            setVoiceHint('This browser cannot record audio — try again');
+            return;
+        }
+
         recorderRef.current = recorder;
         const chunks: BlobPart[] = [];
+
+        recorder.onerror = () => {
+            stream.getTracks().forEach((track) => track.stop());
+            recorderRef.current = null;
+            setCoughPhase('error');
+            setVoiceHint('Recording failed — try the cough sample again');
+        };
 
         recorder.ondataavailable = (event) => {
             chunks.push(event.data);
@@ -551,12 +643,15 @@ export default function Consult({
         recorder.onstop = async () => {
             const blob = new Blob(chunks, { type: recorder.mimeType });
             stream.getTracks().forEach((track) => track.stop());
-            setRecordingCough(false);
+            recorderRef.current = null;
+            setCoughPhase('processing');
+            setVoiceHint('Sample received — analysing securely');
             await analyzeCough(blob);
         };
 
         recorder.start();
-        setTimeout(() => {
+        coughTimerRef.current = window.setTimeout(() => {
+            coughTimerRef.current = null;
             if (recorderRef.current?.state === 'recording') {
                 recorder.stop();
             }
@@ -575,8 +670,6 @@ export default function Consult({
     }
 
     async function analyzeCough(blob: Blob): Promise<void> {
-        setAnalysisPending(true);
-
         try {
             const formData = new FormData();
             formData.append('audio', blob, 'cough.webm');
@@ -585,6 +678,7 @@ export default function Consult({
                 {
                     method: 'POST',
                     headers: {
+                        Accept: 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: formData,
@@ -592,13 +686,15 @@ export default function Consult({
             );
 
             if (!response.ok) {
-                throw new Error('Cough upload failed');
+                const details = (await response.text()).slice(0, 500);
+                throw new Error(
+                    `Cough upload failed (${response.status})${details ? `: ${details}` : ''}`,
+                );
             }
-
-            setAwaitingCough(false);
         } catch (error) {
             console.error('Could not send the cough sample', error);
-            setAnalysisPending(false);
+            setCoughPhase('error');
+            setVoiceHint('Could not send cough sample — try again');
         }
     }
 
@@ -685,6 +781,10 @@ export default function Consult({
         }
     }
 
+    const awaitingCough = coughPhase === 'prompted';
+    const recordingCough = coughPhase === 'recording';
+    const analysisPending = coughPhase === 'processing';
+
     return (
         <div className="grid h-full grid-cols-1 gap-4 p-4 lg:grid-cols-3">
             {consentOpen && (
@@ -705,6 +805,38 @@ export default function Consult({
                     playsInline
                     className="w-full flex-1 object-cover"
                 />
+
+                {(awaitingCough || recordingCough) && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/45 backdrop-blur-[2px]">
+                        <div className="flex flex-col items-center gap-4 text-center text-white">
+                            <div
+                                className={`relative flex size-28 items-center justify-center rounded-full border-2 ${recordingCough ? 'border-red-400 bg-red-500/20' : 'border-white/70 bg-white/10'}`}
+                            >
+                                {recordingCough && (
+                                    <>
+                                        <span className="absolute inset-0 animate-ping rounded-full border border-red-300/70" />
+                                        <span className="absolute inset-2 animate-pulse rounded-full bg-red-400/20" />
+                                    </>
+                                )}
+                                <Mic
+                                    className={`relative size-10 ${recordingCough ? 'text-red-200' : 'text-white'}`}
+                                />
+                            </div>
+                            <div>
+                                <p className="text-lg font-semibold">
+                                    {recordingCough
+                                        ? 'Recording cough sample'
+                                        : 'Get ready to cough'}
+                                </p>
+                                <p className="mt-1 text-sm text-white/80">
+                                    {recordingCough
+                                        ? 'Cough twice toward the microphone'
+                                        : 'Recording starts automatically'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
                     <Heading title="Pre-Visit Consult" />
@@ -743,10 +875,19 @@ export default function Consult({
                             Save Photo
                         </Button>
                     )}
-                    {awaitingCough && !recordingCough && (
+                    {(coughPhase === 'idle' || coughPhase === 'error') && (
                         <Button size="sm" onClick={() => void startCough()}>
-                            Record & Send Cough
+                            <Mic className="size-4" />
+                            {coughPhase === 'error'
+                                ? 'Try Cough Again'
+                                : 'Record Cough'}
                         </Button>
+                    )}
+                    {analysisPending && (
+                        <span className="flex items-center gap-2 text-xs text-white/80">
+                            <LoaderCircle className="size-3 animate-spin" />
+                            Analysing sample securely
+                        </span>
                     )}
                     {sessionStarted && voiceHint && (
                         <span className="text-xs text-white/80">
@@ -888,7 +1029,7 @@ export default function Consult({
 
                 <Card
                     className={
-                        awaitingCough && !recordingCough
+                        awaitingCough || recordingCough
                             ? 'ring-primary ring-4'
                             : undefined
                     }
@@ -898,6 +1039,10 @@ export default function Consult({
                             Cough Assessment
                             {analysisPending ? (
                                 <Badge variant="secondary">analysing…</Badge>
+                            ) : coughPhase === 'error' ? (
+                                <Badge variant="destructive">
+                                    retry needed
+                                </Badge>
                             ) : (
                                 coughRisk && (
                                     <Badge
@@ -1034,16 +1179,28 @@ export default function Consult({
                     <CardHeader>
                         <CardTitle>Cough Sample</CardTitle>
                         <p className="text-sm text-neutral-500">
-                            {awaitingCough && !recordingCough
-                                ? 'Sage is ready — cough toward the microphone twice now.'
-                                : 'Tap record, wait 4 seconds and cough toward the microphone twice.'}
+                            {awaitingCough
+                                ? 'Sage is ready — recording starts automatically.'
+                                : recordingCough
+                                  ? 'Cough twice toward the microphone now.'
+                                  : analysisPending
+                                    ? 'Your sample is being analysed. This page updates automatically.'
+                                    : coughPhase === 'complete'
+                                      ? 'Sample analysed. You can continue the consultation.'
+                                      : coughPhase === 'error'
+                                        ? 'The sample could not be sent. Try again when ready.'
+                                        : 'Sage will start recording automatically when a cough sample is requested.'}
                         </p>
                     </CardHeader>
                     <CardContent>
                         <Button
                             className="w-full"
                             onClick={() => void startCough()}
-                            disabled={recordingCough}
+                            disabled={
+                                recordingCough ||
+                                awaitingCough ||
+                                analysisPending
+                            }
                         >
                             <Mic
                                 className={
@@ -1054,7 +1211,11 @@ export default function Consult({
                             />
                             {recordingCough
                                 ? 'Recording…'
-                                : 'Record & Send Cough'}
+                                : analysisPending
+                                  ? 'Analysing…'
+                                  : coughPhase === 'error'
+                                    ? 'Try Again'
+                                    : 'Record Cough'}
                         </Button>
                     </CardContent>
                 </Card>

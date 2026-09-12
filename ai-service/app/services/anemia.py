@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -246,8 +247,17 @@ class NailProbe:
             scaler_path = hf_hub_download(self._repo_id, "feature_scaler.joblib", **kwargs)
             metadata_path = hf_hub_download(self._repo_id, "model_metadata.json", **kwargs)
 
-            self._model = joblib.load(model_path)
-            self._scaler = joblib.load(scaler_path)
+            # Nail artifact predates the service's scikit-learn 1.8 runtime.
+            # It is trusted and validated by the probe contract; suppress only
+            # its known estimator-version warning during deserialization.
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="Trying to unpickle estimator .* from version 1.7.2",
+                    category=UserWarning,
+                )
+                self._model = joblib.load(model_path)
+                self._scaler = joblib.load(scaler_path)
 
             metadata = json.loads(Path(metadata_path).read_text(encoding="utf-8"))
             self._threshold = float(metadata.get("optimal_threshold", self._threshold))

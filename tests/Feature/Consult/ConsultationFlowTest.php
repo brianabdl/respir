@@ -108,6 +108,22 @@ test('cough analysis stores the audio and queues analysis', function () {
     Queue::assertPushed(AnalyseCough::class);
 });
 
+test('cough analysis accepts browser webm containers', function () {
+    Queue::fake();
+
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create(['consented_at' => now()]);
+    $this->actingAs($user);
+
+    $file = UploadedFile::fake()->createWithContent('cough.webm', 'fake-cough-audio-bytes', 'video/webm');
+
+    $this->post(route('consult.cough', $consultation), ['audio' => $file])
+        ->assertStatus(202)
+        ->assertJsonPath('status', 'processing');
+
+    Queue::assertPushed(AnalyseCough::class);
+});
+
 test('cough analysis rejects non-audio uploads', function () {
     $user = User::factory()->create();
     $consultation = Consultation::factory()->for($user)->create();

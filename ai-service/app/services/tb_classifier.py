@@ -1,3 +1,5 @@
+import warnings
+
 from app.config import Settings
 from app.errors import ModelNotAvailable
 from app.schemas.models import RiskLevel
@@ -39,7 +41,16 @@ class TbClassifier:
                 JOBLIB_FILENAME,
                 **kwargs,
             )
-            self._package = joblib.load(path)
+            # Upstream artifact is a trusted legacy joblib bundle containing
+            # XGBoost estimators. Runtime is pinned to the compatible 2.x line;
+            # suppress only its expected legacy-serialization warning.
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=".*serialized model.*",
+                    category=UserWarning,
+                )
+                self._package = joblib.load(path)
         except Exception as exc:
             self._package = None
             raise ModelNotAvailable("tb_classifier", str(exc)[:300]) from exc

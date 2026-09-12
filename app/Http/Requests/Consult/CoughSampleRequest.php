@@ -26,7 +26,9 @@ class CoughSampleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'audio' => ['required', File::types(['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'])->max(8 * 1024)],
+            // Browser MediaRecorder WebM containers may be detected as video/webm
+            // even when they contain only an audio track.
+            'audio' => ['required', File::types(['audio/webm', 'video/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'])->max(8 * 1024)],
         ];
     }
 }

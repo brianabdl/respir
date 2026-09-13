@@ -112,16 +112,7 @@ export default function Consult({
 
             setCoughRisk(payload.cough_risk ?? payload.risk_level ?? null);
             setCoughPhase('complete');
-            setVoiceHint('Cough sample analysed — continuing the consult');
-
-            const live = liveRef.current;
-
-            if (live?.isReady()) {
-                live.sendText(
-                    'The cough sample has been recorded and processed. Acknowledge that the sample is complete without interpreting or summarising medical findings, then continue the pre-visit conversation with the patient.',
-                );
-                void restartLiveMic();
-            }
+            setVoiceHint('Cough sample analysed — session ended');
         },
         [consultation.id],
     );
@@ -563,17 +554,6 @@ export default function Consult({
         }, 4000);
     }
 
-    async function restartLiveMic() {
-        const live = liveRef.current;
-        if (!live?.isReady()) return;
-
-        const stream = mediaStreamRef.current;
-        if (!stream || stream.getAudioTracks().length === 0) return;
-
-        micRef.current = new LiveMic();
-        micRef.current.start(stream, live);
-    }
-
     async function analyzeCough(blob: Blob): Promise<void> {
         try {
             const formData = new FormData();
@@ -596,6 +576,11 @@ export default function Consult({
                     `Cough upload failed (${response.status})${details ? `: ${details}` : ''}`,
                 );
             }
+
+            // Cough capture completes this voice session. Analysis remains async
+            // and arrives through the Echo event above.
+            teardownLiveSession();
+            setVoiceHint('Cough sample received — session ended');
         } catch (error) {
             console.error('Could not send the cough sample', error);
             setCoughPhase('error');

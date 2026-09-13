@@ -81,7 +81,7 @@ function Logo() {
                 S
             </span>
             <span className="text-sm font-semibold" style={{ color: INK }}>
-                Saga
+                Respair
             </span>
         </span>
     );
@@ -163,7 +163,7 @@ function ProductMockup() {
                 </span>
                 <span className="mx-auto flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-0.5 font-mono text-[10px] font-medium text-[#94A3B8]">
                     <Lock className="h-2.5 w-2.5" />
-                    app.saga.health/consult
+                    app.respair.health/consult
                 </span>
                 <span className="w-10" />
             </div>
@@ -389,8 +389,8 @@ const steps = ['Intake', 'Interview', 'Cough', 'Brief', 'Review'];
 
 const faqs = [
     {
-        q: 'What is Saga?',
-        a: 'Saga is an agentic clinical assistant for primary care. It guides patients through a private pre-visit interview, screens a recorded cough for tuberculosis risk, and hands the clinician a structured briefing before the consultation starts.',
+        q: 'What is Respair?',
+        a: 'Respair is an agentic clinical assistant for primary care. It guides patients through a private pre-visit interview, screens a recorded cough for tuberculosis risk, and hands the clinician a structured briefing before the consultation starts.',
     },
     {
         q: 'Where does patient audio and data go?',
@@ -409,7 +409,7 @@ const faqs = [
         a: 'Most patients finish in about 12 minutes and answer roughly 19 questions. The clinician opens a file that is already organized.',
     },
     {
-        q: 'Can I run Saga in the browser?',
+        q: 'Can I run Respair in the browser?',
         a: 'No installation is needed. The guided interview runs in the browser with live voice via the Gemini Live API, and results arrive in real time over WebSockets.',
     },
 ];
@@ -428,12 +428,12 @@ export default function Welcome() {
 
     return (
         <>
-            <Head title="Saga — The guided pre-visit for primary care" />
+            <Head title="Respair — The guided pre-visit for primary care" />
 
             <div className="min-h-screen bg-black antialiased">
                 <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur-md">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                        <Link href={dashboard()} aria-label="Saga home">
+                        <Link href={dashboard()} aria-label="Respair home">
                             <Logo />
                         </Link>
 
@@ -544,7 +544,7 @@ export default function Welcome() {
                                         className="mx-auto mt-6 max-w-2xl text-base leading-[1.7] sm:text-lg lg:leading-[1.6]"
                                         style={{ color: MUTED }}
                                     >
-                                        Saga guides patients through a private
+                                        Respair guides patients through a private
                                         voice interview, screens a recorded
                                         cough for TB risk, and hands your
                                         clinicians an organized briefing. Less
@@ -614,7 +614,7 @@ export default function Welcome() {
                     >
                         <Reveal>
                             <div className="max-w-2xl">
-                                <Eyebrow>Why Saga</Eyebrow>
+                                <Eyebrow>Why Respair</Eyebrow>
                                 <h2
                                     className="mt-5 text-3xl font-medium tracking-[-0.02em] sm:text-4xl"
                                     style={{ color: INK }}
@@ -627,7 +627,7 @@ export default function Welcome() {
                                     style={{ color: MUTED }}
                                 >
                                     The visit starts before the patient arrives.
-                                    Saga collects the story, screens the cough,
+                                    Respair collects the story, screens the cough,
                                     and prepares the file — so the clinician
                                     reads, not transcribes.
                                 </p>
@@ -957,7 +957,7 @@ export default function Welcome() {
                             </div>
                         </div>
                         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-[#71717A] sm:flex-row">
-                            <span>© 2026 Saga Health</span>
+                            <span>© 2026 Respair Health</span>
                             <span className="font-mono text-xs">
                                 Built with Gemini Live · HeAR · MedGemma
                             </span>

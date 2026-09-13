@@ -18,9 +18,9 @@ startVoiceConsult fetches /consult/{c}/live/token (ephemeral token via POST v1al
 
 Echo is configured once in app.tsx via initEcho() (resources/js/lib/echo.ts, configureEcho broadcaster reverb). The page subscribes with useEcho on private channel `consultation.{id}` to events `cough.analysis` (payload: risk_level, cough_risk, cough_analysis) and `consultation.updated`. Cough POST returns 202; results only arrive via Echo, so never parse the POST response for analysis. ConsentGate must succeed (POST consult/{id}/consent) before startVoiceConsult() is allowed; consented state comes from consultation.consented_at. Voice/camera still ride the Gemini Live client in resources/js/lib/gemini-live.ts.
 
-## Product branding is Saga
+## Product branding is Respair
 
-The clinic agentic-AI product is branded "Saga" (SAGA // CORE in mono). Landing/landing copy must use Saga branding. The design source of truth is root `DESIGN.md`.
+The clinic agentic-AI product is branded "Respair". Landing/landing copy must use Respair branding. The agent persona stays "Sage" — brand name and agent name are distinct. The design source of truth is root `DESIGN.md`.
 
 ## Landing (welcome.tsx) is the design identity; consult is pending restyle
 

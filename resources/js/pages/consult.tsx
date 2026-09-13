@@ -1028,7 +1028,7 @@ export default function Consult({
                         S
                     </span>
                     <div className="flex flex-col">
-                        <span className="text-sm font-semibold">Saga</span>
+                        <span className="text-sm font-semibold">Respair</span>
                         <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
                             pre-visit · voice consult
                         </span>
@@ -1132,7 +1132,7 @@ export default function Consult({
                         </span>
                         <div className="flex flex-col">
                             <span className="text-base font-semibold">
-                                Saga
+                                Respair
                             </span>
                             <span className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
                                 pre-visit consult

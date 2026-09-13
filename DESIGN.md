@@ -1,7 +1,7 @@
 ---
 version: alpha
-name: Saga
-description: Design language for Saga, an agentic pre-visit AI for primary care. A calm, monochrome professional presentation — pure black canvas, white type, slate accent, JetBrains Mono metadata labels, one 14px radius — built around a browser-framed product mockup and powered by aura motion tokens.
+name: Respair
+description: Design language for Respair, an agentic pre-visit AI for primary care. A calm, monochrome professional presentation — pure black canvas, white type, slate accent, JetBrains Mono metadata labels, one 14px radius — built around a browser-framed product mockup and powered by aura motion tokens.
 colors:
     background: '#000000'
     foreground: '#FFFFFF'
@@ -54,11 +54,11 @@ components:
         padding: '{spacing.card-padding}'
 ---
 
-# Saga
+# Respair
 
 ## Overview
 
-This document defines Saga's design language. Saga is a primary-care AI product that guides a patient through a private pre-visit — a voice interview followed by a cough-based TB screen — and hands the clinician a structured briefing.
+This document defines Respair's design language. Respair is a primary-care AI product that guides a patient through a private pre-visit — a voice interview followed by a cough-based TB screen — and hands the clinician a structured briefing.
 
 The style is a professional, calm SaaS presentation built for a clinical audience: a pure black canvas, white type, and restrained slate accents organized into information-dense, modular panels. Inter renders headings and body copy; JetBrains Mono renders labels, metrics, and technical metadata. Everything sits on one 14px radius, one hairline border language, and one motion system based on masked reveals.
 

@@ -77,6 +77,7 @@
     --animate-aura-orbit-reverse: aura-orbit 64s linear infinite reverse;
     --animate-aura-flow: aura-flow 2.8s linear infinite;
     --animate-aura-eq: aura-eq 1.5s ease-in-out infinite;
+    --animate-panel-in: panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 
     @keyframes aura-rise {
         from {
@@ -120,6 +121,17 @@
         }
         50% {
             transform: scaleY(1);
+        }
+    }
+
+    @keyframes panel-in {
+        from {
+            opacity: 0;
+            transform: translateX(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
         }
     }
 }

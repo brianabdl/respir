@@ -153,10 +153,14 @@ export default function Consult({
     );
 
     function handleAssistantCue(said: string) {
-        if (
-            !coughStartedRef.current &&
-            said.toLowerCase().includes('ready to record')
-        ) {
+        const normalized = said.toLowerCase();
+        const requestsCoughSample =
+            normalized.includes('ready to record') ||
+            (normalized.includes('cough') &&
+                (normalized.includes('microphone') ||
+                    normalized.includes('record')));
+
+        if (!coughStartedRef.current && requestsCoughSample) {
             setCoughPhase('prompted');
             setVoiceHint('Get ready — recording your cough sample next');
             coughStartedRef.current = true;

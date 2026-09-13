@@ -1,4 +1,10 @@
-import { LoaderCircle, Mic, SendHorizontal, Video } from 'lucide-react';
+import {
+    AudioLines,
+    LoaderCircle,
+    Mic,
+    SendHorizontal,
+    Video,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
 import { Button } from '@/components/ui/button';
@@ -117,6 +123,8 @@ export default function Consult({
         'Tap to start the voice consult',
     );
     const [useFallbackLoop, setUseFallbackLoop] = useState(false);
+    const [connecting, setConnecting] = useState(false);
+    const [awaitingSpeech, setAwaitingSpeech] = useState(false);
 
     const chatRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -276,6 +284,9 @@ export default function Consult({
     async function startVoiceConsult() {
         resetCoughAssessment();
         setSessionStarted(true);
+        setConnecting(true);
+        setAwaitingSpeech(false);
+        setVoiceHint('Connecting to Sage…');
 
         if (!cameraOn) {
             void toggleCamera();
@@ -308,6 +319,8 @@ export default function Consult({
                 setup,
                 onOpen: () => {
                     setConnected(true);
+                    setConnecting(false);
+                    setAwaitingSpeech(true);
                     setVoiceHint('Listening — just speak naturally');
                     void startLiveMic(live);
                 },
@@ -329,15 +342,18 @@ export default function Consult({
                 onAssistantTranscript: (text) => {
                     assistantBufferRef.current += text;
                     setAssistantLive(assistantBufferRef.current);
+                    setAwaitingSpeech(false);
                     setGenerating(true);
                 },
                 onAudioChunk: (chunk) => {
+                    setAwaitingSpeech(false);
                     setSpeaking(true);
                     void speaker.enqueue(chunk);
                 },
                 onInterrupted: () => {
                     assistantPlaybackTokenRef.current += 1;
                     speaker.interrupt();
+                    setAwaitingSpeech(false);
                     setSpeaking(false);
                 },
                 onTurnComplete: () => {
@@ -375,6 +391,7 @@ export default function Consult({
                 onClose: () => {
                     assistantPlaybackTokenRef.current += 1;
                     setConnected(false);
+                    setAwaitingSpeech(false);
                     void saveSessionLog(true);
                     setVoiceHint('Voice session ended — tap to restart');
                 },
@@ -386,6 +403,8 @@ export default function Consult({
             live.connect();
         } catch (error) {
             console.error('Could not start Live session', error);
+            setConnecting(false);
+            setAwaitingSpeech(false);
             setUseFallbackLoop(true);
             setVoiceHint('Live voice unavailable — using turn-based voice');
         }
@@ -419,6 +438,8 @@ export default function Consult({
         setConnected(false);
         setSpeaking(false);
         setGenerating(false);
+        setConnecting(false);
+        setAwaitingSpeech(false);
         clearLiveTranscript();
     }
 
@@ -822,9 +843,45 @@ export default function Consult({
                     </div>
                 )}
 
+                {(connecting || awaitingSpeech) && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/45 backdrop-blur-[2px]">
+                        <div className="flex flex-col items-center gap-4 text-center text-white">
+                            <div className="relative flex size-28 items-center justify-center rounded-full border-2 border-emerald-300/70 bg-emerald-500/20">
+                                <span className="absolute inset-0 animate-ping rounded-full border border-emerald-300/70" />
+                                <span className="absolute inset-2 animate-pulse rounded-full bg-emerald-400/20" />
+                                <AudioLines
+                                    className={`relative size-10 text-emerald-100 ${awaitingSpeech ? 'animate-pulse' : 'animate-spin'}`}
+                                />
+                            </div>
+                            <div>
+                                <p className="text-lg font-semibold">
+                                    {connecting
+                                        ? 'Connecting to Sage…'
+                                        : 'Sage is about to speak…'}
+                                </p>
+                                <p className="mt-1 text-sm text-white/80">
+                                    {connecting
+                                        ? 'Setting up a secure live voice session'
+                                        : 'Getting a greeting ready for you'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-4">
                     <Heading title="Pre-Visit Consult" />
                     <div className="flex items-center gap-2">
+                        {connecting && (
+                            <Badge className="animate-pulse bg-black/50 text-white">
+                                connecting…
+                            </Badge>
+                        )}
+                        {awaitingSpeech && (
+                            <Badge className="animate-pulse bg-black/50 text-white">
+                                Sage is getting ready…
+                            </Badge>
+                        )}
                         {speaking && (
                             <Badge className="animate-pulse bg-black/50 text-white">
                                 talking…
@@ -835,11 +892,15 @@ export default function Consult({
                                 generating…
                             </Badge>
                         )}
-                        {connected && !speaking && !generating && (
-                            <Badge className="bg-primary/80 text-white">
-                                listening
-                            </Badge>
-                        )}
+                        {connected &&
+                            !speaking &&
+                            !generating &&
+                            !connecting &&
+                            !awaitingSpeech && (
+                                <Badge className="bg-primary/80 text-white">
+                                    listening
+                                </Badge>
+                            )}
                     </div>
                     <Badge className="bg-black/50 text-white">
                         {cameraOn ? 'camera live' : 'camera off'}
@@ -925,15 +986,19 @@ export default function Consult({
                     <CardHeader>
                         <CardTitle>Transcript</CardTitle>
                         <p className="text-sm text-neutral-500">
-                            {speaking
-                                ? 'Sage is speaking… (talk over it to interrupt)'
-                                : generating
-                                  ? 'Generating reply…'
-                                  : connected
-                                    ? 'Listening… turn-taking is automatic'
-                                    : useFallbackLoop
-                                      ? 'Turn-based voice mode — speak or type to reply'
-                                      : 'Not connected'}
+                            {connecting
+                                ? 'Connecting to Sage…'
+                                : awaitingSpeech
+                                  ? 'Sage is about to speak…'
+                                  : speaking
+                                    ? 'Sage is speaking… (talk over it to interrupt)'
+                                    : generating
+                                      ? 'Generating reply…'
+                                      : connected
+                                        ? 'Listening… turn-taking is automatic'
+                                        : useFallbackLoop
+                                          ? 'Turn-based voice mode — speak or type to reply'
+                                          : 'Not connected'}
                         </p>
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col">

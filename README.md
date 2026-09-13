@@ -94,15 +94,15 @@ Flow of a consultation:
 
 ## Technology stack
 
-| Layer | Technology |
-|-------|------------|
-| Backend | Laravel 13, PHP 8.5, Pest 5, Larastan, Pint |
-| Frontend | Inertia v3, React 19, TypeScript 5.7, Tailwind CSS 4, Vite 8, Wayfinder |
-| Realtime | Gemini Live API (interaction), Laravel Reverb + `@laravel/echo-react` (updates) |
-| AI service | Python 3.12, uv, FastAPI, HeAR, TB dual-head classifier, EmbeddingGemma |
-| Clinical LLM | MedGemma on Google Vertex AI (Model Garden endpoint) |
-| Data | PostgreSQL 18 + pgvector, Valkey (Redis-compatible) for queues/cache |
-| Audio | HeAR locally for cough embeddings; ffmpeg for decoding |
+| Layer        | Technology                                                                      |
+| ------------ | ------------------------------------------------------------------------------- |
+| Backend      | Laravel 13, PHP 8.5, Pest 5, Larastan, Pint                                     |
+| Frontend     | Inertia v3, React 19, TypeScript 5.7, Tailwind CSS 4, Vite 8, Wayfinder         |
+| Realtime     | Gemini Live API (interaction), Laravel Reverb + `@laravel/echo-react` (updates) |
+| AI service   | Python 3.12, uv, FastAPI, HeAR, TB dual-head classifier, EmbeddingGemma         |
+| Clinical LLM | MedGemma on Google Vertex AI (Model Garden endpoint)                            |
+| Data         | PostgreSQL 18 + pgvector, Valkey (Redis-compatible) for queues/cache            |
+| Audio        | HeAR locally for cough embeddings; ffmpeg for decoding                          |
 
 ## Repository layout
 
@@ -196,26 +196,26 @@ The AI service degrades gracefully: without local weights, cough analysis return
 
 Key Laravel environment variables (full list in `.env.example`):
 
-| Variable | Purpose |
-|----------|---------|
-| `DB_*` | PostgreSQL connection (`agen_gemma`) |
-| `QUEUE_CONNECTION=redis` | Valkey-backed queue (Redis-compatible) |
-| `CACHE_STORE=redis` | Valkey-backed cache |
-| `BROADCAST_CONNECTION=reverb` | Reverb WebSocket broadcasting |
-| `REVERB_*`, `VITE_REVERB_*` | Reverb server/client credentials |
-| `AI_SERVICE_URL`, `AI_SERVICE_TOKEN` | Python service endpoint and shared secret |
-| `AI_SERVICE_TIMEOUT`, `AI_SERVICE_RETRIES` | Client timeout and retry count |
-| `GEMINI_API_KEY`, `GEMINI_URL` | Realtime interaction layer only |
+| Variable                                   | Purpose                                   |
+| ------------------------------------------ | ----------------------------------------- |
+| `DB_*`                                     | PostgreSQL connection (`agen_gemma`)      |
+| `QUEUE_CONNECTION=redis`                   | Valkey-backed queue (Redis-compatible)    |
+| `CACHE_STORE=redis`                        | Valkey-backed cache                       |
+| `BROADCAST_CONNECTION=reverb`              | Reverb WebSocket broadcasting             |
+| `REVERB_*`, `VITE_REVERB_*`                | Reverb server/client credentials          |
+| `AI_SERVICE_URL`, `AI_SERVICE_TOKEN`       | Python service endpoint and shared secret |
+| `AI_SERVICE_TIMEOUT`, `AI_SERVICE_RETRIES` | Client timeout and retry count            |
+| `GEMINI_API_KEY`, `GEMINI_URL`             | Realtime interaction layer only           |
 
 Key Python service variables (full list in `ai-service/.env.example`):
 
-| Variable | Purpose |
-|----------|---------|
-| `AI_DEVICE` | `auto`, `cpu`, or `cuda` |
-| `HF_TOKEN`, `HEAR_MODEL`, `TB_CLASSIFIER_MODEL`, `EMBEDDING_MODEL` | Model sources |
-| `VERTEX_PROJECT`, `VERTEX_LOCATION`, `VERTEX_ENDPOINT_ID` | Vertex MedGemma endpoint |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Optional; empty means Application Default Credentials |
-| `PRELOAD_MODELS` | Adapters to load at startup (empty on CPU development) |
+| Variable                                                           | Purpose                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------ |
+| `AI_DEVICE`                                                        | `auto`, `cpu`, or `cuda`                               |
+| `HF_TOKEN`, `HEAR_MODEL`, `TB_CLASSIFIER_MODEL`, `EMBEDDING_MODEL` | Model sources                                          |
+| `VERTEX_PROJECT`, `VERTEX_LOCATION`, `VERTEX_ENDPOINT_ID`          | Vertex MedGemma endpoint                               |
+| `GOOGLE_APPLICATION_CREDENTIALS`                                   | Optional; empty means Application Default Credentials  |
+| `PRELOAD_MODELS`                                                   | Adapters to load at startup (empty on CPU development) |
 
 ## AI pipeline
 
@@ -299,11 +299,11 @@ Authenticate with `gcloud auth application-default login` and confirm
 
 ## Documentation
 
-| Document | Contents |
-|----------|----------|
-| [`OVERVIEW.md`](OVERVIEW.md) | Product summary, models, and future enhancements |
-| [`MIGRATION_PLAN.md`](MIGRATION_PLAN.md) | Architecture decisions, phases, runbook |
-| [`ai-service/README.md`](ai-service/README.md) | Python service setup and endpoints |
+| Document                                       | Contents                                         |
+| ---------------------------------------------- | ------------------------------------------------ |
+| [`OVERVIEW.md`](OVERVIEW.md)                   | Product summary, models, and future enhancements |
+| [`MIGRATION_PLAN.md`](MIGRATION_PLAN.md)       | Architecture decisions, phases, runbook          |
+| [`ai-service/README.md`](ai-service/README.md) | Python service setup and endpoints               |
 
 ## License
 

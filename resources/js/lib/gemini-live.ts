@@ -3,6 +3,7 @@ export type LiveTurn = { role: 'user' | 'assistant'; content: string };
 export type LiveSetup = {
     token: string;
     model: string;
+    language_code?: string;
     system_instruction: string;
 };
 
@@ -57,6 +58,9 @@ export class GeminiLiveClient {
 
     /** Lock in config, then ask for the greeting turn. */
     sendSetup(): void {
+        const language = this.options.setup.language_code;
+        const transcriptionConfig = language ? { languageCodes: [language] } : {};
+
         this.sendJson({
             setup: {
                 model: this.options.setup.model,
@@ -67,8 +71,8 @@ export class GeminiLiveClient {
                 systemInstruction: {
                     parts: [{ text: this.options.setup.system_instruction }],
                 },
-                inputAudioTranscription: {},
-                outputAudioTranscription: {},
+                inputAudioTranscription: transcriptionConfig,
+                outputAudioTranscription: transcriptionConfig,
             },
         });
 

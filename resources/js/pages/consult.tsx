@@ -253,6 +253,7 @@ export default function Consult({
             const setup = (await response.json()) as {
                 token: string;
                 model: string;
+                language_code?: string;
                 system_instruction: string;
             };
 

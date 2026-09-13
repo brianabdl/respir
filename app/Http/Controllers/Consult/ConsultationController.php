@@ -326,6 +326,7 @@ class ConsultationController extends Controller
         return response()->json([
             'token' => (string) $response->json('name'),
             'model' => (string) config('ai.live.model'),
+            'language_code' => (string) config('ai.live.language'),
             'system_instruction' => $this->liveSystemInstruction($consultation),
         ]);
     }

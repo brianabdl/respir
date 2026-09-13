@@ -32,6 +32,7 @@ return [
 
     'live' => [
         'model' => env('AI_LIVE_MODEL', 'models/gemini-3.1-flash-live-preview'),
+        'language' => env('AI_LIVE_LANGUAGE', 'en-US'),
     ],
 
     /*

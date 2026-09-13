@@ -1,3 +1,13 @@
+export type LiveFunctionDeclaration = {
+    name: string;
+    description: string;
+    parameters?: Record<string, unknown>;
+};
+
+export type LiveTool = {
+    functionDeclarations: LiveFunctionDeclaration[];
+};
+
 export type LiveTurn = { role: 'user' | 'assistant'; content: string };
 
 export type LiveSetup = {
@@ -17,6 +27,11 @@ export type LiveOptions = {
     onTurnComplete: () => void;
     onError: (error: unknown) => void;
     onClose: () => void;
+    tools?: LiveTool[];
+    onFunctionCall?: (
+        name: string,
+        args: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>>;
 };
 
 const WS_URL =
@@ -63,6 +78,10 @@ export class GeminiLiveClient {
             ? { languageCodes: [language] }
             : {};
 
+        const toolSetup = this.options.tools?.length
+            ? { tools: this.options.tools }
+            : {};
+
         this.sendJson({
             setup: {
                 model: this.options.setup.model,
@@ -75,6 +94,7 @@ export class GeminiLiveClient {
                 },
                 inputAudioTranscription: transcriptionConfig,
                 outputAudioTranscription: transcriptionConfig,
+                ...toolSetup,
             },
         });
 
@@ -122,10 +142,28 @@ export class GeminiLiveClient {
         this.socket?.send(new Blob([JSON.stringify(payload)]));
     }
 
+    /**
+     * Reply to a client tool call so the model can continue its turn.
+     */
+    private sendToolResponse(
+        responses: Array<{
+            name: string;
+            id?: string;
+            response: Record<string, unknown>;
+        }>,
+    ): void {
+        if (!this.isReady()) return;
+
+        this.sendJson({
+            toolResponse: { functionResponses: responses },
+        });
+    }
+
     private async handle(data: Blob): Promise<void> {
         const json = JSON.parse(await data.text()) as {
             setupComplete?: unknown;
             interrupted?: boolean;
+            error?: { code?: number; message?: string };
             serverContent?: {
                 modelTurn?: {
                     parts?: Array<{
@@ -141,7 +179,19 @@ export class GeminiLiveClient {
                 outputTranscription?: { text: string };
             };
             goAway?: unknown;
+            toolCall?: {
+                functionCalls?: Array<{
+                    id?: string;
+                    name?: string;
+                    args?: Record<string, unknown>;
+                }>;
+            };
+            toolCallCancellation?: { ids?: string[] };
         };
+
+        if (json.error) {
+            this.options.onError(json.error);
+        }
 
         if (json.setupComplete) {
             this.options.onOpen();
@@ -195,6 +245,33 @@ export class GeminiLiveClient {
             json.serverContent?.generationComplete
         ) {
             this.options.onTurnComplete();
+        }
+
+        if (json.toolCall?.functionCalls?.length) {
+            const responses: Array<{
+                name: string;
+                id?: string;
+                response: Record<string, unknown>;
+            }> = [];
+
+            for (const call of json.toolCall.functionCalls) {
+                if (!call.name) continue;
+
+                const response = this.options.onFunctionCall
+                    ? await this.options.onFunctionCall(
+                          call.name,
+                          call.args ?? {},
+                      )
+                    : { status: 'unhandled' };
+
+                responses.push({
+                    name: call.name,
+                    id: call.id,
+                    response,
+                });
+            }
+
+            this.sendToolResponse(responses);
         }
 
         if (json.goAway) {

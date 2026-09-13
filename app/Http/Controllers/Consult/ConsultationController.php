@@ -360,7 +360,9 @@ class ConsultationController extends Controller
                 .'breathlessness; TB contact; previous TB; immune-weakening medicines or conditions; smoking.',
             'When everything is covered, give a concise warm summary of reported symptoms and potential risk '
                 .'factors. Do not add a disclaimer, warning, or care instruction before requesting the cough sample.',
-            'Then say exactly: "I\'m ready to record. Please cough toward the microphone twice."',
+            'Then announce exactly: "Please cough toward the microphone twice — recording starts now." Then '
+            .'call the start_cough_capture function. The patient does not need any further '
+                .'recording instructions: the UI records by itself and will end the session afterwards.',
         ]);
     }
 

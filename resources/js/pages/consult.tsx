@@ -7,7 +7,7 @@ import ConsentGate from '@/components/consent-gate';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import ConsultationController from '@/actions/App/Http/Controllers/Consult/ConsultationController';
-import { GeminiLiveClient } from '@/lib/gemini-live';
+import { GeminiLiveClient, type LiveTool } from '@/lib/gemini-live';
 import { LiveMic, LiveSpeaker } from '@/lib/live-audio';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
@@ -39,6 +39,17 @@ type Capture = {
 
 // Band cutoffs mirror TbClassifier in ai-service (HIGH 0.66, MEDIUM 0.33).
 const RISK_BAND_CUTOFFS = { medium: 0.33, high: 0.66 } as const;
+
+const COUGH_CAPTURE_TOOL: LiveTool = {
+    functionDeclarations: [
+        {
+            name: 'start_cough_capture',
+            description:
+                'Starts the cough sample recording: the patient hears a cue and coughs twice toward the microphone. Recording lasts four seconds and stops automatically. Call this exactly once when it is time for the cough sample; do not ask the patient to record manually.',
+            parameters: { type: 'object', properties: {} },
+        },
+    ],
+};
 
 const RISK_MEANINGS: Record<string, string> = {
     low: 'No concerning acoustic pattern was detected in this sample. This does not rule out illness — please keep your appointment and mention any symptoms.',
@@ -179,11 +190,7 @@ export default function Consult({
 
     function handleAssistantCue(said: string) {
         const normalized = said.toLowerCase();
-        const requestsCoughSample =
-            normalized.includes('ready to record') ||
-            (normalized.includes('cough') &&
-                (normalized.includes('microphone') ||
-                    normalized.includes('record')));
+        const requestsCoughSample = normalized.includes('microphone');
 
         if (!coughStartedRef.current && requestsCoughSample) {
             setCoughPhase('prompted');
@@ -371,6 +378,8 @@ export default function Consult({
                     void saveSessionLog(true);
                     setVoiceHint('Voice session ended — tap to restart');
                 },
+                tools: [COUGH_CAPTURE_TOOL],
+                onFunctionCall: (name) => handleToolCall(name),
             });
 
             liveRef.current = live;
@@ -453,6 +462,7 @@ export default function Consult({
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let reply = '';
 
         while (reader) {
             const { done, value } = await reader.read();
@@ -465,6 +475,7 @@ export default function Consult({
                 try {
                     const event = JSON.parse(payload);
                     if (event.type === 'delta') {
+                        reply += event.delta ?? '';
                         setChat((prev) => {
                             const copy = [...prev];
                             copy[copy.length - 1] = {
@@ -478,6 +489,7 @@ export default function Consult({
                     }
                     if (event.type === 'done') {
                         setStreaming(false);
+                        handleAssistantCue(reply);
                     }
                 } catch {
                     console.warn('Parse error for chunk', payload);
@@ -563,6 +575,10 @@ export default function Consult({
         } catch (error) {
             console.error('Could not start input level meter', error);
         }
+    }
+
+    function wait(ms: number): Promise<void> {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
     }
 
     async function startCough() {
@@ -685,6 +701,42 @@ export default function Consult({
             setCoughPhase('error');
             setVoiceHint('Could not send cough sample — try again');
         }
+    }
+
+    async function handleToolCall(
+        name: string,
+    ): Promise<Record<string, unknown>> {
+        if (name !== 'start_cough_capture') {
+            return { status: 'unsupported' };
+        }
+
+        if (coughPhase === 'recording' || coughPhase === 'processing') {
+            return { status: 'already_recording' };
+        }
+
+        coughStartedRef.current = true;
+        setCoughPhase('prompted');
+        setVoiceHint('Get ready — recording your cough sample next');
+        micRef.current?.stop();
+        micRef.current = null;
+        speakerRef.current?.interrupt();
+
+        await wait(900);
+        await startCough();
+
+        const recorder = recorderRef.current;
+
+        if (recorder) {
+            await new Promise<void>((resolve) => {
+                const original = recorder.onstop;
+                recorder.onstop = (event) => {
+                    original?.call(recorder, event);
+                    resolve();
+                };
+            });
+        }
+
+        return { status: 'recording_started', duration_s: 4 };
     }
 
     async function capturePhoto() {

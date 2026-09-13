@@ -397,8 +397,10 @@ class ConsultationController extends Controller
             'When everything is covered, give a concise warm summary of reported symptoms and potential risk '
                 .'factors. Do not add a disclaimer, warning, or care instruction before requesting the cough sample.',
             'Then announce exactly: "Please cough toward the microphone twice — recording starts now." Then '
-            .'call the start_cough_capture function. The patient does not need any further '
-                .'recording instructions: the UI records by itself and will end the session afterwards.',
+                .'call the start_cough_capture function. The patient does not need any further recording '
+                .'instructions: the UI records by itself and submits the sample for analysis. After the sample '
+                .'is received, deliver one concise warm closing summary of what happens next, say goodbye, and '
+                .'call the end_consultation function. End the session only via that function.',
         ]);
     }
 

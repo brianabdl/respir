@@ -56,6 +56,27 @@ const COUGH_CAPTURE_TOOL: LiveTool = {
     ],
 };
 
+const RECALL_CONVERSATION_TOOL: LiveTool = {
+    functionDeclarations: [
+        {
+            name: 'recall_conversation_context',
+            description:
+                'Searches the patient\'s earlier conversation in this consultation (previous voice sessions and the turn-based chat). Use it only when the patient refers to something said earlier that you cannot remember, or to check whether a topic was already covered. Pass the topic or a short query, for example "cough" or "fever duration". Returns matching patient and assistant turns only.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: {
+                        type: 'string',
+                        description:
+                            'The topic or question to search for, for example "cough" or "night sweats".',
+                    },
+                },
+                required: ['query'],
+            },
+        },
+    ],
+};
+
 const RISK_MEANINGS: Record<string, string> = {
     low: 'No concerning acoustic pattern was detected in this sample. This does not rule out illness — please keep your appointment and mention any symptoms.',
     medium: 'This sample shows an acoustic pattern that deserves a closer look. This is not a diagnosis — a clinician needs to assess you in person.',
@@ -427,8 +448,8 @@ export default function Consult({
                     void saveSessionLog(true);
                     setVoiceHint('Voice session ended — tap to restart');
                 },
-                tools: [COUGH_CAPTURE_TOOL],
-                onFunctionCall: (name) => handleToolCall(name),
+                tools: [COUGH_CAPTURE_TOOL, RECALL_CONVERSATION_TOOL],
+                onFunctionCall: (name, args) => handleToolCall(name, args),
             });
 
             liveRef.current = live;
@@ -758,7 +779,12 @@ export default function Consult({
 
     async function handleToolCall(
         name: string,
+        args: Record<string, unknown>,
     ): Promise<Record<string, unknown>> {
+        if (name === 'recall_conversation_context') {
+            return recallConversationContext(args);
+        }
+
         if (name !== 'start_cough_capture') {
             return { status: 'unsupported' };
         }
@@ -790,6 +816,38 @@ export default function Consult({
         }
 
         return { status: 'recording_started', duration_s: 4 };
+    }
+
+    async function recallConversationContext(
+        args: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+        const query = typeof args.query === 'string' ? args.query.trim() : '';
+
+        if (query === '') {
+            return { status: 'missing_query' };
+        }
+
+        try {
+            const response = await fetch(
+                ConsultationController.conversationContext.url(
+                    consultation.id,
+                    { query: { q: query } },
+                ),
+                { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
+            );
+
+            if (!response.ok) {
+                return { status: 'unavailable' };
+            }
+
+            const data = (await response.json()) as {
+                turns: Array<{ role: 'user' | 'assistant'; text: string }>;
+            };
+
+            return { status: 'ok', turns: data.turns };
+        } catch {
+            return { status: 'unavailable' };
+        }
     }
 
     async function capturePhoto() {

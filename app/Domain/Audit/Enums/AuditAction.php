@@ -10,6 +10,7 @@ enum AuditAction: string
     case BriefingRequested = 'briefing.requested';
     case ConsentRecorded = 'consultation.consent_recorded';
     case LiveSessionStarted = 'consultation.live_session_started';
+    case ConversationContextRetrieved = 'consultation.context_retrieved';
     case CoughAnalysed = 'cough.analysed';
     case BriefingGenerated = 'briefing.generated';
 }

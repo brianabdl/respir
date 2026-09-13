@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Consult;
 use App\Ai\Agents\ConsultAgent;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\AuditAction;
+use App\Domain\Consult\Actions\RecallConversationContext;
 use App\Domain\Consult\Actions\RecordCoughSample;
 use App\Domain\Consult\Actions\SaveSessionTranscript;
 use App\Domain\Consult\Actions\StartConsultation;
@@ -35,6 +36,7 @@ class ConsultationController extends Controller
     public function __construct(
         private StartConsultation $startConsultation,
         private SaveSessionTranscript $saveSessionTranscript,
+        private RecallConversationContext $recallConversationContext,
         private RecordCoughSample $recordCoughSample,
         private AuditLogger $auditLogger,
     ) {}
@@ -214,6 +216,36 @@ class ConsultationController extends Controller
     }
 
     /**
+     * Search this consultation's prior conversation (earlier voice sessions
+     * and the fallback chat) so a Live session can recall what was said.
+     * Only patient-stated turns are returned — never stored clinical analysis.
+     */
+    public function conversationContext(Request $request, Consultation $consultation): JsonResponse
+    {
+        $this->authorizeConsultation($consultation, $request->user());
+
+        abort_unless($consultation->consented_at !== null, 403, 'Consent is required before recalling conversation context.');
+
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $query = (string) ($validated['q'] ?? '');
+
+        $result = $this->recallConversationContext->forConsultation($consultation, $query);
+
+        $this->auditLogger->record(
+            AuditAction::ConversationContextRetrieved,
+            actor: $request->user(),
+            subject: $consultation,
+            destination: 'gemini',
+            context: ['turns_returned' => $result['found']],
+        );
+
+        return response()->json($result);
+    }
+
+    /**
      * Save the recorded cough sample and queue it for analysis.
      */
     public function cough(CoughSampleRequest $request, Consultation $consultation): JsonResponse
@@ -358,6 +390,10 @@ class ConsultationController extends Controller
             'Cover these topics one at a time: how they feel; fever; night sweats; unexplained weight loss; '
                 .'fatigue; whether they have a cough; cough duration; sputum; coughing up blood; chest pain; '
                 .'breathlessness; TB contact; previous TB; immune-weakening medicines or conditions; smoking.',
+            'If the patient refers to something from an earlier chat or voice session, or you need '
+                .'to check whether a topic was already covered, you may call the recall_conversation_context '
+                .'function, passing the topic as the query. Use it at most twice per session and only describe '
+                .'facts the function actually returns; never invent earlier answers.',
             'When everything is covered, give a concise warm summary of reported symptoms and potential risk '
                 .'factors. Do not add a disclaimer, warning, or care instruction before requesting the cough sample.',
             'Then announce exactly: "Please cough toward the microphone twice — recording starts now." Then '

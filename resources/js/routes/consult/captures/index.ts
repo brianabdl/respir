@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:236
+* @see app/Http/Controllers/Consult/ConsultationController.php:268
 * @route '/consult/{consultation}/captures'
 */
 export const store = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:236
+* @see app/Http/Controllers/Consult/ConsultationController.php:268
 * @route '/consult/{consultation}/captures'
 */
 store.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ store.url = (args: { consultation: number | { id: number } } | [consultation: nu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:236
+* @see app/Http/Controllers/Consult/ConsultationController.php:268
 * @route '/consult/{consultation}/captures'
 */
 store.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -59,7 +59,7 @@ store.post = (args: { consultation: number | { id: number } } | [consultation: n
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:236
+* @see app/Http/Controllers/Consult/ConsultationController.php:268
 * @route '/consult/{consultation}/captures'
 */
 const storeForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -69,7 +69,7 @@ const storeForm = (args: { consultation: number | { id: number } } | [consultati
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:236
+* @see app/Http/Controllers/Consult/ConsultationController.php:268
 * @route '/consult/{consultation}/captures'
 */
 storeForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -81,7 +81,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 export const download = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -96,7 +96,7 @@ download.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 download.url = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions) => {
@@ -124,7 +124,7 @@ download.url = (args: { consultation: number | { id: number }, capture: string |
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 download.get = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -134,7 +134,7 @@ download.get = (args: { consultation: number | { id: number }, capture: string |
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 download.head = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -144,7 +144,7 @@ download.head = (args: { consultation: number | { id: number }, capture: string 
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 const downloadForm = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -154,7 +154,7 @@ const downloadForm = (args: { consultation: number | { id: number }, capture: st
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 downloadForm.get = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -164,7 +164,7 @@ downloadForm.get = (args: { consultation: number | { id: number }, capture: stri
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::download
-* @see app/Http/Controllers/Consult/ConsultationController.php:259
+* @see app/Http/Controllers/Consult/ConsultationController.php:291
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 downloadForm.head = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

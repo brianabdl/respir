@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::log
-* @see app/Http/Controllers/Consult/ConsultationController.php:197
+* @see app/Http/Controllers/Consult/ConsultationController.php:199
 * @route '/consult/{consultation}/sessions'
 */
 export const log = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ log.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::log
-* @see app/Http/Controllers/Consult/ConsultationController.php:197
+* @see app/Http/Controllers/Consult/ConsultationController.php:199
 * @route '/consult/{consultation}/sessions'
 */
 log.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -49,7 +49,7 @@ log.url = (args: { consultation: number | { id: number } } | [consultation: numb
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::log
-* @see app/Http/Controllers/Consult/ConsultationController.php:197
+* @see app/Http/Controllers/Consult/ConsultationController.php:199
 * @route '/consult/{consultation}/sessions'
 */
 log.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -59,7 +59,7 @@ log.post = (args: { consultation: number | { id: number } } | [consultation: num
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::log
-* @see app/Http/Controllers/Consult/ConsultationController.php:197
+* @see app/Http/Controllers/Consult/ConsultationController.php:199
 * @route '/consult/{consultation}/sessions'
 */
 const logForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -69,7 +69,7 @@ const logForm = (args: { consultation: number | { id: number } } | [consultation
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::log
-* @see app/Http/Controllers/Consult/ConsultationController.php:197
+* @see app/Http/Controllers/Consult/ConsultationController.php:199
 * @route '/consult/{consultation}/sessions'
 */
 logForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

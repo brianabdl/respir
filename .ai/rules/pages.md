@@ -1,6 +1,7 @@
 ---
 paths:
     - resources/js/pages/consult.tsx
+    - resources/js/pages/welcome.tsx
 ---
 
 # Pages
@@ -16,3 +17,11 @@ startVoiceConsult fetches /consult/{c}/live/token (ephemeral token via POST v1al
 ## Consult page: consent gate + Echo events drive cough results
 
 Echo is configured once in app.tsx via initEcho() (resources/js/lib/echo.ts, configureEcho broadcaster reverb). The page subscribes with useEcho on private channel `consultation.{id}` to events `cough.analysis` (payload: risk_level, cough_risk, cough_analysis) and `consultation.updated`. Cough POST returns 202; results only arrive via Echo, so never parse the POST response for analysis. ConsentGate must succeed (POST consult/{id}/consent) before startVoiceConsult() is allowed; consented state comes from consultation.consented_at. Voice/camera still ride the Gemini Live client in resources/js/lib/gemini-live.ts.
+
+## Product branding is Saga
+
+The clinic agentic-AI product is branded "Saga" (SAGA // CORE in mono). Landing/landing copy must use Saga branding. The design source of truth is root `DESIGN.md`.
+
+## Landing (welcome.tsx) is the design identity; consult is pending restyle
+
+`welcome.tsx` follows `DESIGN.md`: black background, white type, #94A3B8 slate accent, #71717A mono labels, single 14px radius, monochrome mockup, explicit hexes so it stays dark regardless of theme. The consult page and app-wide tokens are still on the legacy light palette; both are pending a restyle to `DESIGN.md` — do not treat the legacy light look as the design.

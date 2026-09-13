@@ -1,7 +1,10 @@
-import ConsultationController from './ConsultationController'
+import ConsultationController from './ConsultationController';
 
 const Consult = {
-    ConsultationController: Object.assign(ConsultationController, ConsultationController),
-}
+    ConsultationController: Object.assign(
+        ConsultationController,
+        ConsultationController,
+    ),
+};
 
-export default Consult
+export default Consult;

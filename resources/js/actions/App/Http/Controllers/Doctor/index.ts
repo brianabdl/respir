@@ -1,7 +1,10 @@
-import ConsultationReviewController from './ConsultationReviewController'
+import ConsultationReviewController from './ConsultationReviewController';
 
 const Doctor = {
-    ConsultationReviewController: Object.assign(ConsultationReviewController, ConsultationReviewController),
-}
+    ConsultationReviewController: Object.assign(
+        ConsultationReviewController,
+        ConsultationReviewController,
+    ),
+};
 
-export default Doctor
+export default Doctor;

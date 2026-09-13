@@ -59,7 +59,9 @@ export class GeminiLiveClient {
     /** Lock in config, then ask for the greeting turn. */
     sendSetup(): void {
         const language = this.options.setup.language_code;
-        const transcriptionConfig = language ? { languageCodes: [language] } : {};
+        const transcriptionConfig = language
+            ? { languageCodes: [language] }
+            : {};
 
         this.sendJson({
             setup: {

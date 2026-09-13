@@ -13,3 +13,6 @@ Mic audio must be sent as `realtimeInput.audio = { data: base64, mimeType: "audi
 
 ## Gemini Live transcription fields + commit timing
 Live API sends transcriptions under serverContent: inputTranscription (final user text), interimInputTranscription (partial, frequent updates), outputTranscription (final assistant text). There is NO guaranteed ordering between these and turnComplete — outputTranscription can arrive AFTER turnComplete. So never commit the transcript on turnComplete; commit on the final transcription message instead (inputTranscription/outputTranscription), and treat interimInputTranscription as live preview only.
+
+## Pin Gemini Live transcription language when crossing languages
+Live transcription auto-detects per turn unless pinned. Send inputAudioTranscription { languageCodes: [bcp47] } in the setup message (source: config('ai.live.language') / AI_LIVE_LANGUAGE, default en-US). Without it, STT can flip to another language (e.g. Indian English -> Hindi), which lands in saved session transcripts for the doctor console. Keep setup.system_instruction English too.

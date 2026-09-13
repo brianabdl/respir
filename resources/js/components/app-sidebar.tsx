@@ -30,12 +30,15 @@ const mainNavItems = (isDoctor: boolean): NavItem[] => {
             href: dashboard(),
             icon: LayoutGrid,
         },
-        {
+    ];
+
+    if (!isDoctor) {
+        items.push({
             title: 'Consult',
             href: consult(),
             icon: Stethoscope,
-        },
-    ];
+        });
+    }
 
     if (isDoctor) {
         items.push({

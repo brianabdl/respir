@@ -27,6 +27,7 @@ use Laravel\Ai\Models\Conversation;
  * @property-read User $user
  * @property-read Collection<int, ConsultCapture> $captures
  * @property-read Collection<int, Conversation> $conversations
+ * @property-read int $captures_count
  */
 #[Fillable(['status'])]
 class Consultation extends Model

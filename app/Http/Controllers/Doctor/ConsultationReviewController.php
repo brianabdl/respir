@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Doctor;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\AuditAction;
 use App\Domain\Consult\Actions\FindSimilarCoughs;
+use App\Domain\Consult\Actions\QueueSummary;
 use App\Domain\Consult\Jobs\GenerateClinicianBriefing;
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
@@ -15,7 +16,7 @@ use Inertia\Response;
 
 class ConsultationReviewController extends Controller
 {
-    public function __construct(private AuditLogger $auditLogger) {}
+    public function __construct(private AuditLogger $auditLogger, private QueueSummary $queueSummary) {}
 
     /**
      * List every patient consultation for the reviewing doctor.
@@ -29,6 +30,7 @@ class ConsultationReviewController extends Controller
 
         $consultations = Consultation::query()
             ->with(['user:id,name,email', 'sessionLogs'])
+            ->withCount('captures')
             ->latest()
             ->paginate(15)
             ->through(fn (Consultation $consultation) => [
@@ -36,7 +38,10 @@ class ConsultationReviewController extends Controller
                 'patient' => $consultation->user->only(['id', 'name', 'email']),
                 'status' => $consultation->status,
                 'cough_risk' => $consultation->cough_risk,
+                'has_briefing' => $consultation->report !== null,
+                'captures_count' => $consultation->captures_count,
                 'created_at' => $consultation->created_at->toDateTimeString(),
+                'updated_at' => $consultation->updated_at->toDateTimeString(),
                 'sessions' => $consultation->sessionLogs->map(fn ($log) => [
                     'id' => $log->id,
                     'started_at' => $log->started_at?->toDateTimeString(),
@@ -47,6 +52,7 @@ class ConsultationReviewController extends Controller
 
         return inertia('doctor/index', [
             'consultations' => $consultations,
+            'summary' => $this->queueSummary->get(),
         ]);
     }
 

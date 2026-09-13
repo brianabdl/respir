@@ -81,7 +81,7 @@ export default function DoctorConsultationShow({
         cough_analysis?: CoughAnalysis;
     }>(
         `consultation.${consultation.id}`,
-        'cough.analysis',
+        '.cough.analysis',
         (payload) => {
             if (payload.cough_analysis) {
                 setCoughAnalysis(payload.cough_analysis);
@@ -94,7 +94,7 @@ export default function DoctorConsultationShow({
 
     useEcho<{ report?: Briefing | null }>(
         `consultation.${consultation.id}`,
-        'consultation.updated',
+        '.consultation.updated',
         (payload) => {
             if (payload.report) {
                 setReport(payload.report);

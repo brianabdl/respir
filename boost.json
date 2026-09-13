@@ -1,5 +1,9 @@
 {
-    "agents": ["claude_code", "opencode", "zed"],
+    "agents": [
+        "claude_code",
+        "opencode",
+        "zed"
+    ],
     "cloud": true,
     "guidelines": true,
     "mcp": true,
@@ -13,9 +17,6 @@
         "laravel-best-practices",
         "testing-best-practices",
         "wayfinder-development",
-        "inertia-react-development",
-        "echo-react-development",
-        "echo-development",
         "tailwindcss-development"
     ]
 }

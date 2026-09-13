@@ -104,7 +104,7 @@ export default function Consult({
         cough_analysis?: CoughAnalysis;
     }>(
         `consultation.${consultation.id}`,
-        'cough.analysis',
+        '.cough.analysis',
         (payload) => {
             if (payload.cough_analysis) {
                 setAnalysis(payload.cough_analysis);

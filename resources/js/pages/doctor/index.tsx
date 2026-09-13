@@ -37,7 +37,7 @@ function ConsultationRowItem({
 
     useEcho<ConsultationEvent>(
         `consultation.${consultation.id}`,
-        ['cough.analysis', 'consultation.updated'],
+        ['.cough.analysis', '.consultation.updated'],
         (payload) => {
             const risk = payload.cough_risk ?? payload.risk_level;
 

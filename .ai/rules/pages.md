@@ -1,6 +1,7 @@
 ---
 paths:
-    - resources/js/pages/consult.tsx
+  - resources/js/pages/consult.tsx
+  - 'resources/js/pages/**'
 ---
 
 # Pages
@@ -16,3 +17,6 @@ startVoiceConsult fetches /consult/{c}/live/token (ephemeral token via POST v1al
 ## Consult page: consent gate + Echo events drive cough results
 
 Echo is configured once in app.tsx via initEcho() (resources/js/lib/echo.ts, configureEcho broadcaster reverb). The page subscribes with useEcho on private channel `consultation.{id}` to events `cough.analysis` (payload: risk_level, cough_risk, cough_analysis) and `consultation.updated`. Cough POST returns 202; results only arrive via Echo, so never parse the POST response for analysis. ConsentGate must succeed (POST consult/{id}/consent) before startVoiceConsult() is allowed; consented state comes from consultation.consented_at. Voice/camera still ride the Gemini Live client in resources/js/lib/gemini-live.ts.
+
+## Prefix broadcastAs event names with a leading dot in useEcho
+Backend events use broadcastAs() (e.g. 'cough.analysis'), so the wire name has no namespace. laravel-echo prefixes listen() names with the default App.Events namespace unless the name starts with a dot. Plain useEcho() passes names straight through (only useEchoModel auto-adds dots), so always write '.cough.analysis' / '.consultation.updated' with a leading dot — without it the callback never fires and results only appear after reload.

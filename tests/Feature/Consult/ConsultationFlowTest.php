@@ -177,6 +177,7 @@ test('live voice instruction requires clarification before advancing', function 
                 && str_contains($instruction, 'Never use a checklist in one reply.')
                 && str_contains($instruction, 'pre-visit intake assistant')
                 && str_contains($instruction, 'Do not add a disclaimer')
+                && str_contains($instruction, 'call the end_consultation function')
                 && ! str_contains($instruction, 'medical advice')
                 && ! str_contains($instruction, 'healthcare professional')
                 && ! str_contains($instruction, 'seek care'),

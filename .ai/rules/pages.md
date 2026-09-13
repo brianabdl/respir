@@ -25,3 +25,6 @@ The clinic agentic-AI product is branded "Saga" (SAGA // CORE in mono). Landing/
 ## Landing (welcome.tsx) is the design identity; consult is pending restyle
 
 `welcome.tsx` follows `DESIGN.md`: black background, white type, #94A3B8 slate accent, #71717A mono labels, single 14px radius, monochrome mockup, explicit hexes so it stays dark regardless of theme. The consult page and app-wide tokens are still on the legacy light palette; both are pending a restyle to `DESIGN.md` — do not treat the legacy light look as the design.
+
+## end_consultation tool is the only graceful Live-close path
+Close the Gemini Live session only through the end_consultation tool call. Never teardownLiveSession directly after a cough upload (that instant-kills the socket before Sage speaks). Flow: successful cough -> tool response note (tool path) or promptModelWrapUp sendText (manual path) -> model delivers closing turn and calls end_consultation -> handleEndConsultation sets closingRef -> turnComplete/audio drain triggers beginGracefulClose. beginGracefulClose drains the speaker (<=20s) then teardown. scheduleForcedClose (20s) is a safety net for a model that never calls the tool. Transcript string matching (handleAssistantCue/microphone) is NOT a session-close trigger.

@@ -56,6 +56,17 @@ const COUGH_CAPTURE_TOOL: LiveTool = {
     ],
 };
 
+const END_CONSULTATION_TOOL: LiveTool = {
+    functionDeclarations: [
+        {
+            name: 'end_consultation',
+            description:
+                'Closes the voice consultation. Call this after the cough sample has been captured and the patient has no more questions. Deliver a short warm closing summary and a goodbye first, then call this function.',
+            parameters: { type: 'object', properties: {} },
+        },
+    ],
+};
+
 const RECALL_CONVERSATION_TOOL: LiveTool = {
     functionDeclarations: [
         {
@@ -184,6 +195,10 @@ export default function Consult({
         Array<{ role: 'user' | 'assistant'; text: string }>
     >([]);
     const sessionIdRef = useRef<string>('');
+    const toolCoughRef = useRef(false);
+    const coughUploadOkRef = useRef(false);
+    const closingRef = useRef(false);
+    const closingTimerRef = useRef<number | null>(null);
     const meterRef = useRef<{
         context: AudioContext;
         analyser: AnalyserNode;
@@ -244,6 +259,10 @@ export default function Consult({
             if (coughTimerRef.current !== null) {
                 window.clearTimeout(coughTimerRef.current);
                 coughTimerRef.current = null;
+            }
+            if (closingTimerRef.current !== null) {
+                window.clearTimeout(closingTimerRef.current);
+                closingTimerRef.current = null;
             }
         },
         [],
@@ -336,6 +355,13 @@ export default function Consult({
 
     async function startVoiceConsult() {
         resetCoughAssessment();
+        closingRef.current = false;
+        toolCoughRef.current = false;
+        coughUploadOkRef.current = false;
+        if (closingTimerRef.current !== null) {
+            window.clearTimeout(closingTimerRef.current);
+            closingTimerRef.current = null;
+        }
         setSessionStarted(true);
         setConnecting(true);
         setAwaitingSpeech(false);
@@ -424,9 +450,20 @@ export default function Consult({
                             ...prev,
                             { role: 'assistant', content: said },
                         ]);
-                        void finishAssistantTurn(said, speaker, playbackToken);
+                        void finishAssistantTurn(
+                            said,
+                            speaker,
+                            playbackToken,
+                        ).finally(() => {
+                            if (closingRef.current) {
+                                void beginGracefulClose();
+                            }
+                        });
                     } else {
                         setSpeaking(false);
+                        if (closingRef.current) {
+                            void beginGracefulClose();
+                        }
                     }
 
                     assistantBufferRef.current = '';
@@ -448,7 +485,11 @@ export default function Consult({
                     void saveSessionLog(true);
                     setVoiceHint('Voice session ended — tap to restart');
                 },
-                tools: [COUGH_CAPTURE_TOOL, RECALL_CONVERSATION_TOOL],
+                tools: [
+                    COUGH_CAPTURE_TOOL,
+                    RECALL_CONVERSATION_TOOL,
+                    END_CONSULTATION_TOOL,
+                ],
                 onFunctionCall: (name, args) => handleToolCall(name, args),
             });
 
@@ -478,6 +519,10 @@ export default function Consult({
     }
 
     function teardownLiveSession() {
+        if (closingTimerRef.current !== null) {
+            window.clearTimeout(closingTimerRef.current);
+            closingTimerRef.current = null;
+        }
         micRef.current?.stop();
         micRef.current = null;
         speakerRef.current?.reset();
@@ -766,11 +811,16 @@ export default function Consult({
                 );
             }
 
-            // Cough capture completes this voice session. Analysis remains async
-            // and arrives through the Echo event above.
-            teardownLiveSession();
-            setVoiceHint('Cough sample received — session ended');
+            coughUploadOkRef.current = true;
+            setVoiceHint('Cough sample received — wrapping up');
+
+            // Tool-driven captures deliver the closing instruction inside the
+            // tool response; a manual sidebar capture needs a direct prompt.
+            if (!toolCoughRef.current && !closingRef.current) {
+                void promptModelWrapUp();
+            }
         } catch (error) {
+            coughUploadOkRef.current = false;
             console.error('Could not send the cough sample', error);
             setCoughPhase('error');
             setVoiceHint('Could not send cough sample — try again');
@@ -785,6 +835,10 @@ export default function Consult({
             return recallConversationContext(args);
         }
 
+        if (name === 'end_consultation') {
+            return handleEndConsultation();
+        }
+
         if (name !== 'start_cough_capture') {
             return { status: 'unsupported' };
         }
@@ -793,6 +847,11 @@ export default function Consult({
             return { status: 'already_recording' };
         }
 
+        if (closingRef.current) {
+            return { status: 'already_closing' };
+        }
+
+        toolCoughRef.current = true;
         coughStartedRef.current = true;
         setCoughPhase('prompted');
         setVoiceHint('Get ready — recording your cough sample next');
@@ -815,7 +874,67 @@ export default function Consult({
             });
         }
 
+        toolCoughRef.current = false;
+
+        if (coughUploadOkRef.current) {
+            scheduleForcedClose();
+            return {
+                status: 'recording_started',
+                duration_s: 4,
+                note: 'The cough sample was captured and submitted for secure analysis. The consultation is complete: give the patient a concise warm closing summary and a goodbye, then call the end_consultation function.',
+            };
+        }
+
         return { status: 'recording_started', duration_s: 4 };
+    }
+
+    function handleEndConsultation(): Record<string, unknown> {
+        closingRef.current = true;
+        setVoiceHint('Wrapping up — thank you');
+        scheduleForcedClose();
+        return { status: 'closing' };
+    }
+
+    async function promptModelWrapUp(): Promise<void> {
+        const live = liveRef.current;
+        if (!live?.isReady() || closingRef.current) return;
+
+        live.sendText(
+            'The cough sample has been captured and submitted for secure analysis. The consultation is complete: give the patient a concise warm closing summary and a goodbye, then call the end_consultation function.',
+        );
+        scheduleForcedClose();
+    }
+
+    function scheduleForcedClose(): void {
+        if (closingTimerRef.current !== null) return;
+        closingTimerRef.current = window.setTimeout(() => {
+            closingTimerRef.current = null;
+            void beginGracefulClose();
+        }, 20_000);
+    }
+
+    async function beginGracefulClose(): Promise<void> {
+        const live = liveRef.current;
+        if (!live) return;
+
+        if (closingTimerRef.current !== null) {
+            window.clearTimeout(closingTimerRef.current);
+            closingTimerRef.current = null;
+        }
+
+        const speaker = speakerRef.current;
+
+        if (speaker) {
+            const deadline = Date.now() + 20_000;
+
+            while (speaker.isSpeaking() && Date.now() < deadline) {
+                await new Promise<void>((resolve) =>
+                    window.setTimeout(resolve, 50),
+                );
+            }
+        }
+
+        teardownLiveSession();
     }
 
     async function recallConversationContext(

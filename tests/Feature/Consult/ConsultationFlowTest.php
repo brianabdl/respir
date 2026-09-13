@@ -175,8 +175,24 @@ test('live voice instruction requires clarification before advancing', function 
             'system_instruction',
             fn (string $instruction): bool => str_contains($instruction, 'repeat or rephrase the same question')
                 && str_contains($instruction, 'Never use a checklist in one reply.')
-                && ! str_contains($instruction, 'only a doctor can diagnose anything'),
+                && str_contains($instruction, 'pre-visit intake assistant')
+                && str_contains($instruction, 'Do not add a disclaimer')
+                && ! str_contains($instruction, 'medical advice')
+                && ! str_contains($instruction, 'healthcare professional')
+                && ! str_contains($instruction, 'seek care'),
         );
+});
+
+test('fallback agent instructions keep the conversation focused on pre-visit intake', function () {
+    $user = User::factory()->create();
+
+    $instructions = (string) (new ConsultAgent($user))->instructions();
+
+    expect($instructions)
+        ->toContain('Collect pre-visit information')
+        ->toContain('Do not diagnose, prescribe, recommend treatment, or add medical disclaimers.')
+        ->not->toContain('Please see a healthcare professional')
+        ->not->toContain('medical advice or a diagnosis');
 });
 
 test('camera capture stores the media file', function () {

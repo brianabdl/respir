@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from tests.conftest import build_client
-from tests.stubs import StubRegistry, UnavailableHear
+from tests.stubs import NonCoughGate, StubRegistry, UnavailableHear, UntrainedGate
 
 TOKEN_HEADERS = {"X-Internal-Token": "test-token"}
 
@@ -42,6 +42,24 @@ def test_cough_analysis_without_explanation_uses_template(wav_bytes):
     assert payload["findings"] != "stub findings"
 
 
+def test_cough_analysis_rejects_silence_without_calling_models(silence_bytes):
+    with TestClient(build_client()) as client:
+        response = client.post(
+            "/v1/cough/analyze",
+            headers=TOKEN_HEADERS,
+            files={"audio": ("silence.wav", silence_bytes, "audio/wav")},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["risk_level"] == "unclear"
+    assert payload["risk_score"] is None
+    assert "cough" in payload["findings"].lower()
+    assert payload["embedding"] == []
+    assert payload["model"]["available"] is True
+
+
 def test_cough_analysis_rejects_invalid_audio():
     with TestClient(build_client()) as client:
         response = client.post(
@@ -71,3 +89,37 @@ def test_cough_analysis_degrades_when_model_is_unavailable(wav_bytes):
     assert payload["risk_score"] is None
     assert payload["embedding"] == []
     assert payload["model"]["available"] is False
+
+
+def test_cough_analysis_rejects_sample_gate_flags_as_non_cough(wav_bytes):
+    registry = StubRegistry(gate=NonCoughGate())
+
+    with TestClient(build_client(registry=registry)) as client:
+        response = client.post(
+            "/v1/cough/analyze",
+            headers=TOKEN_HEADERS,
+            files={"audio": ("speech.wav", wav_bytes, "audio/wav")},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["risk_level"] == "unclear"
+    assert payload["risk_score"] is None
+    assert "cough" in payload["findings"].lower()
+    assert payload["embedding"] == []
+    assert payload["model"]["available"] is True
+
+
+def test_cough_analysis_skips_gate_when_untrained(wav_bytes):
+    registry = StubRegistry(gate=UntrainedGate())
+
+    with TestClient(build_client(registry=registry)) as client:
+        response = client.post(
+            "/v1/cough/analyze",
+            headers=TOKEN_HEADERS,
+            files={"audio": ("cough.wav", wav_bytes, "audio/wav")},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["risk_level"] == "high"

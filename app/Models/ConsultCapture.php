@@ -22,6 +22,13 @@ use Illuminate\Support\Carbon;
 #[Fillable(['type', 'path', 'disk', 'mime_type', 'captured_at'])]
 class ConsultCapture extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'captured_at' => 'datetime',
+        ];
+    }
+
     /**
      * The consultation this capture belongs to.
      *

@@ -46,9 +46,29 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 9000
 ```
 
 Everything degrades gracefully: without `ml` extras or weights, `/cough/analyze`
-returns `risk_level: "unclear"`; without
+returns `risk_level: "unclear"`; recordings with no audible event (near-silence
+or no sustained loud burst) are also returned as `"unclear"` without invoking
+the models, since the TB classifier was only trained on real coughs; without
 `VERTEX_ENDPOINT_ID`, MedGemma runs in fake mode and `/health` reports
 `vertex.mode: "fake"`.
+
+## Personal cough gate (recommended)
+
+Speech or background noise has sustained energy, so it passes the loudness
+gate above — but the TB head never saw speech in training and answers with
+a spurious risk. Train a tiny personal gate on your own clips:
+
+```bash
+mkdir -p data/gate/cough data/gate/other
+# cough/: 5+ forced coughs. other/: 5+ speech / room-noise clips.
+uv run scripts/train_cough_gate.py --cough-dir data/gate/cough --other-dir data/gate/other
+```
+
+This writes `models/cough_gate.joblib` (gitignored, personal voice prints).
+`/v1/cough/analyze` then rejects non-cough samples as `"unclear"` before the
+TB classifier runs. Without a trained gate the service logs a note and
+skips it; `/health` reports `cough_gate.loaded: false`. Tune with
+`COUGH_GATE_THRESHOLD` (probability of "cough", default 0.5).
 
 ## Vertex wiring
 

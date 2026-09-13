@@ -45,3 +45,14 @@ def wav_bytes() -> bytes:
     sf.write(buffer, stereo, sample_rate, format="WAV")
 
     return buffer.getvalue()
+
+
+@pytest.fixture
+def silence_bytes() -> bytes:
+    sample_rate = 44_100
+    seconds = 1.0
+    stereo = np.zeros((int(sample_rate * seconds), 2))
+    buffer = io.BytesIO()
+    sf.write(buffer, stereo, sample_rate, format="WAV")
+
+    return buffer.getvalue()

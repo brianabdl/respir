@@ -34,6 +34,29 @@ class StubClassifier:
         return ("high", 0.91)
 
 
+class StubGate:
+    name = "cough_gate"
+    is_loaded = True
+
+    def load(self) -> None:
+        pass
+
+    def predict(self, embedding: list[float]) -> tuple[bool, float]:
+        return (True, 0.93)
+
+
+class NonCoughGate(StubGate):
+    def predict(self, embedding: list[float]) -> tuple[bool, float]:
+        return (False, 0.12)
+
+
+class UntrainedGate(StubGate):
+    is_loaded = False
+
+    def predict(self, embedding: list[float]) -> tuple[bool, float]:
+        raise ModelNotAvailable("cough_gate", "no trained gate")
+
+
 class StubEmbedder:
     name = "embeddings"
     is_loaded = True
@@ -46,10 +69,11 @@ class StubEmbedder:
 
 
 class StubRegistry:
-    def __init__(self, hear: StubHear | None = None) -> None:
+    def __init__(self, hear: StubHear | None = None, gate: StubGate | None = None) -> None:
         self._hear = hear or StubHear()
         self._classifier = StubClassifier()
         self._embeddings = StubEmbedder()
+        self._gate = gate or StubGate()
 
     def device(self) -> str:
         return "cpu"
@@ -63,6 +87,9 @@ class StubRegistry:
     def text_embeddings(self) -> StubEmbedder:
         return self._embeddings
 
+    def gate(self) -> StubGate:
+        return self._gate
+
     def load(self, name: str) -> None:
         pass
 
@@ -71,6 +98,7 @@ class StubRegistry:
             "hear": ModelState(name="hear", loaded=self._hear.is_loaded),
             "classifier": ModelState(name="classifier", loaded=True),
             "embeddings": ModelState(name="embeddings", loaded=True),
+            "gate": ModelState(name="gate", loaded=self._gate.is_loaded),
         }
 
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Consult\ConsultationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Doctor\ConsultationReviewController;
 use App\Http\Middleware\EnsureDoctor;
 use App\Http\Middleware\EnsurePatient;
@@ -43,7 +44,7 @@ Route::middleware(['auth', 'verified', EnsureDoctor::class])->group(function () 
 Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 });
 
 require __DIR__.'/settings.php';

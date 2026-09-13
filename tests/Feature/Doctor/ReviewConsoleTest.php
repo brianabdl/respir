@@ -66,6 +66,62 @@ test('doctors can read the full transcript, cough analysis and captures', functi
             ->where('consultation.sessions.0.turns.1.text', 'Not great, coughing a lot'));
 });
 
+test('doctors can open a review that includes captures', function () {
+    $doctor = User::factory()->create(['role' => 'doctor']);
+    $this->actingAs($doctor);
+
+    $consultation = Consultation::factory()->for(User::factory()->create())->create();
+    $capture = $consultation->captures()->create([
+        'type' => 'audio',
+        'path' => 'captures/sample.webm',
+        'disk' => 'local',
+        'mime_type' => 'audio/webm',
+        'captured_at' => now()->startOfSecond(),
+    ]);
+
+    $this->get(route('doctor.consultations.show', $consultation))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('doctor/show')
+            ->where('consultation.captures.0.id', $capture->id)
+            ->where('consultation.captures.0.captured_at', $capture->captured_at->toDateTimeString()));
+});
+
+test('doctors see queue summary and per-row briefing and capture status', function () {
+    $doctor = User::factory()->create(['role' => 'doctor']);
+    $this->actingAs($doctor);
+
+    $withBriefing = Consultation::factory()->for(User::factory()->create())->create([
+        'cough_risk' => 'high',
+        'cough_analysis' => ['risk_level' => 'high'],
+        'report' => ['chief_complaint' => 'Cough'],
+        'created_at' => now()->subMinutes(5),
+    ]);
+    $withBriefing->captures()->create([
+        'type' => 'audio',
+        'path' => 'captures/a.webm',
+        'disk' => 'local',
+        'mime_type' => 'audio/webm',
+        'captured_at' => now(),
+    ]);
+    Consultation::factory()->for(User::factory()->create())->create([
+        'cough_risk' => 'medium',
+        'cough_analysis' => ['risk_level' => 'medium'],
+        'report' => null,
+    ]);
+
+    $this->get(route('doctor.consultations.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('doctor/index')
+            ->where('summary.total', 2)
+            ->where('summary.high', 1)
+            ->where('summary.medium', 1)
+            ->where('summary.needs_briefing', 1)
+            ->where('consultations.data.1.has_briefing', true)
+            ->where('consultations.data.1.captures_count', 1));
+});
+
 test('patients can persist their voice session transcript for review', function () {
     $user = User::factory()->create();
     $consultation = Consultation::factory()->for($user)->create();

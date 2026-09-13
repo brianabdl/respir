@@ -34,6 +34,20 @@ def fallback_explanation(risk_level: RiskLevel) -> tuple[str, str]:
     return FALLBACK_EXPLANATIONS.get(risk_level, FALLBACK_EXPLANATIONS["unclear"])
 
 
+def no_cough_explanation() -> tuple[str, str]:
+    return (
+        "No cough sound was detected in the recording — only silence or background noise.",
+        "Record again close to the microphone: cough twice, clearly, in a quiet room.",
+    )
+
+
+def non_cough_explanation() -> tuple[str, str]:
+    return (
+        "The recording sounds like speech or background noise rather than coughing.",
+        "Record again in a quiet room: cough twice, clearly, close to the microphone.",
+    )
+
+
 def template_briefing(request: BriefingRequest, generated_by: str = "template") -> BriefingResponse:
     first_user_turn = next(
         (turn.text for turn in request.transcript if turn.role == "user"),

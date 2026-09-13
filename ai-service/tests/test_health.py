@@ -15,7 +15,7 @@ def test_health_reports_models_and_vertex_state():
 
     assert payload["status"] == "ok"
     assert payload["device"] == "cpu"
-    assert set(payload["models"].keys()) == {"hear", "classifier", "embeddings"}
+    assert set(payload["models"].keys()) == {"hear", "classifier", "embeddings", "gate"}
     assert payload["models"]["hear"]["loaded"] is True
     assert payload["vertex"] == {
         "configured": False,

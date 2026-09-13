@@ -13,8 +13,15 @@ import { LiveMic, LiveSpeaker } from '@/lib/live-audio';
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 type CoughAnalysis = {
     risk_level?: string;
+    risk_score?: number | null;
     findings?: string;
     recommendation?: string;
+    duration_s?: number;
+    model?: {
+        name?: string;
+        version?: string;
+        available?: boolean;
+    };
 } | null;
 type CoughPhase =
     | 'idle'
@@ -29,6 +36,24 @@ type Capture = {
     path: string;
     mime_type?: string;
 } | null;
+
+// Band cutoffs mirror TbClassifier in ai-service (HIGH 0.66, MEDIUM 0.33).
+const RISK_BAND_CUTOFFS = { medium: 0.33, high: 0.66 } as const;
+
+const RISK_MEANINGS: Record<string, string> = {
+    low: 'No concerning acoustic pattern was detected in this sample. This does not rule out illness — please keep your appointment and mention any symptoms.',
+    medium: 'This sample shows an acoustic pattern that deserves a closer look. This is not a diagnosis — a clinician needs to assess you in person.',
+    high: 'This sample shows a strong acoustic pattern that needs prompt in-person assessment. Please see a doctor soon. This is still not a diagnosis.',
+    unclear:
+        'This sample could not be assessed — it may have been too short, too noisy, or the analysis model was unavailable.',
+};
+
+const RISK_MARKER_STYLES: Record<string, string> = {
+    low: 'bg-emerald-500',
+    medium: 'bg-amber-500',
+    high: 'bg-red-500',
+    unclear: 'bg-neutral-400',
+};
 
 export default function Consult({
     consultation,
@@ -68,6 +93,8 @@ export default function Consult({
     const [coughRisk, setCoughRisk] = useState<string | null>(
         consultation.cough_risk ?? null,
     );
+    const [micLevel, setMicLevel] = useState(0);
+    const [quietSample, setQuietSample] = useState(false);
 
     // Live-voice channel state: the transcript shows what is happening.
     const [connected, setConnected] = useState(false);
@@ -96,6 +123,12 @@ export default function Consult({
         Array<{ role: 'user' | 'assistant'; text: string }>
     >([]);
     const sessionIdRef = useRef<string>('');
+    const meterRef = useRef<{
+        context: AudioContext;
+        analyser: AnalyserNode;
+        timer: number;
+        peak: number;
+    } | null>(null);
 
     useEcho<{
         consultation_id: number;
@@ -129,6 +162,7 @@ export default function Consult({
             liveRef.current = null;
             micRef.current?.stop();
             micRef.current = null;
+            stopMeter();
             speakerRef.current?.reset();
             speakerRef.current = null;
             mediaStreamRef.current
@@ -475,6 +509,62 @@ export default function Consult({
         }
     }
 
+    function stopMeter(): number {
+        const meter = meterRef.current;
+        meterRef.current = null;
+
+        if (!meter) {
+            return 1;
+        }
+
+        window.clearInterval(meter.timer);
+        void meter.context.close().catch(() => undefined);
+
+        return meter.peak;
+    }
+
+    function startMeter(stream: MediaStream): void {
+        // Best-effort input level indicator only; recording works without it.
+        try {
+            const Context =
+                window.AudioContext ??
+                (
+                    window as unknown as {
+                        webkitAudioContext?: typeof AudioContext;
+                    }
+                ).webkitAudioContext;
+
+            if (!Context) {
+                return;
+            }
+
+            const context = new Context();
+            const analyser = context.createAnalyser();
+            analyser.fftSize = 2048;
+            context.createMediaStreamSource(stream).connect(analyser);
+            const samples = new Uint8Array(analyser.fftSize);
+            const meter = { context, analyser, timer: 0, peak: 0 };
+            meter.timer = window.setInterval(() => {
+                analyser.getByteTimeDomainData(samples);
+                let max = 0;
+
+                for (let i = 0; i < samples.length; i++) {
+                    const value = Math.abs(samples[i] - 128) / 128;
+
+                    if (value > max) {
+                        max = value;
+                    }
+                }
+
+                meter.peak = Math.max(meter.peak, max);
+                setMicLevel(max);
+            }, 120);
+            meterRef.current = meter;
+        } catch (error) {
+            console.error('Could not start input level meter', error);
+        }
+    }
+
     async function startCough() {
         if (coughPhase === 'recording' || coughPhase === 'processing') return;
 
@@ -529,6 +619,8 @@ export default function Consult({
         recorder.onerror = () => {
             stream.getTracks().forEach((track) => track.stop());
             recorderRef.current = null;
+            stopMeter();
+            setMicLevel(0);
             setCoughPhase('error');
             setVoiceHint('Recording failed — try the cough sample again');
         };
@@ -541,12 +633,18 @@ export default function Consult({
             const blob = new Blob(chunks, { type: recorder.mimeType });
             stream.getTracks().forEach((track) => track.stop());
             recorderRef.current = null;
+            const peak = stopMeter();
+            setMicLevel(0);
+            setQuietSample(peak < 0.02);
             setCoughPhase('processing');
             setVoiceHint('Sample received — analysing securely');
             await analyzeCough(blob);
         };
 
         recorder.start();
+        setMicLevel(0);
+        setQuietSample(false);
+        startMeter(stream);
         coughTimerRef.current = window.setTimeout(() => {
             coughTimerRef.current = null;
             if (recorderRef.current?.state === 'recording') {
@@ -901,13 +999,73 @@ export default function Consult({
 
                     {analysisPending && (
                         <CardContent className="text-sm text-neutral-500">
-                            The cough sample is being analysed. This page
-                            updates automatically.
+                            The cough sample is being analysed. This usually
+                            takes under a minute. This page updates
+                            automatically.
                         </CardContent>
                     )}
 
                     {analysis && !analysisPending && (
-                        <CardContent className="space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
+                        <CardContent className="space-y-3 text-sm text-neutral-600 dark:text-neutral-300">
+                            {typeof analysis.risk_score === 'number' &&
+                                analysis.risk_level !== 'unclear' && (
+                                    <div>
+                                        <div
+                                            className="relative flex h-2 overflow-visible rounded-full"
+                                            role="img"
+                                            aria-label={`Estimated risk score ${Math.round(Math.min(100, Math.max(0, analysis.risk_score * 100)))} out of 100, ${analysis.risk_level} band`}
+                                        >
+                                            <div
+                                                className="rounded-l-full bg-emerald-500/25"
+                                                style={{
+                                                    width: `${RISK_BAND_CUTOFFS.medium * 100}%`,
+                                                }}
+                                            />
+                                            <div
+                                                className="bg-amber-500/35"
+                                                style={{
+                                                    width: `${(RISK_BAND_CUTOFFS.high - RISK_BAND_CUTOFFS.medium) * 100}%`,
+                                                }}
+                                            />
+                                            <div className="flex-1 rounded-r-full bg-red-500/35" />
+                                            <div
+                                                className={`absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow dark:border-neutral-900 ${RISK_MARKER_STYLES[analysis.risk_level ?? 'unclear'] ?? 'bg-neutral-400'}`}
+                                                style={{
+                                                    left: `${Math.min(100, Math.max(0, analysis.risk_score * 100))}%`,
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="mt-1 flex text-xs text-neutral-500">
+                                            <span
+                                                style={{
+                                                    width: `${RISK_BAND_CUTOFFS.medium * 100}%`,
+                                                }}
+                                            >
+                                                Low
+                                            </span>
+                                            <span
+                                                className="text-center"
+                                                style={{
+                                                    width: `${(RISK_BAND_CUTOFFS.high - RISK_BAND_CUTOFFS.medium) * 100}%`,
+                                                }}
+                                            >
+                                                Medium
+                                            </span>
+                                            <span className="flex-1 text-right">
+                                                High
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            {analysis.risk_level &&
+                                RISK_MEANINGS[analysis.risk_level] && (
+                                    <p>
+                                        <span className="font-medium">
+                                            What this means:
+                                        </span>{' '}
+                                        {RISK_MEANINGS[analysis.risk_level]}
+                                    </p>
+                                )}
                             <p>
                                 <span className="font-medium">Findings:</span>{' '}
                                 {analysis.findings}
@@ -918,6 +1076,51 @@ export default function Consult({
                                 </span>{' '}
                                 {analysis.recommendation}
                             </p>
+                            {typeof analysis.duration_s === 'number' &&
+                                analysis.duration_s > 0 && (
+                                    <p className="text-xs text-neutral-500">
+                                        Sample length:{' '}
+                                        {analysis.duration_s.toFixed(1)}{' '}
+                                        seconds.
+                                    </p>
+                                )}
+                            {analysis.model?.available === false && (
+                                <p className="text-xs text-neutral-500">
+                                    Limited result — the analysis model was
+                                    offline when this sample was processed.
+                                </p>
+                            )}
+                            {(analysis.risk_level === 'low' ||
+                                analysis.risk_level === 'medium' ||
+                                analysis.risk_level === 'high') && (
+                                <div>
+                                    <p className="font-medium">
+                                        What happens next:
+                                    </p>
+                                    <ol className="ml-5 list-decimal space-y-1">
+                                        <li>
+                                            Your doctor reviews this result
+                                            together with your interview notes.
+                                        </li>
+                                        <li>
+                                            You will still be examined in person
+                                            — this result guides that exam, it
+                                            does not replace it.
+                                        </li>
+                                        <li>
+                                            Mention any new symptoms at your
+                                            visit, such as fever, night sweats,
+                                            or weight loss.
+                                        </li>
+                                    </ol>
+                                </div>
+                            )}
+                            {analysis.risk_level === 'unclear' && (
+                                <p>
+                                    Tap Record Cough below to try again with a
+                                    clearer sample.
+                                </p>
+                            )}
                             <p className="text-xs italic">
                                 This is not a diagnosis. Please see a doctor for
                                 a clinical assessment.
@@ -968,6 +1171,34 @@ export default function Consult({
                                     ? 'Try Again'
                                     : 'Record Cough'}
                         </Button>
+                        {recordingCough && (
+                            <div className="mt-3">
+                                <div
+                                    role="meter"
+                                    aria-label="Microphone input level"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={Math.round(micLevel * 100)}
+                                    className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
+                                >
+                                    <div
+                                        className="h-full rounded-full bg-emerald-500 transition-[width] duration-150"
+                                        style={{
+                                            width: `${Math.min(100, Math.round(micLevel * 100))}%`,
+                                        }}
+                                    />
+                                </div>
+                                <p className="mt-1 text-xs text-neutral-500">
+                                    Make sure the bar moves while you cough.
+                                </p>
+                            </div>
+                        )}
+                        {quietSample && !recordingCough && (
+                            <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                                That sample was very quiet — move closer to the
+                                microphone and try again.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             </div>

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -15,6 +16,8 @@ class Settings(BaseSettings):
     hear_model: str = "google/hear-pytorch"
     tb_classifier_model: str = "sach3v/Domain_aware_dual_head_HEar"
     embedding_model: str = "google/embeddinggemma-300m"
+    cough_gate_model: str = "models/cough_gate.joblib"
+    cough_gate_threshold: float = 0.5
     max_upload_mb: int = 25
 
     vertex_project: str = ""
@@ -27,6 +30,15 @@ class Settings(BaseSettings):
     @property
     def model_cache_dir(self) -> str | None:
         return self.model_dir or None
+
+    @property
+    def cough_gate_path(self) -> Path:
+        path = Path(self.cough_gate_model)
+
+        if path.is_absolute():
+            return path
+
+        return Path(__file__).resolve().parent.parent / path
 
     @property
     def vertex_configured(self) -> bool:

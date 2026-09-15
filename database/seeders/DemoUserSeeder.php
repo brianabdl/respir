@@ -32,5 +32,17 @@ class DemoUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
+
+        for ($i = 1; $i <= 9; $i++) {
+            User::query()->firstOrCreate(
+                ['email' => "patient{$i}@demo.test"],
+                [
+                    'name' => "Patient {$i}",
+                    'password' => Hash::make('password'),
+                    'role' => 'patient',
+                    'email_verified_at' => now(),
+                ],
+            );
+        }
     }
 }

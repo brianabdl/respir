@@ -11,6 +11,7 @@ import {
     show,
 } from '@/routes/doctor/consultations';
 
+// commit
 type ConsultationRow = {
     id: number;
     patient: { id: number; name: string; email: string };

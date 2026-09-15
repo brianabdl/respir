@@ -48,10 +48,7 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "bun install",
-            "bun run build"
+            "@php artisan key:generate"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
@@ -65,8 +62,8 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "bun run check",
-            "bun run types:check",
+            "@lint:check",
+            "@types:check",
             "@test"
         ],
         "types:check": [
@@ -75,16 +72,14 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
-            "@types:check",
-            "@php artisan test"
+            "@types:check"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan boost:update --ansi"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""

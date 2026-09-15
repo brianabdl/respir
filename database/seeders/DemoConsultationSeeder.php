@@ -38,6 +38,9 @@ class DemoConsultationSeeder extends Seeder
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $item
+     */
     private function createConsultation(array $item): void
     {
         $risk = $item['risk'];

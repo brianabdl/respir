@@ -30,6 +30,9 @@ class ConsultationFactory extends Factory
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function getCoughAnalysis(string $risk): array
     {
         $score = match ($risk) {
@@ -46,6 +49,9 @@ class ConsultationFactory extends Factory
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function getBriefing(): array
     {
         return [

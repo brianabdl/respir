@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Consultation;
+use App\Models\ConsultCapture;
+use App\Models\ConsultSessionLog;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -14,6 +16,7 @@ class DemoConsultationSeeder extends Seeder
 
         if ($patients->count() < 10) {
             $this->command->error('Not enough patients. Expected 10, found '.$patients->count());
+
             return;
         }
 
@@ -110,7 +113,7 @@ class DemoConsultationSeeder extends Seeder
                 ];
             }
 
-            \App\Models\ConsultSessionLog::create([
+            ConsultSessionLog::create([
                 'consultation_id' => $consultationId,
                 'turns' => $turns,
                 'started_at' => $startedAt,
@@ -125,7 +128,7 @@ class DemoConsultationSeeder extends Seeder
         $mimes = ['video/webm', 'image/jpeg', 'audio/webm'];
 
         for ($i = 0; $i < 2; $i++) {
-            \App\Models\ConsultCapture::create([
+            ConsultCapture::create([
                 'consultation_id' => $consultationId,
                 'type' => $types[$i % 3],
                 'path' => 'captures/'.uniqid().'.webm',

@@ -11,13 +11,13 @@ import {
     show,
 } from '@/routes/doctor/consultations';
 
-// commit
 type ConsultationRow = {
     id: number;
     patient: { id: number; name: string; email: string };
     status: string;
     cough_risk?: string | null;
     has_briefing: boolean;
+    is_reviewed?: boolean;
     captures_count: number;
     created_at: string;
     updated_at: string;
@@ -142,6 +142,11 @@ function ConsultationRowItem({
                         <span className="text-xs text-neutral-500">
                             no result yet
                         </span>
+                    )}
+                    {consultation.is_reviewed && (
+                        <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
+                            reviewed
+                        </Badge>
                     )}
                     {hasBriefing ? (
                         <Badge variant="outline">briefing ready</Badge>

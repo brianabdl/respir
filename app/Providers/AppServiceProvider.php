@@ -83,5 +83,8 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('consult-cough', fn (Request $request) => Limit::perMinute(10)
             ->by($request->user()?->id ?: $request->ip()));
+
+        RateLimiter::for('consult-context', fn (Request $request) => Limit::perMinute(8)
+            ->by($request->user()?->id ?: $request->ip()));
     }
 }

@@ -278,21 +278,33 @@ export default function Consult({
         [],
     );
 
-    function handleAssistantCue(said: string) {
-        const normalized = said.toLowerCase();
-        const requestsCoughSample = normalized.includes('microphone');
+    /**
+     * Start the cough-capture countdown. Guarded by coughStartedRef so the
+     * explicit start_cough_capture tool signal and the handleAssistantCue
+     * keyword backup can never both fire.
+     */
+    function triggerCoughCapture() {
+        if (coughStartedRef.current) return;
 
-        if (!coughStartedRef.current && requestsCoughSample) {
-            setCoughPhase('prompted');
-            setVoiceHint('Get ready — recording your cough sample next');
-            coughStartedRef.current = true;
-            micRef.current?.stop();
-            micRef.current = null;
-            speakerRef.current?.interrupt();
-            coughTimerRef.current = window.setTimeout(() => {
-                coughTimerRef.current = null;
-                void startCough();
-            }, 900);
+        setCoughPhase('prompted');
+        setVoiceHint('Get ready — recording your cough sample next');
+        coughStartedRef.current = true;
+        micRef.current?.stop();
+        micRef.current = null;
+        speakerRef.current?.interrupt();
+        coughTimerRef.current = window.setTimeout(() => {
+            coughTimerRef.current = null;
+            void startCough();
+        }, 900);
+    }
+
+    // Backup only: the SSE /chat stream now also emits an explicit 'tool'
+    // event when the agent calls start_cough_capture (see send()). This
+    // keyword check just covers the rare case where that event doesn't
+    // decode client-side.
+    function handleAssistantCue(said: string) {
+        if (said.toLowerCase().includes('microphone')) {
+            triggerCoughCapture();
         }
     }
 
@@ -616,6 +628,12 @@ export default function Consult({
                             };
                             return copy;
                         });
+                    }
+                    if (
+                        event.type === 'tool' &&
+                        event.name === 'start_cough_capture'
+                    ) {
+                        triggerCoughCapture();
                     }
                     if (event.type === 'done') {
                         setStreaming(false);

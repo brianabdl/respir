@@ -255,18 +255,34 @@ export class GeminiLiveClient {
 
             // Run any parallel function calls concurrently instead of one at
             // a time — each call is independent and the model waits on the
-            // slowest one either way.
+            // slowest one either way. Dedupe by name within the same batch:
+            // the seen-check below runs synchronously before any call's
+            // handler starts, so a model that (against instructions) emits
+            // the same tool twice in one turn can't race the handler's own
+            // state guards into double-firing.
+            const seen = new Set<string>();
             const responses = await Promise.all(
-                calls.map(async (call) => ({
-                    name: call.name,
-                    id: call.id,
-                    response: this.options.onFunctionCall
-                        ? await this.options.onFunctionCall(
-                              call.name,
-                              call.args ?? {},
-                          )
-                        : { status: 'unhandled' },
-                })),
+                calls.map(async (call) => {
+                    if (seen.has(call.name)) {
+                        return {
+                            name: call.name,
+                            id: call.id,
+                            response: { status: 'duplicate_call_ignored' },
+                        };
+                    }
+                    seen.add(call.name);
+
+                    return {
+                        name: call.name,
+                        id: call.id,
+                        response: this.options.onFunctionCall
+                            ? await this.options.onFunctionCall(
+                                  call.name,
+                                  call.args ?? {},
+                              )
+                            : { status: 'unhandled' },
+                    };
+                }),
             );
 
             this.sendToolResponse(responses);

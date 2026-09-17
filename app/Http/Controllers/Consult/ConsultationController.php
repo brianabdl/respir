@@ -22,17 +22,27 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Response;
 use Laravel\Ai\Audio;
+use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Streaming\Events\StreamEnd;
 use Laravel\Ai\Streaming\Events\TextDelta;
+use Laravel\Ai\Streaming\Events\ToolCall as ToolCallEvent;
 use Laravel\Ai\Transcription;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ConsultationController extends Controller
 {
+    /**
+     * Name of the ConsultAgent tool that signals it is time to record a cough sample. Detecting
+     * the real tool call — instead of pattern-matching the agent's spoken reply — keeps the
+     * fallback voice/chat tracks reliable even if the model paraphrases its announcement.
+     */
+    private const START_COUGH_CAPTURE_TOOL = 'start_cough_capture';
+
     public function __construct(
         private StartConsultation $startConsultation,
         private SaveSessionTranscript $saveSessionTranscript,
@@ -106,6 +116,10 @@ class ConsultationController extends Controller
             foreach ($response as $event) {
                 if ($event instanceof TextDelta) {
                     echo sprintf("data: %s\n\n", json_encode(['type' => 'delta', 'delta' => $event->delta]));
+                }
+
+                if ($event instanceof ToolCallEvent && $event->toolCall->name === self::START_COUGH_CAPTURE_TOOL) {
+                    echo sprintf("data: %s\n\n", json_encode(['type' => 'tool', 'name' => $event->toolCall->name]));
                 }
 
                 if ($event instanceof StreamEnd) {
@@ -186,7 +200,7 @@ class ConsultationController extends Controller
             reply: $reply,
             audio: $this->speak($reply),
             mime: 'audio/wav',
-            requestCough: str_contains($reply, "I'm ready to record"),
+            requestCough: $this->calledStartCoughCapture($response->toolCalls),
         );
 
         return response()->json($turn->toArray());
@@ -364,32 +378,24 @@ class ConsultationController extends Controller
     }
 
     /**
-     * The system instruction spoken format for a Live voice session.
+     * Determine whether the agent called the start_cough_capture tool during this turn.
+     *
+     * @param  Collection<int, ToolCall>  $toolCalls
+     */
+    private function calledStartCoughCapture(Collection $toolCalls): bool
+    {
+        return $toolCalls->contains(fn (ToolCall $call): bool => $call->name === self::START_COUGH_CAPTURE_TOOL);
+    }
+
+    /**
+     * The system instruction spoken format for a Live voice session. Shares the Sage persona and
+     * interview flow with ConsultAgent::instructions() via basePersona() — only the tool-calling
+     * paragraphs below differ, because the Live track additionally exposes recall_conversation_context
+     * and end_consultation. Keep both in sync when editing the shared persona.
      */
     private function liveSystemInstruction(Consultation $consultation): string
     {
-        return implode("\n", [
-            'You are "Sage", an extroverted, warm and chatty pre-visit intake assistant for a primary-care '
-                .'clinic. Talk like a friendly receptionist: short sentences of two to four, plain speech, '
-                .'no lists, no markdown, no special characters. Your voice is synthesised. Collect information '
-                .'for the clinician; do not diagnose, prescribe, recommend treatment, or add medical disclaimers. '
-                .'Follow the conversation state carefully. Ask '
-                .'exactly one atomic question per reply. An atomic question asks for one fact only. Never bundle '
-                .'symptoms, risk factors, timeframes or yes/no questions. Never use a checklist in one reply.',
-            'FIRST TURN (mandatory): greet the patient like an extroverted intake nurse. Introduce yourself '
-                .'as Sage and ask their name — that one question only, nothing else bundled in.',
-            'After learning their name, weave it naturally into conversation. Ask one symptom or risk factor '
-                .'at a time, then wait for the answer before choosing the next question. For example, ask only '
-                .'about fever, then only about night sweats, then only about weight loss. Never ask about '
-                .'fever and night sweats in the same reply.',
-            'Validate every answer before advancing. If the patient answers the wrong question, is vague, '
-                .'contradicts the question, or seems not to understand, acknowledge what you understood and '
-                .'repeat or rephrase the same question. Do not silently accept an unrelated answer and move '
-                .'to the next topic. If the patient gives a clear negative answer, acknowledge the negative '
-                .'and ask one new question only.',
-            'Cover these topics one at a time: how they feel; fever; night sweats; unexplained weight loss; '
-                .'fatigue; whether they have a cough; cough duration; sputum; coughing up blood; chest pain; '
-                .'breathlessness; TB contact; previous TB; immune-weakening medicines or conditions; smoking.',
+        return ConsultAgent::basePersona()."\n\n".implode("\n\n", [
             'If the patient refers to something from an earlier chat or voice session, or you need '
                 .'to check whether a topic was already covered, you may call the recall_conversation_context '
                 .'function, passing the topic as the query. Use it at most twice per session and only describe '

@@ -8,6 +8,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Audio;
+use Laravel\Ai\Responses\Data\ToolCall;
 use Laravel\Ai\Transcription;
 
 test('guests are redirected to the login page', function () {
@@ -69,6 +70,28 @@ test('chat streams agent deltas and prompts the agent for real calls', function 
     $response->assertOk();
 
     ConsultAgent::assertPrompted('hi');
+});
+
+test('chat emits a tool event when the agent calls start_cough_capture', function () {
+    ConsultAgent::fake([
+        new ToolCall(id: 'call_1', name: 'start_cough_capture', arguments: []),
+        'Please cough toward the microphone twice.',
+    ]);
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create();
+    $this->actingAs($user);
+
+    $response = $this->post(
+        route('consult.chat', $consultation),
+        ['message' => 'ready'],
+        ['HTTP_ACCEPT' => 'text/event-stream'],
+    );
+
+    $response->assertOk();
+
+    expect($response->streamedContent())
+        ->toContain('"type":"tool"')
+        ->toContain('"name":"start_cough_capture"');
 });
 
 test('chat validates the message', function () {
@@ -257,8 +280,11 @@ test('voice turn transcribes, replies and returns agent speech', function () {
     expect(base64_decode((string) $response->json('audio'), true))->toBe('fake-wav-bytes');
 });
 
-test('voice turn flags the cough request when the agent asks for a sample', function () {
-    ConsultAgent::fake(["I'm ready to record. Please cough toward the microphone twice."]);
+test('voice turn flags the cough request when the agent calls the tool', function () {
+    ConsultAgent::fake([
+        new ToolCall(id: 'call_1', name: 'start_cough_capture', arguments: []),
+        'Please cough toward the microphone twice.',
+    ]);
     Audio::fake(['fake-wav-bytes']);
 
     $user = User::factory()->create();

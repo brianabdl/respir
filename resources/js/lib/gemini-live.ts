@@ -248,28 +248,26 @@ export class GeminiLiveClient {
         }
 
         if (json.toolCall?.functionCalls?.length) {
-            const responses: Array<{
-                name: string;
-                id?: string;
-                response: Record<string, unknown>;
-            }> = [];
+            const calls = json.toolCall.functionCalls.filter(
+                (call): call is typeof call & { name: string } =>
+                    Boolean(call.name),
+            );
 
-            for (const call of json.toolCall.functionCalls) {
-                if (!call.name) continue;
-
-                const response = this.options.onFunctionCall
-                    ? await this.options.onFunctionCall(
-                          call.name,
-                          call.args ?? {},
-                      )
-                    : { status: 'unhandled' };
-
-                responses.push({
+            // Run any parallel function calls concurrently instead of one at
+            // a time — each call is independent and the model waits on the
+            // slowest one either way.
+            const responses = await Promise.all(
+                calls.map(async (call) => ({
                     name: call.name,
                     id: call.id,
-                    response,
-                });
-            }
+                    response: this.options.onFunctionCall
+                        ? await this.options.onFunctionCall(
+                              call.name,
+                              call.args ?? {},
+                          )
+                        : { status: 'unhandled' },
+                })),
+            );
 
             this.sendToolResponse(responses);
         }

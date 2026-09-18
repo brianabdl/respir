@@ -6,6 +6,8 @@ enum AuditAction: string
 {
     case ConsultationListViewed = 'consultation.list_viewed';
     case ConsultationViewed = 'consultation.viewed';
+    case ConsultationUpdated = 'consultation.updated';
+    case ConsultationReviewed = 'consultation.reviewed';
     case CaptureDownloaded = 'capture.downloaded';
     case BriefingRequested = 'briefing.requested';
     case ConsentRecorded = 'consultation.consent_recorded';

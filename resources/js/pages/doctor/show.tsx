@@ -10,6 +10,8 @@ import {
     Mic,
     Video,
     Download,
+    CheckCircle2,
+    Save,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +20,6 @@ import { cn } from '@/lib/utils';
 import { briefing as briefingRoute } from '@/actions/App/Http/Controllers/Doctor/ConsultationReviewController';
 import { dashboard } from '@/routes';
 import { index as doctorIndexRoute } from '@/routes/doctor/consultations';
-import type { CoughAnalysis } from '@/pages/consult';
 
 type Turn = { role: string; text: string };
 
@@ -48,6 +49,20 @@ type Capture = {
     download: string;
 };
 
+type DoctorCoughAnalysis = {
+    risk_level?: string;
+    risk_score?: number | null;
+    findings?: string;
+    explanation?: string;
+    recommendation?: string;
+    duration_s?: number;
+    model?: {
+        name?: string;
+        version?: string;
+        available?: boolean;
+    };
+} | null;
+
 export default function DoctorConsultationShow({
     consultation,
 }: {
@@ -57,16 +72,26 @@ export default function DoctorConsultationShow({
         status: string;
         cough_risk?: string | null;
         report?: Briefing | null;
-        cough_analysis?: CoughAnalysis | null;
+        cough_analysis?: DoctorCoughAnalysis;
+        clinical_notes?: string | null;
+        follow_up_actions?: string[];
+        is_reviewed?: boolean;
+        reviewed_at?: string | null;
+        reviewer?: { id: number; name: string } | null;
         created_at: string;
         sessions: SessionLog[];
         captures: Capture[];
     };
 }) {
-    const [activeTab, setActiveTab] = useState<'briefing' | 'transcript' | 'cough' | 'media'>(
+    const [activeTab, setActiveTab] = useState<'briefing' | 'transcript' | 'cough' | 'media' | 'notes'>(
         'briefing',
     );
     const [requestingBriefing, setRequestingBriefing] = useState(false);
+    const [clinicalNotes, setClinicalNotes] = useState(consultation.clinical_notes || '');
+    const [followUpActions, setFollowUpActions] = useState<string[]>(consultation.follow_up_actions || []);
+    const [savingNotes, setSavingNotes] = useState(false);
+    const [reviewing, setReviewing] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     useEcho(
         `consultation.${consultation.id}`,
@@ -99,6 +124,74 @@ export default function DoctorConsultationShow({
         }
     };
 
+    const handleSaveNotes = async () => {
+        setSavingNotes(true);
+        setSaveSuccess(false);
+        try {
+            const response = await fetch(`/doctor/consultations/${consultation.id}/notes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({
+                    clinical_notes: clinicalNotes,
+                    follow_up_actions: followUpActions,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save notes');
+            }
+
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (error) {
+            console.error('Could not save notes', error);
+        } finally {
+            setSavingNotes(false);
+        }
+    };
+
+    const handleMarkReviewed = async () => {
+        setReviewing(true);
+        try {
+            const response = await fetch(`/doctor/consultations/${consultation.id}/review`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to mark as reviewed');
+            }
+
+            router.reload({ only: ['consultation'] });
+        } catch (error) {
+            console.error('Could not mark as reviewed', error);
+        } finally {
+            setReviewing(false);
+        }
+    };
+
+    const toggleFollowUpAction = (action: string) => {
+        setFollowUpActions(prev =>
+            prev.includes(action)
+                ? prev.filter(a => a !== action)
+                : [...prev, action]
+        );
+    };
+
+    const followUpOptions = [
+        'Order chest X-ray',
+        'TB test (sputum culture)',
+        'Schedule follow-up appointment (2 weeks)',
+        'Refer to pulmonologist',
+        'Prescribe standard antibiotics',
+        'Advise home isolation until test results',
+    ];
+
     const riskScore = consultation.cough_analysis?.risk_score ?? 0;
     const riskPercentage = Math.round(riskScore * 100);
 
@@ -119,6 +212,18 @@ export default function DoctorConsultationShow({
                         </div>
 
                         <div className="flex items-center gap-3">
+                            <a href={`/doctor/consultations/${consultation.id}/export`} target="_blank">
+                                <Button variant="outline" size="sm" className="rounded-full border-white/10 bg-transparent text-[#94A3B8] hover:border-white/20 hover:bg-white/5">
+                                    <Download className="mr-2 size-4" />
+                                    Export PDF
+                                </Button>
+                            </a>
+                            {consultation.is_reviewed && (
+                                <Badge className="rounded-full border border-green-500/20 bg-green-500/10 text-green-400">
+                                    <CheckCircle2 className="mr-1 size-3" />
+                                    REVIEWED
+                                </Badge>
+                            )}
                             {consultation.cough_risk === 'high' && (
                                 <Badge className="rounded-full border border-red-500/20 bg-red-500/10 text-red-400">
                                     <Activity className="mr-1 size-3" />
@@ -203,8 +308,15 @@ export default function DoctorConsultationShow({
                                                 className="rounded-[14px]"
                                             >
                                                 <Video className="mr-2 size-4" />
-                                                Media
-                                                ({consultation.captures.length} files)
+                                                Media ({consultation.captures.length})
+                                            </Button>
+                                            <Button
+                                                variant={activeTab === 'notes' ? 'default' : 'ghost'}
+                                                onClick={() => setActiveTab('notes')}
+                                                className="rounded-[14px]"
+                                            >
+                                                <FileText className="mr-2 size-4" />
+                                                Clinical Notes
                                             </Button>
                                         </nav>
 
@@ -392,6 +504,85 @@ export default function DoctorConsultationShow({
                                                     )}
                                                 </div>
                                             )}
+
+                                            {activeTab === 'notes' && (
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                Doctor's Clinical Notes
+                                                            </h4>
+                                                            {saveSuccess && (
+                                                                <span className="text-xs text-green-400 flex items-center gap-1 font-mono">
+                                                                    <CheckCircle2 className="size-3" /> Saved successfully
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <textarea
+                                                            value={clinicalNotes}
+                                                            onChange={(e) => setClinicalNotes(e.target.value)}
+                                                            placeholder="Write your clinical assessment, diagnosis, prescription details, or general notes here..."
+                                                            rows={6}
+                                                            className="w-full rounded-[14px] border border-white/10 bg-[#000000]/60 p-4 text-sm text-white placeholder:text-[#71717A] focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide mb-3">
+                                                            Follow-up Actions Required
+                                                        </h4>
+                                                        <div className="grid gap-2 sm:grid-cols-2">
+                                                            {followUpOptions.map((action) => {
+                                                                const isChecked = followUpActions.includes(action);
+                                                                return (
+                                                                    <button
+                                                                        key={action}
+                                                                        type="button"
+                                                                        onClick={() => toggleFollowUpAction(action)}
+                                                                        className={cn(
+                                                                            'flex items-center gap-3 rounded-[10px] border p-3 text-left text-sm transition-all',
+                                                                            isChecked
+                                                                                ? 'border-white/30 bg-white/10 text-white'
+                                                                                : 'border-white/5 bg-[#000000]/30 text-[#A1A1AA] hover:border-white/15'
+                                                                        )}
+                                                                    >
+                                                                        <div className={cn(
+                                                                            'flex size-4 shrink-0 items-center justify-center rounded border',
+                                                                            isChecked ? 'border-white bg-white text-black' : 'border-white/20'
+                                                                        )}>
+                                                                            {isChecked && <CheckCircle2 className="size-3" />}
+                                                                        </div>
+                                                                        <span className="text-xs">{action}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 pt-2">
+                                                        <Button
+                                                            onClick={handleSaveNotes}
+                                                            disabled={savingNotes}
+                                                            className="rounded-full bg-white text-black hover:bg-white/90"
+                                                        >
+                                                            <Save className="mr-2 size-4" />
+                                                            {savingNotes ? 'Saving...' : 'Save Notes'}
+                                                        </Button>
+
+                                                        {!consultation.is_reviewed && (
+                                                            <Button
+                                                                onClick={handleMarkReviewed}
+                                                                disabled={reviewing}
+                                                                variant="outline"
+                                                                className="rounded-full border-green-500/20 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                                                            >
+                                                                <CheckCircle2 className="mr-2 size-4" />
+                                                                {reviewing ? 'Marking...' : 'Mark as Reviewed'}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </CardContent>
@@ -403,6 +594,34 @@ export default function DoctorConsultationShow({
                                 <CardContent className="p-5">
                                     <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Patient Summary</h3>
                                     <div className="mt-4 space-y-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-[#71717A]">Review Status</span>
+                                            {consultation.is_reviewed ? (
+                                                <span className="rounded-full bg-green-500/10 text-green-400 px-2 py-0.5 text-xs font-mono">
+                                                    REVIEWED
+                                                </span>
+                                            ) : (
+                                                <span className="rounded-full bg-yellow-500/10 text-yellow-400 px-2 py-0.5 text-xs font-mono">
+                                                    PENDING
+                                                </span>
+                                            )}
+                                        </div>
+                                        {consultation.reviewed_at && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-[#71717A]">Reviewed At</span>
+                                                <span className="font-mono text-xs text-[#94A3B8]">
+                                                    {consultation.reviewed_at.split(' ')[0]}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {consultation.reviewer && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-[#71717A]">Reviewed By</span>
+                                                <span className="text-xs text-[#94A3B8]">
+                                                    {consultation.reviewer.name}
+                                                </span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-[#71717A]">Email</span>
                                             <span className="font-mono text-[#94A3B8]">{consultation.patient.email}</span>

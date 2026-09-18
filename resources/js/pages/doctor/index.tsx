@@ -18,6 +18,7 @@ type ConsultationRow = {
     status: string;
     cough_risk?: string | null;
     has_briefing: boolean;
+    is_reviewed?: boolean;
     captures_count: number;
     created_at: string;
     updated_at: string;
@@ -145,6 +146,11 @@ function ConsultationRowItem({
                             no result yet
                         </span>
                     )}
+                    {consultation.is_reviewed && (
+                        <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
+                            reviewed
+                        </Badge>
+                    )}
                     {hasBriefing ? (
                         <Badge variant="outline">briefing ready</Badge>
                     ) : (
@@ -169,6 +175,7 @@ function ConsultationRowItem({
 export default function DoctorConsultations({
     consultations,
     summary,
+    filters,
 }: {
     consultations: {
         data: ConsultationRow[];
@@ -176,6 +183,14 @@ export default function DoctorConsultations({
         last_page: number;
     };
     summary: QueueSummary;
+    filters?: {
+        search?: string;
+        risk?: string;
+        reviewed?: string;
+        date_from?: string;
+        date_to?: string;
+        sort?: string;
+    };
 }) {
     const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
     const [query, setQuery] = useState('');
@@ -195,7 +210,9 @@ export default function DoctorConsultations({
 
             return (
                 needle.length === 0 ||
-                consultation.patient.name.toLowerCase().includes(needle)
+                consultation.patient.name.toLowerCase().includes(needle) ||
+                consultation.patient.email.toLowerCase().includes(needle) ||
+                consultation.id.toString().includes(needle)
             );
         });
     }, [consultations.data, query, riskFilter]);

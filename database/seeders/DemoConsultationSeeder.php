@@ -47,6 +47,8 @@ class DemoConsultationSeeder extends Seeder
         $score = $item['score'];
         $status = $item['status'];
 
+        $isReviewed = in_array($risk, ['high', 'medium']) && $status === 'completed';
+
         $consultation = Consultation::create([
             'user_id' => $item['patient']->id,
             'status' => $status,
@@ -63,6 +65,11 @@ class DemoConsultationSeeder extends Seeder
                 'clinical_impression' => $this->getClinicalImpression($risk),
                 'recommendations' => "- Follow up in 2 weeks\n- Monitor symptoms\n- Contact if condition worsens",
             ] : null,
+            'clinical_notes' => $isReviewed ? 'Reviewed patient intake. High-priority case. Ordered confirmatory GeneXpert test and PA chest radiograph. Patient advised on respiratory hygiene.' : null,
+            'follow_up_actions' => $isReviewed ? ['Order chest X-ray', 'TB test (sputum culture)', 'Schedule follow-up appointment (2 weeks)'] : [],
+            'is_reviewed' => $isReviewed,
+            'reviewed_at' => $isReviewed ? now()->subHours(rand(2, 24)) : null,
+            'reviewed_by' => $isReviewed ? 2 : null,
         ]);
 
         $this->createSessionLogs($consultation->id);

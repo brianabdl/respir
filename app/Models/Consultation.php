@@ -21,15 +21,21 @@ use Laravel\Ai\Models\Conversation;
  * @property array<string, mixed>|null $report
  * @property array<string, mixed>|null $cough_analysis
  * @property string|null $cough_risk
+ * @property string|null $clinical_notes
+ * @property array<string>|null $follow_up_actions
+ * @property bool $is_reviewed
+ * @property Carbon|null $reviewed_at
+ * @property int|null $reviewed_by
  * @property Carbon|null $consented_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
+ * @property-read User|null $reviewer
  * @property-read Collection<int, ConsultCapture> $captures
  * @property-read Collection<int, Conversation> $conversations
  * @property-read int $captures_count
  */
-#[Fillable(['status'])]
+#[Fillable(['status', 'clinical_notes', 'follow_up_actions', 'is_reviewed', 'reviewed_at', 'reviewed_by'])]
 class Consultation extends Model
 {
     /** @use HasFactory<ConsultationFactory> */
@@ -40,7 +46,10 @@ class Consultation extends Model
         return [
             'report' => 'array',
             'cough_analysis' => 'array',
+            'follow_up_actions' => 'array',
+            'is_reviewed' => 'boolean',
             'consented_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -51,6 +60,15 @@ class Consultation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The doctor who reviewed this consultation.
+     */
+    /** @return BelongsTo<User, $this> */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     /**

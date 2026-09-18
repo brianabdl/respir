@@ -42,6 +42,12 @@ Route::middleware(['auth', 'verified', EnsureDoctor::class])->group(function () 
         ->name('doctor.consultations.briefing');
     Route::get('doctor/consultations/{consultation}/similar', [ConsultationReviewController::class, 'similar'])
         ->name('doctor.consultations.similar');
+    Route::post('doctor/consultations/{consultation}/notes', [ConsultationReviewController::class, 'saveNotes'])
+        ->name('doctor.consultations.notes');
+    Route::post('doctor/consultations/{consultation}/review', [ConsultationReviewController::class, 'markReviewed'])
+        ->name('doctor.consultations.review');
+    Route::get('doctor/consultations/{consultation}/export', [ConsultationReviewController::class, 'exportPdf'])
+        ->name('doctor.consultations.export');
 });
 
 Route::inertia('/', 'welcome')->name('home');

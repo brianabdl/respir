@@ -931,8 +931,13 @@ export default function Consult({
             stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     channelCount: 1,
-                    echoCancellation: true,
-                    noiseSuppression: true,
+                    // Raw capture: browser noise suppression, AGC, and echo
+                    // cancellation treat cough bursts as noise and destroy
+                    // them irreversibly. Burst isolation and any denoising
+                    // happen downstream in the AI service instead.
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
                 },
             });
         } catch (error) {

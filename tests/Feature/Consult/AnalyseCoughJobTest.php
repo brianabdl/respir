@@ -42,6 +42,21 @@ function analyseCoughCapture(Consultation $consultation): ConsultCapture
     ]);
 }
 
+function scoredCoughCapture(Consultation $consultation, float $score, string $findings): ConsultCapture
+{
+    $capture = analyseCoughCapture($consultation);
+    $capture->forceFill(['analysis' => [
+        'risk_level' => 'high',
+        'risk_score' => $score,
+        'findings' => $findings,
+        'recommendation' => 'See a doctor',
+        'model' => ['name' => 'tb', 'version' => 'hear', 'available' => true],
+        'duration_s' => 3.0,
+    ]])->save();
+
+    return $capture;
+}
+
 test('analysis job stores results and broadcasts completion', function () {
     Event::fake([CoughAnalysisCompleted::class]);
     Storage::fake('local');
@@ -91,6 +106,58 @@ test('analysis job falls back to unclear when the service fails', function () {
         ->and($consultation->cough_analysis['risk_level'])->toBe('unclear');
 
     expect(CoughEmbedding::count())->toBe(0);
+
+    Event::assertDispatched(CoughAnalysisCompleted::class);
+});
+
+test('analysis job reports the median over the last three takes', function () {
+    Event::fake([CoughAnalysisCompleted::class]);
+    Storage::fake('local');
+    Http::fake(['*/v1/cough/analyze' => Http::response(array_merge(analyseCoughPayload(), [
+        'risk_level' => 'medium',
+        'risk_score' => 0.5,
+        'findings' => 'Third take',
+    ]))]);
+
+    $consultation = Consultation::factory()->create();
+    scoredCoughCapture($consultation, 0.9, 'Older take');
+    scoredCoughCapture($consultation, 0.3, 'Middle take');
+    $capture = analyseCoughCapture($consultation);
+
+    (new AnalyseCough($consultation->id, $capture->id))
+        ->handle(app(PythonAiClient::class), app(AuditLogger::class));
+
+    $consultation->refresh();
+
+    expect($consultation->cough_risk)->toBe('medium')
+        ->and($consultation->cough_analysis['risk_score'])->toBe(0.5)
+        ->and($consultation->cough_analysis['findings'])->toBe('Third take');
+
+    Event::assertDispatched(CoughAnalysisCompleted::class);
+});
+
+test('failed analysis falls back to the median of previous takes', function () {
+    Event::fake([CoughAnalysisCompleted::class]);
+    Storage::fake('local');
+    Http::fake(['*/v1/cough/analyze' => Http::response(['error' => ['code' => 'down']], 503)]);
+
+    $consultation = Consultation::factory()->create();
+    scoredCoughCapture($consultation, 0.8, 'Older take');
+    scoredCoughCapture($consultation, 0.4, 'Newer take');
+    $capture = analyseCoughCapture($consultation);
+    $job = new AnalyseCough($consultation->id, $capture->id);
+
+    try {
+        $job->handle(app(PythonAiClient::class), app(AuditLogger::class));
+    } catch (AiServiceUnavailable $exception) {
+        $job->failed($exception);
+    }
+
+    $consultation->refresh();
+
+    expect($consultation->cough_risk)->toBe('medium')
+        ->and($consultation->cough_analysis['risk_score'])->toBe(0.6)
+        ->and($consultation->cough_analysis['findings'])->toBe('Newer take');
 
     Event::assertDispatched(CoughAnalysisCompleted::class);
 });

@@ -13,6 +13,8 @@ from app.services.audio import (
     AudioDecodeError,
     NoCoughDetected,
     decode_to_mono_16k,
+    denoise_clip,
+    detect_cough_bursts,
     duration_seconds,
     ensure_audible,
 )
@@ -95,10 +97,25 @@ async def analyze_cough(
 
     duration = duration_seconds(waveform)
 
+    # Isolate cough bursts first so only cough audio reaches inference.
+    # Long silences are dropped (they used to dilute the embedding and trip
+    # the whole-clip sustained gate); a clip with no bursts at all is
+    # silence or room tone and is rejected here.
+    segments = detect_cough_bursts(waveform)
+
+    if not segments:
+        logger.info("Cough sample contains no cough bursts")
+        findings, recommendation = no_cough_explanation()
+
+        return _unclear_response(settings, duration, findings, recommendation)
+
+    clip = denoise_clip(waveform, segments)
+    duration = duration_seconds(clip)
+
     try:
-        ensure_audible(waveform)
+        ensure_audible(clip)
     except NoCoughDetected as exc:
-        logger.info("Cough sample has no audible event: %s", exc)
+        logger.info("Cough bursts are not audible: %s", exc)
         findings, recommendation = no_cough_explanation()
 
         return _unclear_response(settings, duration, findings, recommendation)
@@ -109,7 +126,7 @@ async def analyze_cough(
     available = True
 
     try:
-        embedding = registry.hear().embed(waveform)
+        embedding = registry.hear().embed(clip)
     except ModelNotAvailable as exc:
         available = False
         logger.warning("Cough model unavailable: %s", exc.reason)

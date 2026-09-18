@@ -14,17 +14,19 @@ use Illuminate\Support\Carbon;
  * @property string $path
  * @property string $disk
  * @property string $mime_type
+ * @property array<string, mixed>|null $analysis
  * @property Carbon $captured_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Consultation $consultation
  */
-#[Fillable(['type', 'path', 'disk', 'mime_type', 'captured_at'])]
+#[Fillable(['type', 'path', 'disk', 'mime_type', 'captured_at', 'analysis'])]
 class ConsultCapture extends Model
 {
     protected function casts(): array
     {
         return [
+            'analysis' => 'array',
             'captured_at' => 'datetime',
         ];
     }

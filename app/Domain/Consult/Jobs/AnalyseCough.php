@@ -4,6 +4,7 @@ namespace App\Domain\Consult\Jobs;
 
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\AuditAction;
+use App\Domain\Consult\Actions\AggregateCoughTakes;
 use App\Domain\Consult\DTOs\CoughAnalysisResult;
 use App\Domain\Consult\Events\CoughAnalysisCompleted;
 use App\Domain\Consult\Services\PythonAiClient;
@@ -50,9 +51,13 @@ class AnalyseCough implements ShouldQueue
             mimeType: $capture->mime_type !== '' ? $capture->mime_type : 'audio/webm',
         );
 
+        $capture->forceFill(['analysis' => $result->toArray()])->save();
+
+        $aggregated = (new AggregateCoughTakes)->forConsultation($consultation, $result);
+
         $consultation->forceFill([
-            'cough_analysis' => $result->toArray(),
-            'cough_risk' => $result->riskLevel->value,
+            'cough_analysis' => $aggregated->toArray(),
+            'cough_risk' => $aggregated->riskLevel->value,
         ])->save();
 
         if ($result->embedding !== []) {
@@ -72,13 +77,13 @@ class AnalyseCough implements ShouldQueue
             subject: $consultation,
             destination: 'ai-service',
             context: [
-                'risk_level' => $result->riskLevel->value,
-                'duration_s' => $result->durationSeconds,
-                'available' => $result->model['available'] ?? false,
+                'risk_level' => $aggregated->riskLevel->value,
+                'duration_s' => $aggregated->durationSeconds,
+                'available' => $aggregated->model['available'] ?? false,
             ],
         );
 
-        event(new CoughAnalysisCompleted($consultation, $result));
+        event(new CoughAnalysisCompleted($consultation, $aggregated));
     }
 
     public function failed(?Throwable $exception): void
@@ -91,11 +96,15 @@ class AnalyseCough implements ShouldQueue
 
         $result = CoughAnalysisResult::unanalysed([]);
 
+        ConsultCapture::whereKey($this->captureId)->update(['analysis' => $result->toArray()]);
+
+        $aggregated = (new AggregateCoughTakes)->forConsultation($consultation, $result);
+
         $consultation->forceFill([
-            'cough_analysis' => $result->toArray(),
-            'cough_risk' => $result->riskLevel->value,
+            'cough_analysis' => $aggregated->toArray(),
+            'cough_risk' => $aggregated->riskLevel->value,
         ])->save();
 
-        event(new CoughAnalysisCompleted($consultation, $result));
+        event(new CoughAnalysisCompleted($consultation, $aggregated));
     }
 }

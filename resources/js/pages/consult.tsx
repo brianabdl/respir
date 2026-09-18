@@ -4,6 +4,7 @@ import {
     Mic,
     SendHorizontal,
     Video,
+    VideoOff,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -129,6 +130,186 @@ function StatusPill({
             <span className="size-1.5 rounded-full bg-white/80" />
             {children}
         </span>
+    );
+}
+
+/**
+ * Radial spectrum for Sage's camera tile. Reads real playback frequency
+ * data from `speakerRef` while Sage is speaking (LiveSpeaker.getFrequencyData);
+ * otherwise animates a deterministic idle/thinking hum keyed off the voice
+ * state, so the tile never sits dead-flat between turns.
+ */
+function SageSpectrum({
+    speakerRef,
+    speaking,
+    generating,
+    awaitingSpeech,
+    connecting,
+    connected,
+}: {
+    speakerRef: { current: LiveSpeaker | null };
+    speaking: boolean;
+    generating: boolean;
+    awaitingSpeech: boolean;
+    connecting: boolean;
+    connected: boolean;
+}) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const stateRef = useRef({
+        speaking,
+        generating,
+        awaitingSpeech,
+        connecting,
+        connected,
+    });
+    stateRef.current = {
+        speaking,
+        generating,
+        awaitingSpeech,
+        connecting,
+        connected,
+    };
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (!canvas || !ctx) return;
+
+        const BAR_COUNT = 64;
+        const bins = new Uint8Array(BAR_COUNT);
+        const startTime = performance.now();
+        let raf = 0;
+
+        function resize() {
+            const rect = canvas!.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas!.width = Math.max(1, Math.round(rect.width * dpr));
+            canvas!.height = Math.max(1, Math.round(rect.height * dpr));
+        }
+        resize();
+        // Window resize alone misses this: opening/closing the transcript
+        // panel changes the tile's flex width without the window resizing,
+        // so the canvas's backing buffer must track the element itself.
+        const observer = new ResizeObserver(resize);
+        observer.observe(canvas);
+
+        // How "awake" the tile looks per voice state — real audio (below)
+        // overrides this the moment Sage is actually speaking.
+        function energyFor(): number {
+            const s = stateRef.current;
+            if (s.speaking) return 1;
+            if (s.generating) return 0.55;
+            if (s.awaitingSpeech) return 0.4;
+            if (s.connecting) return 0.25;
+            if (s.connected) return 0.18;
+            return 0.08;
+        }
+
+        // Deterministic burst/pause cadence so idle motion reads as
+        // "breathing", not random jitter.
+        function envelope(t: number): number {
+            const burst = Math.max(0, Math.sin(t * 1.7));
+            const shaped = burst * burst;
+            const flutter = 0.5 + 0.5 * Math.sin(t * 13.0);
+            return shaped * (0.35 + 0.65 * flutter);
+        }
+
+        function proceduralBar(i: number, t: number, energy: number): number {
+            const wobble =
+                0.5 +
+                0.5 *
+                    Math.sin(i * 0.37 + t * 2.3) *
+                    Math.sin(i * 0.13 - t * 1.1 + i);
+            const env = energy * (0.3 + 0.7 * envelope(t));
+            return Math.max(0, Math.min(1, env * (0.25 + 0.75 * wobble)));
+        }
+
+        function draw(now: number) {
+            const t = (now - startTime) / 1000;
+            const energy = energyFor();
+            const live =
+                stateRef.current.speaking &&
+                speakerRef.current?.getFrequencyData(bins);
+
+            const w = canvas!.width;
+            const h = canvas!.height;
+            ctx!.clearRect(0, 0, w, h);
+
+            const cx = w / 2;
+            const cy = h / 2;
+            const minDim = Math.min(w, h);
+            const coreBase = minDim * 0.1;
+            const barInner = minDim * 0.16;
+            const barMax = minDim * 0.32;
+            const barW = Math.max(
+                1.5,
+                ((2 * Math.PI * barInner) / BAR_COUNT) * 0.55,
+            );
+
+            let rms = 0;
+
+            for (let i = 0; i < BAR_COUNT; i++) {
+                const magnitude = live
+                    ? bins[i] / 255
+                    : proceduralBar(i, t, energy);
+                rms += magnitude;
+
+                const angle = (i / BAR_COUNT) * Math.PI * 2 - Math.PI / 2;
+                const len = barInner + magnitude * barMax;
+                const x1 = cx + Math.cos(angle) * barInner;
+                const y1 = cy + Math.sin(angle) * barInner;
+                const x2 = cx + Math.cos(angle) * len;
+                const y2 = cy + Math.sin(angle) * len;
+
+                ctx!.strokeStyle = `rgba(255,255,255,${0.2 + magnitude * 0.65})`;
+                ctx!.lineWidth = barW;
+                ctx!.lineCap = 'round';
+                ctx!.beginPath();
+                ctx!.moveTo(x1, y1);
+                ctx!.lineTo(x2, y2);
+                ctx!.stroke();
+            }
+            rms /= BAR_COUNT;
+
+            const coreR = coreBase + rms * coreBase * 1.6;
+            const glow = ctx!.createRadialGradient(
+                cx,
+                cy,
+                0,
+                cx,
+                cy,
+                coreR * 3,
+            );
+            glow.addColorStop(0, `rgba(255,255,255,${0.3 + rms * 0.35})`);
+            glow.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx!.fillStyle = glow;
+            ctx!.beginPath();
+            ctx!.arc(cx, cy, coreR * 3, 0, Math.PI * 2);
+            ctx!.fill();
+
+            ctx!.fillStyle = '#ffffff';
+            ctx!.beginPath();
+            ctx!.arc(cx, cy, coreR, 0, Math.PI * 2);
+            ctx!.fill();
+
+            raf = requestAnimationFrame(draw);
+        }
+
+        raf = requestAnimationFrame(draw);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            observer.disconnect();
+        };
+    }, [speakerRef]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            role="img"
+            aria-label="Sage voice activity"
+            className="absolute inset-0 size-full"
+        />
     );
 }
 
@@ -1060,7 +1241,7 @@ export default function Consult({
         !sessionStarted && Boolean(consultation.cough_analysis);
 
     return (
-        <div className="relative h-dvh w-full overflow-hidden bg-black text-white">
+        <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-black text-white sm:flex-row">
             {consentOpen && (
                 <ConsentGate
                     consultationId={consultation.id}
@@ -1072,240 +1253,267 @@ export default function Consult({
                 />
             )}
 
-            <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="absolute inset-0 size-full object-cover"
-            />
-
-            <div className="pointer-events-none absolute inset-0 bg-black/20" />
-
-            <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4 sm:p-5">
-                <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 items-center justify-center rounded-[14px] bg-white text-xs font-bold text-black">
-                        S
-                    </span>
-                    <div className="flex flex-col">
-                        <span className="text-sm font-semibold">Respair</span>
-                        <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
-                            pre-visit · voice consult
-                        </span>
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                    {connecting && <StatusPill pulse>connecting</StatusPill>}
-                    {awaitingSpeech && (
-                        <StatusPill pulse>sage is ready</StatusPill>
-                    )}
-                    {speaking && <StatusPill pulse>talking</StatusPill>}
-                    {generating && <StatusPill>generating</StatusPill>}
-                    {connected &&
-                        !speaking &&
-                        !generating &&
-                        !connecting &&
-                        !awaitingSpeech && (
-                            <StatusPill pulse>listening</StatusPill>
-                        )}
-                    <StatusPill>
-                        {cameraOn ? 'camera live' : 'camera off'}
-                    </StatusPill>
-                </div>
-            </div>
-
-            {awaitingCough && !recordingCough && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
-                    <div className="flex flex-col items-center gap-4 text-center">
-                        <div className="relative flex size-28 items-center justify-center rounded-full border border-white/25 bg-white/5">
-                            <span className="absolute inset-0 animate-ping rounded-full border border-white/30" />
-                            <Mic className="size-10 text-[#94A3B8]" />
-                        </div>
-                        <div>
-                            <p className="font-mono text-[10px] tracking-widest text-[#A1A1AA] uppercase">
-                                get ready
-                            </p>
-                            <p className="mt-1 text-lg font-semibold">
-                                Cough sample coming next
-                            </p>
-                            <p className="mt-1 text-sm text-[#A1A1AA]">
-                                Recording starts automatically — no need to
-                                press anything.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {recordingCough && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
-                    <div className="flex flex-col items-center gap-4 text-center">
-                        <div className="relative flex size-28 items-center justify-center rounded-full border border-white/50 bg-white/10">
-                            <span className="absolute inset-0 animate-ping rounded-full border border-white/40" />
-                            <span className="absolute inset-2 animate-pulse rounded-full bg-white/10" />
-                            <Mic className="relative size-10 animate-pulse text-white" />
-                        </div>
-                        <div>
-                            <p className="font-mono text-[10px] tracking-widest text-[#94A3B8] uppercase">
-                                recording
-                            </p>
-                            <p className="mt-1 text-lg font-semibold">
-                                Cough twice toward the microphone
-                            </p>
-                            <div
-                                role="meter"
-                                aria-label="Microphone input level"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={Math.round(micLevel * 100)}
-                                className="mx-auto mt-3 h-1 w-3/4 max-w-56 overflow-hidden rounded-full bg-white/10"
-                            >
-                                <div
-                                    className="h-full rounded-full bg-white/70 transition-[width] duration-150"
-                                    style={{
-                                        width: `${Math.min(100, Math.round(micLevel * 100))}%`,
-                                    }}
-                                />
+            <div className="relative min-h-0 flex-1 overflow-hidden">
+                <div className="absolute inset-0 grid grid-cols-1 gap-2 p-2 sm:grid-cols-2 sm:gap-3 sm:p-3">
+                    <div className="relative overflow-hidden rounded-[18px] bg-[#111114]">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="absolute inset-0 size-full object-cover"
+                        />
+                        {!cameraOn && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="flex size-16 items-center justify-center rounded-full border border-white/15 bg-white/5">
+                                    <VideoOff className="size-6 text-[#71717A]" />
+                                </div>
                             </div>
-                        </div>
+                        )}
+                        <span className="absolute bottom-3 left-3 rounded-full bg-black/50 px-2.5 py-1 font-mono text-[10px] tracking-widest text-[#E4E4E7] uppercase backdrop-blur">
+                            You
+                        </span>
                     </div>
-                </div>
-            )}
 
-            {analysisPending && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
-                    <div className="flex items-center gap-2 rounded-[14px] border border-white/10 bg-[#0B0B0D]/90 px-4 py-3">
-                        <LoaderCircle className="size-4 animate-spin text-[#94A3B8]" />
-                        <span className="font-mono text-[10px] tracking-widest text-[#A1A1AA] uppercase">
-                            analysing sample securely
+                    <div className="relative overflow-hidden rounded-[18px] border border-white/10 bg-[#111114]">
+                        <SageSpectrum
+                            speakerRef={speakerRef}
+                            speaking={speaking}
+                            generating={generating}
+                            awaitingSpeech={awaitingSpeech}
+                            connecting={connecting}
+                            connected={connected}
+                        />
+                        <span className="absolute bottom-3 left-3 rounded-full bg-black/50 px-2.5 py-1 font-mono text-[10px] tracking-widest text-[#E4E4E7] uppercase backdrop-blur">
+                            Sage
                         </span>
                     </div>
                 </div>
-            )}
 
-            {!sessionStarted && !connecting && !awaitingSpeech && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-black/55 px-4 backdrop-blur-sm">
+                <div className="pointer-events-none absolute inset-0 bg-black/20" />
+
+                <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4 sm:p-5">
                     <div className="flex items-center gap-2.5">
-                        <span className="flex size-10 items-center justify-center rounded-[14px] bg-white text-sm font-bold text-black">
+                        <span className="flex size-8 items-center justify-center rounded-[14px] bg-white text-xs font-bold text-black">
                             S
                         </span>
                         <div className="flex flex-col">
-                            <span className="text-base font-semibold">
+                            <span className="text-sm font-semibold">
                                 Respair
                             </span>
-                            <span className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
-                                pre-visit consult
+                            <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
+                                pre-visit · voice consult
                             </span>
                         </div>
                     </div>
-                    <p className="max-w-sm text-center text-sm text-[#A1A1AA]">
-                        Sage, your voice assistant, will greet you live — like a
-                        real conversation. The camera fills this screen and the
-                        transcript lives in the chat panel.
-                    </p>
-                    {showingPreviousAssessment && (
-                        <p className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
-                            previous cough screening on file
-                        </p>
-                    )}
-                    <div className="flex flex-col items-center gap-3">
-                        <Button
-                            className="rounded-[14px] bg-white px-6 font-semibold text-black hover:bg-[#CBD5E1]"
-                            size="lg"
-                            onClick={() => {
-                                if (consented) {
-                                    void startVoiceConsult();
-                                } else {
-                                    setConsentOpen(true);
-                                }
-                            }}
-                        >
-                            <Mic className="size-5" />
-                            Start voice consult
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="rounded-[14px] border border-white/15 bg-black/30 font-semibold text-white hover:bg-white/10"
-                            size="sm"
-                            onClick={toggleCamera}
-                        >
-                            <Video className="size-4" />
-                            {cameraOn
-                                ? 'Camera on — tap to stop'
-                                : 'Start camera'}
-                        </Button>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        {connecting && (
+                            <StatusPill pulse>connecting</StatusPill>
+                        )}
+                        {awaitingSpeech && (
+                            <StatusPill pulse>sage is ready</StatusPill>
+                        )}
+                        {speaking && <StatusPill pulse>talking</StatusPill>}
+                        {generating && <StatusPill>generating</StatusPill>}
+                        {connected &&
+                            !speaking &&
+                            !generating &&
+                            !connecting &&
+                            !awaitingSpeech && (
+                                <StatusPill pulse>listening</StatusPill>
+                            )}
+                        <StatusPill>
+                            {cameraOn ? 'camera live' : 'camera off'}
+                        </StatusPill>
                     </div>
                 </div>
-            )}
 
-            {(sessionStarted || connecting || awaitingSpeech) && (
-                <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 p-4 sm:p-5">
-                    {sessionStarted && voiceHint && (
-                        <span className="rounded-full border border-white/10 bg-black/40 px-4 py-1.5 font-mono text-[10px] tracking-widest text-[#A1A1AA] uppercase backdrop-blur">
-                            {voiceHint}
-                        </span>
-                    )}
+                {awaitingCough && !recordingCough && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+                        <div className="flex flex-col items-center gap-4 text-center">
+                            <div className="relative flex size-28 items-center justify-center rounded-full border border-white/25 bg-white/5">
+                                <span className="absolute inset-0 animate-ping rounded-full border border-white/30" />
+                                <Mic className="size-10 text-[#94A3B8]" />
+                            </div>
+                            <div>
+                                <p className="font-mono text-[10px] tracking-widest text-[#A1A1AA] uppercase">
+                                    get ready
+                                </p>
+                                <p className="mt-1 text-lg font-semibold">
+                                    Cough sample coming next
+                                </p>
+                                <p className="mt-1 text-sm text-[#A1A1AA]">
+                                    Recording starts automatically — no need to
+                                    press anything.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={
-                                cameraOn ? 'Stop camera' : 'Start camera'
-                            }
-                            onClick={toggleCamera}
-                            className={cn(
-                                'rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10',
-                                cameraOn &&
-                                    'bg-white text-black hover:bg-[#CBD5E1]',
-                            )}
-                        >
-                            <Video className="size-5" />
-                        </Button>
+                {recordingCough && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+                        <div className="flex flex-col items-center gap-4 text-center">
+                            <div className="relative flex size-28 items-center justify-center rounded-full border border-white/50 bg-white/10">
+                                <span className="absolute inset-0 animate-ping rounded-full border border-white/40" />
+                                <span className="absolute inset-2 animate-pulse rounded-full bg-white/10" />
+                                <Mic className="relative size-10 animate-pulse text-white" />
+                            </div>
+                            <div>
+                                <p className="font-mono text-[10px] tracking-widest text-[#94A3B8] uppercase">
+                                    recording
+                                </p>
+                                <p className="mt-1 text-lg font-semibold">
+                                    Cough twice toward the microphone
+                                </p>
+                                <div
+                                    role="meter"
+                                    aria-label="Microphone input level"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={Math.round(micLevel * 100)}
+                                    className="mx-auto mt-3 h-1 w-3/4 max-w-56 overflow-hidden rounded-full bg-white/10"
+                                >
+                                    <div
+                                        className="h-full rounded-full bg-white/70 transition-[width] duration-150"
+                                        style={{
+                                            width: `${Math.min(100, Math.round(micLevel * 100))}%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                        {cameraOn && (
+                {analysisPending && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+                        <div className="flex items-center gap-2 rounded-[14px] border border-white/10 bg-[#0B0B0D]/90 px-4 py-3">
+                            <LoaderCircle className="size-4 animate-spin text-[#94A3B8]" />
+                            <span className="font-mono text-[10px] tracking-widest text-[#A1A1AA] uppercase">
+                                analysing sample securely
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {!sessionStarted && !connecting && !awaitingSpeech && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-black/55 px-4 backdrop-blur-sm">
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex size-10 items-center justify-center rounded-[14px] bg-white text-sm font-bold text-black">
+                                S
+                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-base font-semibold">
+                                    Respair
+                                </span>
+                                <span className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
+                                    pre-visit consult
+                                </span>
+                            </div>
+                        </div>
+                        <p className="max-w-sm text-center text-sm text-[#A1A1AA]">
+                            Sage, your voice assistant, will greet you live —
+                            like a real conversation. Your camera sits beside
+                            Sage's voice, and the transcript lives in the chat
+                            panel.
+                        </p>
+                        {showingPreviousAssessment && (
+                            <p className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
+                                previous cough screening on file
+                            </p>
+                        )}
+                        <div className="flex flex-col items-center gap-3">
+                            <Button
+                                className="rounded-[14px] bg-white px-6 font-semibold text-black hover:bg-[#CBD5E1]"
+                                size="lg"
+                                onClick={() => {
+                                    if (consented) {
+                                        void startVoiceConsult();
+                                    } else {
+                                        setConsentOpen(true);
+                                    }
+                                }}
+                            >
+                                <Mic className="size-5" />
+                                Start voice consult
+                            </Button>
                             <Button
                                 variant="ghost"
+                                className="rounded-[14px] border border-white/15 bg-black/30 font-semibold text-white hover:bg-white/10"
                                 size="sm"
-                                onClick={() => void capturePhoto()}
-                                className="rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10"
+                                onClick={toggleCamera}
                             >
-                                Save photo
+                                <Video className="size-4" />
+                                {cameraOn
+                                    ? 'Camera on — tap to stop'
+                                    : 'Start camera'}
                             </Button>
+                        </div>
+                    </div>
+                )}
+
+                {(sessionStarted || connecting || awaitingSpeech) && (
+                    <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 p-4 sm:p-5">
+                        {sessionStarted && voiceHint && (
+                            <span className="rounded-full border border-white/10 bg-black/40 px-4 py-1.5 font-mono text-[10px] tracking-widest text-[#A1A1AA] uppercase backdrop-blur">
+                                {voiceHint}
+                            </span>
                         )}
 
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Open chat"
-                            onClick={() => {
-                                setChatOpen(true);
-                                setUnreadCount(0);
-                            }}
-                            className="relative rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10"
-                        >
-                            <MessageSquare className="size-5" />
-                            {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-black">
-                                    {unreadCount}
-                                </span>
-                            )}
-                        </Button>
-                    </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={
+                                    cameraOn ? 'Stop camera' : 'Start camera'
+                                }
+                                onClick={toggleCamera}
+                                className={cn(
+                                    'rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10',
+                                    cameraOn &&
+                                        'bg-white text-black hover:bg-[#CBD5E1]',
+                                )}
+                            >
+                                <Video className="size-5" />
+                            </Button>
 
-                    {captures.length > 0 && (
-                        <p className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
-                            {captures.length} capture
-                            {captures.length === 1 ? '' : 's'} saved for the
-                            doctor
-                        </p>
-                    )}
-                </div>
-            )}
+                            {cameraOn && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => void capturePhoto()}
+                                    className="rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10"
+                                >
+                                    Save photo
+                                </Button>
+                            )}
+
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Open chat"
+                                onClick={() => {
+                                    setChatOpen(true);
+                                    setUnreadCount(0);
+                                }}
+                                className="relative rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10"
+                            >
+                                <MessageSquare className="size-5" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-black">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {(sessionStarted || connecting || awaitingSpeech) && chatOpen && (
-                <aside className="animate-panel-in absolute top-4 right-4 bottom-4 z-30 flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[#0B0B0D]/95 shadow-2xl backdrop-blur">
+                <aside className="animate-panel-in flex h-[45vh] w-full shrink-0 flex-col overflow-hidden border-t border-white/10 bg-[#0B0B0D]/95 shadow-2xl backdrop-blur sm:h-full sm:w-96 sm:border-t-0 sm:border-l">
                     <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                         <div className="flex flex-col">
                             <h2 className="text-sm font-semibold">
@@ -1410,197 +1618,6 @@ export default function Consult({
                             <SendHorizontal className="size-4" />
                         </Button>
                     </form>
-
-                    <div className="border-t border-white/10 px-5 py-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <h3 className="text-sm font-semibold">
-                                    Cough sample
-                                </h3>
-                                <span className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
-                                    TB acoustic screen
-                                </span>
-                            </div>
-                            {analysisPending && (
-                                <StatusPill>analysing</StatusPill>
-                            )}
-                            {coughPhase === 'error' && (
-                                <StatusPill>retry needed</StatusPill>
-                            )}
-                            {coughRisk &&
-                                !analysisPending &&
-                                coughPhase !== 'error' && (
-                                    <StatusPill>{coughRisk} risk</StatusPill>
-                                )}
-                        </div>
-
-                        {showingPreviousAssessment && analysis && (
-                            <p className="mb-3 text-xs text-[#71717A]">
-                                Previous session result. Start a new consult to
-                                record a fresh sample.
-                            </p>
-                        )}
-
-                        <Button
-                            className="w-full rounded-[14px] bg-white font-semibold text-black hover:bg-[#CBD5E1]"
-                            onClick={() => void startCough()}
-                            disabled={
-                                recordingCough ||
-                                awaitingCough ||
-                                analysisPending
-                            }
-                        >
-                            <Mic
-                                className={
-                                    recordingCough
-                                        ? 'size-4 animate-pulse'
-                                        : 'size-4'
-                                }
-                            />
-                            {recordingCough
-                                ? 'Recording…'
-                                : analysisPending
-                                  ? 'Analysing…'
-                                  : coughPhase === 'error'
-                                    ? 'Try Again'
-                                    : coughPhase === 'complete'
-                                      ? 'Record New Sample'
-                                      : 'Record Cough'}
-                        </Button>
-
-                        {quietSample && !recordingCough && (
-                            <p className="mt-2 text-xs text-[#A1A1AA]">
-                                That sample was very quiet — move closer to the
-                                microphone and try again.
-                            </p>
-                        )}
-
-                        {analysis && !analysisPending && (
-                            <div className="mt-4 space-y-3 text-sm text-[#E4E4E7]">
-                                {typeof analysis.risk_score === 'number' &&
-                                    analysis.risk_level !== 'unclear' && (
-                                        <div>
-                                            <div
-                                                className="relative flex h-2 overflow-visible rounded-full"
-                                                role="img"
-                                                aria-label={`Estimated risk score ${Math.round(Math.min(100, Math.max(0, analysis.risk_score * 100)))} out of 100, ${analysis.risk_level} band`}
-                                            >
-                                                <div
-                                                    className="rounded-l-full bg-white/10"
-                                                    style={{
-                                                        width: `${RISK_BAND_CUTOFFS.medium * 100}%`,
-                                                    }}
-                                                />
-                                                <div
-                                                    className="bg-white/25"
-                                                    style={{
-                                                        width: `${(RISK_BAND_CUTOFFS.high - RISK_BAND_CUTOFFS.medium) * 100}%`,
-                                                    }}
-                                                />
-                                                <div className="flex-1 rounded-r-full bg-white/50" />
-                                                <div
-                                                    className={`absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black ${RISK_MARKER_STYLES[analysis.risk_level ?? 'unclear'] ?? 'bg-white/40'}`}
-                                                    style={{
-                                                        left: `${Math.min(100, Math.max(0, analysis.risk_score * 100))}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="mt-1 flex text-xs text-[#A1A1AA]">
-                                                <span
-                                                    style={{
-                                                        width: `${RISK_BAND_CUTOFFS.medium * 100}%`,
-                                                    }}
-                                                >
-                                                    Low
-                                                </span>
-                                                <span
-                                                    className="text-center"
-                                                    style={{
-                                                        width: `${(RISK_BAND_CUTOFFS.high - RISK_BAND_CUTOFFS.medium) * 100}%`,
-                                                    }}
-                                                >
-                                                    Medium
-                                                </span>
-                                                <span className="flex-1 text-right">
-                                                    High
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                {analysis.risk_level &&
-                                    RISK_MEANINGS[analysis.risk_level] && (
-                                        <p>
-                                            <span className="font-medium">
-                                                What this means:{' '}
-                                            </span>
-                                            {RISK_MEANINGS[analysis.risk_level]}
-                                        </p>
-                                    )}
-                                <p>
-                                    <span className="font-medium">
-                                        Findings:
-                                    </span>{' '}
-                                    {analysis.findings}
-                                </p>
-                                <p>
-                                    <span className="font-medium">
-                                        Recommendation:
-                                    </span>{' '}
-                                    {analysis.recommendation}
-                                </p>
-                                {typeof analysis.duration_s === 'number' &&
-                                    analysis.duration_s > 0 && (
-                                        <p className="text-xs text-[#71717A]">
-                                            Sample length:{' '}
-                                            {analysis.duration_s.toFixed(1)}{' '}
-                                            seconds.
-                                        </p>
-                                    )}
-                                {analysis.model?.available === false && (
-                                    <p className="text-xs text-[#71717A]">
-                                        Limited result — the analysis model was
-                                        offline when this sample was processed.
-                                    </p>
-                                )}
-                                {(analysis.risk_level === 'low' ||
-                                    analysis.risk_level === 'medium' ||
-                                    analysis.risk_level === 'high') && (
-                                    <div>
-                                        <p className="font-medium">
-                                            What happens next:
-                                        </p>
-                                        <ol className="ml-5 list-decimal space-y-1">
-                                            <li>
-                                                Your doctor reviews this result
-                                                together with your interview
-                                                notes.
-                                            </li>
-                                            <li>
-                                                You will still be examined in
-                                                person — this result guides that
-                                                exam, it does not replace it.
-                                            </li>
-                                            <li>
-                                                Mention any new symptoms at your
-                                                visit, such as fever, night
-                                                sweats, or weight loss.
-                                            </li>
-                                        </ol>
-                                    </div>
-                                )}
-                                {analysis.risk_level === 'unclear' && (
-                                    <p>
-                                        Tap Record Cough below to try again with
-                                        a clearer sample.
-                                    </p>
-                                )}
-                                <p className="text-xs text-[#71717A] italic">
-                                    This is not a diagnosis. Please see a doctor
-                                    for a clinical assessment.
-                                </p>
-                            </div>
-                        )}
-                    </div>
                 </aside>
             )}
         </div>

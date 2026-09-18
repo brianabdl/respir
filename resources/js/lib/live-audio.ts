@@ -71,6 +71,7 @@ export class LiveMic {
  */
 export class LiveSpeaker {
     private context: AudioContext | null = null;
+    private analyser: AnalyserNode | null = null;
     private queue: AudioBuffer[] = [];
     private nextTime = 0;
     private current: AudioBufferSourceNode | null = null;
@@ -78,8 +79,26 @@ export class LiveSpeaker {
     private epoch = 0;
 
     private ensureContext(): AudioContext {
-        this.context ??= new AudioContext({ sampleRate: 24000 });
+        if (!this.context) {
+            this.context = new AudioContext({ sampleRate: 24000 });
+            this.analyser = this.context.createAnalyser();
+            this.analyser.fftSize = 128;
+            this.analyser.smoothingTimeConstant = 0.6;
+            this.analyser.connect(this.context.destination);
+        }
         return this.context;
+    }
+
+    /**
+     * Fills `out` with the current playback spectrum (byte frequency data,
+     * length must match `analyser.frequencyBinCount` = fftSize / 2 = 64).
+     * Returns false before any audio has ever played, when there is no
+     * analyser yet to read from.
+     */
+    getFrequencyData(out: Uint8Array<ArrayBuffer>): boolean {
+        if (!this.analyser) return false;
+        this.analyser.getByteFrequencyData(out);
+        return true;
     }
 
     async enqueue(base64: string): Promise<void> {
@@ -111,7 +130,7 @@ export class LiveSpeaker {
 
             const source = context.createBufferSource();
             source.buffer = buffer;
-            source.connect(context.destination);
+            source.connect(this.analyser ?? context.destination);
             this.current = source;
 
             const startTime = Math.max(context.currentTime, this.nextTime);
@@ -147,6 +166,7 @@ export class LiveSpeaker {
         this.interrupt();
         void this.context?.close();
         this.context = null;
+        this.analyser = null;
         this.queue = [];
         this.nextTime = 0;
         this.playing = false;

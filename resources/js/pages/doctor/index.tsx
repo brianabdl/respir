@@ -190,23 +190,30 @@ export default function DoctorConsultations({
         sort?: string;
     };
 }) {
-    const [riskFilter, setRiskFilter] = useState<RiskFilter>((filters?.risk as RiskFilter) || 'all');
-    const [query, setQuery] = useState(filters?.search || '');
-    const [reviewedFilter, setReviewedFilter] = useState(filters?.reviewed || 'all');
-    const [sortBy, setSortBy] = useState(filters?.sort || 'latest');
+    const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
+    const [query, setQuery] = useState('');
 
-    // Apply filters to server
-    const applyFilters = () => {
-        const params = new URLSearchParams();
-        if (query) params.set('search', query);
-        if (riskFilter !== 'all') params.set('risk', riskFilter);
-        if (reviewedFilter !== 'all') params.set('reviewed', reviewedFilter);
-        if (sortBy !== 'latest') params.set('sort', sortBy);
-        
-        window.location.href = consultationsIndex() + '?' + params.toString();
-    };
+    const visible = useMemo(() => {
+        const needle = query.trim().toLowerCase();
 
-    const visible = consultations.data;
+        return consultations.data.filter((consultation) => {
+            if (
+                riskFilter === 'pending'
+                    ? consultation.cough_risk
+                    : riskFilter !== 'all' &&
+                      consultation.cough_risk !== riskFilter
+            ) {
+                return false;
+            }
+
+            return (
+                needle.length === 0 ||
+                consultation.patient.name.toLowerCase().includes(needle) ||
+                consultation.patient.email.toLowerCase().includes(needle) ||
+                consultation.id.toString().includes(needle)
+            );
+        });
+    }, [consultations.data, query, riskFilter]);
 
     const isDefaultView = riskFilter === 'all' && query.trim() === '';
     const attention = visible.filter(

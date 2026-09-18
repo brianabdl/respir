@@ -210,6 +210,12 @@ export default function DoctorConsultationShow({
                         </div>
 
                         <div className="flex items-center gap-3">
+                            <a href={`/doctor/consultations/${consultation.id}/export`} target="_blank">
+                                <Button variant="outline" size="sm" className="rounded-full border-white/10 bg-transparent text-[#94A3B8] hover:border-white/20 hover:bg-white/5">
+                                    <Download className="mr-2 size-4" />
+                                    Export PDF
+                                </Button>
+                            </a>
                             {consultation.is_reviewed && (
                                 <Badge className="rounded-full border border-green-500/20 bg-green-500/10 text-green-400">
                                     <CheckCircle2 className="mr-1 size-3" />

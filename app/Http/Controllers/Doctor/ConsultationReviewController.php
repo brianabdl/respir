@@ -9,6 +9,7 @@ use App\Domain\Consult\Actions\QueueSummary;
 use App\Domain\Consult\Jobs\GenerateClinicianBriefing;
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -28,11 +29,53 @@ class ConsultationReviewController extends Controller
             actor: $request->user(),
         );
 
-        $consultations = Consultation::query()
+        $query = Consultation::query()
             ->with(['user:id,name,email', 'sessionLogs'])
-            ->withCount('captures')
-            ->latest()
-            ->paginate(15)
+            ->withCount('captures');
+
+        // Search by patient name, email, or consultation ID
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Filter by risk level
+        if ($risk = $request->input('risk')) {
+            if ($risk === 'pending') {
+                $query->whereNull('cough_risk');
+            } else {
+                $query->where('cough_risk', $risk);
+            }
+        }
+
+        // Filter by review status
+        if ($reviewed = $request->input('reviewed')) {
+            $query->where('is_reviewed', $reviewed === 'true');
+        }
+
+        // Filter by date range
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        // Sorting
+        $sortBy = $request->input('sort', 'latest');
+        match ($sortBy) {
+            'oldest' => $query->oldest(),
+            'risk_high' => $query->orderByRaw("CASE WHEN cough_risk = 'high' THEN 1 WHEN cough_risk = 'medium' THEN 2 WHEN cough_risk = 'low' THEN 3 ELSE 4 END"),
+            'risk_low' => $query->orderByRaw("CASE WHEN cough_risk = 'low' THEN 1 WHEN cough_risk = 'medium' THEN 2 WHEN cough_risk = 'high' THEN 3 ELSE 4 END"),
+            default => $query->latest(),
+        };
+
+        $consultations = $query->paginate(15)
             ->through(fn (Consultation $consultation) => [
                 'id' => $consultation->id,
                 'patient' => $consultation->user->only(['id', 'name', 'email']),
@@ -54,6 +97,7 @@ class ConsultationReviewController extends Controller
         return inertia('doctor/index', [
             'consultations' => $consultations,
             'summary' => $this->queueSummary->get(),
+            'filters' => $request->only(['search', 'risk', 'reviewed', 'date_from', 'date_to', 'sort']),
         ]);
     }
 
@@ -188,5 +232,27 @@ class ConsultationReviewController extends Controller
             'message' => 'Consultation marked as reviewed',
             'reviewed_at' => $consultation->reviewed_at?->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Export consultation report as PDF.
+     */
+    public function exportPdf(Request $request, Consultation $consultation)
+    {
+        $consultation->load(['user', 'reviewer']);
+
+        $this->auditLogger->record(
+            AuditAction::ConsultationViewed,
+            actor: $request->user(),
+            subject: $consultation,
+            context: ['action' => 'pdf_export'],
+        );
+
+        $pdf = Pdf::loadView('pdf.consultation-report', [
+            'consultation' => $consultation,
+            'doctor' => $request->user(),
+        ]);
+
+        return $pdf->download('consultation-'.$consultation->id.'-'.now()->format('Y-m-d').'.pdf');
     }
 }

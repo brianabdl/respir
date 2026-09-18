@@ -6,6 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { dashboard } from '@/routes';
 import {
     index as consultationsIndex,
@@ -218,6 +226,7 @@ export default function DoctorConsultations({
     const [query, setQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [bulkReviewing, setBulkReviewing] = useState(false);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds((prev) =>
@@ -241,12 +250,9 @@ export default function DoctorConsultations({
             return;
         }
 
-        const confirmed = confirm(
-            `Mark ${selectedIds.length} consultation(s) as reviewed?`,
-        );
-        if (!confirmed) return;
-
+        setConfirmDialogOpen(false);
         setBulkReviewing(true);
+        
         try {
             await Promise.all(
                 selectedIds.map((id) =>
@@ -400,7 +406,7 @@ export default function DoctorConsultations({
                                 <div className="flex gap-2">
                                     <Button
                                         size="sm"
-                                        onClick={handleBulkMarkReviewed}
+                                        onClick={() => setConfirmDialogOpen(true)}
                                         disabled={bulkReviewing}
                                         className="bg-orange-500 text-white hover:bg-orange-600"
                                     >
@@ -506,6 +512,55 @@ export default function DoctorConsultations({
                     </div>
                 </div>
             </div>
+
+            {/* Custom Bulk Review Confirmation Dialog */}
+            <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+                <DialogContent className="border-white/10 bg-[#0B0B0D] text-white sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            <svg className="size-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Bulk Mark as Reviewed
+                        </DialogTitle>
+                        <DialogDescription className="text-[#94A3B8] pt-2">
+                            Are you sure you want to mark {selectedIds.length} consultation(s) as reviewed?
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="py-4">
+                        <div className="rounded-lg border border-white/10 bg-[#000000]/50 p-4 space-y-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[#71717A]">Total Selected:</span>
+                                <span className="font-mono text-lg font-semibold text-orange-400">{selectedIds.length}</span>
+                            </div>
+                            <div className="pt-2 border-t border-white/5">
+                                <p className="text-xs text-[#71717A]">
+                                    Selected consultations will be marked as <strong className="text-white">"Reviewed"</strong> and status badge will appear on the dashboard.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setConfirmDialogOpen(false)}
+                            disabled={bulkReviewing}
+                            className="rounded-full border-white/10 text-[#94A3B8] hover:bg-white/5"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleBulkMarkReviewed}
+                            disabled={bulkReviewing}
+                            className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
+                        >
+                            {bulkReviewing ? 'Processing...' : 'Confirm Review'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
@@ -518,3 +573,7 @@ DoctorConsultations.layout = {
 };
 
 export type { ConsultationRow };
+
+// force rebuild 20.30.59
+
+// translation complete 20.36.02

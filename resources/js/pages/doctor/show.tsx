@@ -19,6 +19,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { briefing as briefingRoute } from '@/actions/App/Http/Controllers/Doctor/ConsultationReviewController';
 import { dashboard } from '@/routes';
@@ -99,6 +107,7 @@ export default function DoctorConsultationShow({
     const [loadingSimilar, setLoadingSimilar] = useState(false);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
     useEcho(
         'doctor-queue',
@@ -160,6 +169,8 @@ export default function DoctorConsultationShow({
 
     const handleMarkReviewed = async () => {
         setReviewing(true);
+        setConfirmDialogOpen(false);
+        
         try {
             const response = await fetch(`/doctor/consultations/${consultation.id}/review`, {
                 method: 'POST',
@@ -398,8 +409,20 @@ export default function DoctorConsultationShow({
                                                         <Card className="border-yellow-500/20 bg-yellow-500/5">
                                                             <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
                                                                 <AlertTriangle className="size-12 text-yellow-400" />
-                                                                <p className="mt-4 text-[#FFFFFF]">No AI Briefing generated yet</p>
-                                                                <p className="mt-1 text-sm text-[#71717A]">Click "Generate Briefing" to create a summary of this consultation</p>
+                                                                <p className="mt-4 text-[#FFFFFF] font-semibold">AI Briefing Not Available Yet</p>
+                                                                <p className="mt-2 text-sm text-[#71717A] text-center max-w-md">
+                                                                    AI Briefing will be automatically generated after patient completes the consultation:
+                                                                </p>
+                                                                <ul className="mt-3 text-sm text-[#94A3B8] space-y-1 text-left">
+                                                                    <li>✓ Chat with AI Sage for symptoms screening</li>
+                                                                    <li>✓ <strong className="text-white">Record cough audio</strong> for AI analysis</li>
+                                                                    <li>✓ Upload photos/supporting media (optional)</li>
+                                                                    <li>✓ Close/finish consultation</li>
+                                                                </ul>
+                                                                <p className="mt-4 text-xs text-[#71717A] text-center">
+                                                                    Status: <span className="font-mono text-yellow-400">{consultation.status}</span>
+                                                                    {!consultation.cough_risk && <span className="ml-2">| Missing: <strong className="text-white">Cough Recording</strong></span>}
+                                                                </p>
                                                             </CardContent>
                                                         </Card>
                                                     )}
@@ -634,7 +657,7 @@ export default function DoctorConsultationShow({
 
                                                         {!consultation.is_reviewed && (
                                                             <Button
-                                                                onClick={handleMarkReviewed}
+                                                                onClick={() => setConfirmDialogOpen(true)}
                                                                 disabled={reviewing}
                                                                 variant="outline"
                                                                 className="rounded-full border-green-500/20 bg-green-500/10 text-green-400 hover:bg-green-500/20"
@@ -854,6 +877,65 @@ export default function DoctorConsultationShow({
                     </div>
                 </div>
             </div>
+
+            {/* Custom Confirmation Dialog */}
+            <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+                <DialogContent className="border-white/10 bg-[#0B0B0D] text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            <CheckCircle2 className="size-6 text-green-400" />
+                            Mark as Reviewed
+                        </DialogTitle>
+                        <DialogDescription className="text-[#94A3B8] pt-2">
+                            Are you sure you want to mark this consultation as reviewed?
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="py-4">
+                        <div className="rounded-lg border border-white/10 bg-[#000000]/50 p-4 space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[#71717A]">Patient:</span>
+                                <span className="font-medium text-white">{consultation.patient.name}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[#71717A]">Consultation ID:</span>
+                                <span className="font-mono text-[#94A3B8]">#{consultation.id}</span>
+                            </div>
+                            {consultation.cough_risk && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-[#71717A]">Risk Level:</span>
+                                    <Badge className={
+                                        consultation.cough_risk === 'high' 
+                                            ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                            : consultation.cough_risk === 'medium'
+                                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                                            : 'bg-green-500/10 text-green-400 border-green-500/20'
+                                    }>
+                                        {consultation.cough_risk.toUpperCase()}
+                                    </Badge>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setConfirmDialogOpen(false)}
+                            className="rounded-full border-white/10 text-[#94A3B8] hover:bg-white/5"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleMarkReviewed}
+                            disabled={reviewing}
+                            className="rounded-full bg-green-500 text-white hover:bg-green-600"
+                        >
+                            {reviewing ? 'Processing...' : 'Confirm'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
@@ -868,3 +950,5 @@ DoctorConsultationShow.layout = {
         { title: 'Consultation' },
     ],
 };
+
+// trigger rebuild

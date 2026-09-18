@@ -30,6 +30,14 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'date_of_birth' => fake()->date('Y-m-d', '-18 years'),
+            'sex' => fake()->randomElement(['male', 'female', 'other', 'unknown']),
+            'phone' => fake()->numerify('+1##########'),
+            'address' => fake()->address(),
+            'emergency_contact_name' => fake()->name(),
+            'emergency_contact_phone' => fake()->numerify('+1##########'),
+            'profile_completed_at' => now(),
+            'privacy_policy_accepted_at' => now(),
         ];
     }
 
@@ -40,6 +48,24 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the patient has not yet completed the post-registration
+     * personalization step.
+     */
+    public function needsOnboarding(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'date_of_birth' => null,
+            'sex' => null,
+            'phone' => null,
+            'address' => null,
+            'emergency_contact_name' => null,
+            'emergency_contact_phone' => null,
+            'profile_completed_at' => null,
+            'privacy_policy_accepted_at' => null,
         ]);
     }
 

@@ -3,11 +3,18 @@
 use App\Http\Controllers\Consult\ConsultationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Doctor\ConsultationReviewController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Middleware\EnsureDoctor;
 use App\Http\Middleware\EnsurePatient;
+use App\Http\Middleware\EnsureProfileCompleted;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', EnsurePatient::class])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('onboarding/profile', [OnboardingController::class, 'edit'])->name('onboarding.profile.edit');
+    Route::post('onboarding/profile', [OnboardingController::class, 'update'])->name('onboarding.profile.update');
+});
+
+Route::middleware(['auth', 'verified', EnsurePatient::class, EnsureProfileCompleted::class])->group(function () {
     Route::get('consult', [ConsultationController::class, 'index'])->name('consult');
     Route::post('consult', [ConsultationController::class, 'store'])->name('consult.store');
     Route::post('consult/{consultation}/consent', [ConsultationController::class, 'consent'])->name('consult.consent');
@@ -51,8 +58,9 @@ Route::middleware(['auth', 'verified', EnsureDoctor::class])->group(function () 
 });
 
 Route::inertia('/', 'welcome')->name('home');
+Route::inertia('privacy', 'legal/privacy')->name('privacy');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', EnsureProfileCompleted::class])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 });
 

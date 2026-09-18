@@ -183,7 +183,7 @@ class DemoConsultationSeeder extends Seeder
         }
     }
 
-private function createCoughEmbedding(int $consultationId, string $riskLevel, float $riskScore): void
+    private function createCoughEmbedding(int $consultationId, string $riskLevel, float $riskScore): void
     {
         // Generate dummy embedding vector (512 dimensions to match database schema)
         // Similar risk levels will have similar embeddings
@@ -200,7 +200,7 @@ private function createCoughEmbedding(int $consultationId, string $riskLevel, fl
             $baseVector
         );
 
-        \App\Models\CoughEmbedding::create([
+        CoughEmbedding::create([
             'consultation_id' => $consultationId,
             'embedding' => $embedding,
             'risk_level' => $riskLevel,

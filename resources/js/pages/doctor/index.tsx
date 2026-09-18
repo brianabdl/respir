@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -230,13 +231,12 @@ export default function DoctorConsultations({
 
     const handleBulkMarkReviewed = async () => {
         if (selectedIds.length === 0) {
-            alert('Please select at least one consultation to mark as reviewed');
+            toast.warning('Please select at least one consultation to mark as reviewed');
             return;
         }
-        
-        if (!confirm(`Mark ${selectedIds.length} consultation(s) as reviewed?`)) {
-            return;
-        }
+
+        const confirmed = confirm(`Mark ${selectedIds.length} consultation(s) as reviewed?`);
+        if (!confirmed) return;
 
         setBulkReviewing(true);
         try {
@@ -250,10 +250,11 @@ export default function DoctorConsultations({
                     })
                 )
             );
+            toast.success(`${selectedIds.length} consultation(s) marked as reviewed successfully`);
             window.location.reload();
         } catch (error) {
             console.error('Bulk review failed', error);
-            alert('Failed to mark consultations as reviewed. Please try again.');
+            toast.error('Failed to mark consultations as reviewed. Please try again.');
         } finally {
             setBulkReviewing(false);
         }

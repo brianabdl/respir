@@ -131,7 +131,7 @@
     <div class="header">
         <h1>TB SCREENING CONSULTATION REPORT</h1>
         <p>Respair Health System</p>
-        <p>Generated on {{ now()->format('F d, Y h:i A') }}</p>
+        <p>Generated on {{ now()->timezone('Asia/Jakarta')->format('F d, Y h:i A') }} WIB</p>
     </div>
 
     <!-- Patient Information -->
@@ -151,7 +151,7 @@
         </div>
         <div class="info-row">
             <div class="info-label">Consultation Date:</div>
-            <div class="info-value">{{ $consultation->created_at->format('F d, Y h:i A') }}</div>
+            <div class="info-value">{{ $consultation->created_at->timezone('Asia/Jakarta')->format('F d, Y h:i A') }} WIB</div>
         </div>
         <div class="info-row">
             <div class="info-label">Status:</div>
@@ -274,7 +274,7 @@
         </div>
         <div class="info-row">
             <div class="info-label">Reviewed At:</div>
-            <div class="info-value">{{ $consultation->reviewed_at ? $consultation->reviewed_at->format('F d, Y h:i A') : 'N/A' }}</div>
+            <div class="info-value">{{ $consultation->reviewed_at ? $consultation->reviewed_at->timezone('Asia/Jakarta')->format('F d, Y h:i A') . ' WIB' : 'N/A' }}</div>
         </div>
     </div>
     @endif
@@ -293,7 +293,7 @@
     <div class="footer">
         <p><strong>CONFIDENTIAL MEDICAL DOCUMENT</strong></p>
         <p>This report contains confidential patient information. Unauthorized disclosure is prohibited.</p>
-        <p>Document ID: {{ $consultation->id }}-{{ now()->format('YmdHis') }}</p>
+        <p>Document ID: {{ $consultation->id }}-{{ now()->timezone('Asia/Jakarta')->format('YmdHis') }}</p>
     </div>
 </body>
 </html>

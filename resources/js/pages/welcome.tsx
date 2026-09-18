@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import {
     Activity,
     ArrowRight,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
+import Lenis from 'lenis';
 
 const ACCENT = '#94A3B8';
 const INK = '#FFFFFF';
@@ -37,10 +39,7 @@ function Reveal({ className, delay = 0, children }: RevealProps) {
 
     useEffect(() => {
         const node = ref.current;
-
-        if (!node) {
-            return;
-        }
+        if (!node) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
@@ -53,7 +52,6 @@ function Reveal({ className, delay = 0, children }: RevealProps) {
         );
 
         observer.observe(node);
-
         return () => observer.disconnect();
     }, []);
 
@@ -76,14 +74,7 @@ function Reveal({ className, delay = 0, children }: RevealProps) {
 
 function Logo() {
     return (
-        <span className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[14px] bg-white text-xs font-bold text-black">
-                S
-            </span>
-            <span className="text-sm font-semibold" style={{ color: INK }}>
-                Respair
-            </span>
-        </span>
+        <img src="/Respir logo.png" alt="respir-logo" className="h-10 w-auto" />
     );
 }
 
@@ -97,7 +88,7 @@ function PrimaryButton({
     return (
         <Link
             href={href}
-            className="group inline-flex items-center gap-2 rounded-[14px] bg-white px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-[#CBD5E1]"
+            className="group inline-flex items-center gap-1 rounded-[6px] bg-white px-5 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:scale-105 hover:bg-neutral-200 active:scale-95"
         >
             {children}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -115,7 +106,8 @@ function SecondaryButton({
     return (
         <Link
             href={href}
-            className="inline-flex items-center gap-2 rounded-[14px] border border-white/15 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white/10"
+
+            className="inline-flex items-center gap-2 rounded-[6px] border border-white/15 px-5 py-2.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
             style={{ color: INK }}
         >
             {children}
@@ -123,15 +115,39 @@ function SecondaryButton({
     );
 }
 
-function Eyebrow({ children }: { children: ReactNode }) {
+function TypewriterText({ text }: { text: string }) {
     return (
-        <p
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] font-semibold tracking-wide"
-            style={{ color: ACCENT }}
+        <motion.span
+            initial="hidden"
+            animate="visible"
+            variants={{
+                visible: { transition: { staggerChildren: 0.05 } },
+            }}
+            className="inline-flex"
         >
-            <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
-            {children}
-        </p>
+            {text.split('').map((char, i) => (
+                <motion.span
+                    key={i}
+                    variants={{
+                        hidden: { opacity: 0, display: 'none' },
+                        visible: { opacity: 1, display: 'inline' },
+                    }}
+                >
+                    {char === ' ' ? '\u00A0' : char}
+                </motion.span>
+            ))}
+        </motion.span>
+    );
+}
+
+function BannerEyebrow({ text }: { text: string }) {
+    return (
+        <div className="w-full border-y border-white/[0.08] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent py-2.5 flex justify-center items-center shadow-sm backdrop-blur-sm">
+            <p className="flex items-center gap-2 font-mono text-xs font-medium tracking-wide text-white/80">
+                <Sparkles className="h-3.5 w-3.5 text-[#A1A1AA]" />
+                <TypewriterText text={text} />
+            </p>
+        </div>
     );
 }
 
@@ -154,7 +170,7 @@ function ProductMockup() {
     ];
 
     return (
-        <div className="overflow-hidden rounded-[14px] border border-white/10 bg-[#0B0B0D] shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0B0B0D] shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
             <div className="flex items-center gap-2 border-b border-white/10 bg-[#111114] px-4 py-2.5">
                 <span className="flex gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
@@ -163,13 +179,13 @@ function ProductMockup() {
                 </span>
                 <span className="mx-auto flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-0.5 font-mono text-[10px] font-medium text-[#94A3B8]">
                     <Lock className="h-2.5 w-2.5" />
-                    app.respair.health/consult
+                    app.respir.health/consult
                 </span>
                 <span className="w-10" />
             </div>
 
             <div className="grid gap-4 p-4 sm:grid-cols-[1.2fr_0.8fr] sm:p-5">
-                <div className="rounded-[14px] border border-white/10 bg-[#0F0F12]">
+                <div className="rounded-xl border border-white/10 bg-[#0F0F12]">
                     <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
                         <span className="flex items-center gap-1.5 font-mono text-[10px] font-semibold text-[#94A3B8]">
                             <Mic
@@ -188,7 +204,7 @@ function ProductMockup() {
                             <div
                                 key={line.text}
                                 className={cn(
-                                    'max-w-[88%] rounded-[10px] px-3 py-1.5 text-[11px] leading-relaxed',
+                                    'max-w-[88%] rounded-lg px-3 py-1.5 text-[11px] leading-relaxed',
                                     line.role === 'Sage'
                                         ? 'bg-white/10 text-[#D4D4D8]'
                                         : 'ml-auto bg-white text-[#0B0B0D]',
@@ -197,7 +213,7 @@ function ProductMockup() {
                                 {line.text}
                             </div>
                         ))}
-                        <div className="ml-auto flex h-8 w-14 items-end justify-center gap-0.5 rounded-[10px] bg-white/10 px-2 pb-1.5">
+                        <div className="ml-auto flex h-8 w-14 items-end justify-center gap-0.5 rounded-lg bg-white/10 px-2 pb-1.5">
                             {[30, 55, 75, 45, 65].map((h, i) => (
                                 <span
                                     key={i}
@@ -220,7 +236,7 @@ function ProductMockup() {
                 </div>
 
                 <div className="flex flex-col gap-4">
-                    <div className="rounded-[14px] border border-white/10 bg-[#0F0F12] p-3">
+                    <div className="rounded-xl border border-white/10 bg-[#0F0F12] p-3">
                         <div className="font-mono text-[10px] font-semibold text-[#94A3B8]">
                             COUGH SCREEN
                         </div>
@@ -271,7 +287,7 @@ function ProductMockup() {
                         </div>
                     </div>
 
-                    <div className="rounded-[14px] border border-white/10 bg-[#0F0F12] p-3">
+                    <div className="rounded-xl border border-white/10 bg-[#0F0F12] p-3">
                         <div className="font-mono text-[10px] font-semibold text-[#94A3B8]">
                             CLINICIAN BRIEF
                         </div>
@@ -389,8 +405,8 @@ const steps = ['Intake', 'Interview', 'Cough', 'Brief', 'Review'];
 
 const faqs = [
     {
-        q: 'What is Respair?',
-        a: 'Respair is an agentic clinical assistant for primary care. It guides patients through a private pre-visit interview, screens a recorded cough for tuberculosis risk, and hands the clinician a structured briefing before the consultation starts.',
+        q: 'What is Respir?',
+        a: 'Respir is an agentic clinical assistant for primary care. It guides patients through a private pre-visit interview, screens a recorded cough for tuberculosis risk, and hands the clinician a structured briefing before the consultation starts.',
     },
     {
         q: 'Where does patient audio and data go?',
@@ -409,7 +425,7 @@ const faqs = [
         a: 'Most patients finish in about 12 minutes and answer roughly 19 questions. The clinician opens a file that is already organized.',
     },
     {
-        q: 'Can I run Respair in the browser?',
+        q: 'Can I run Respir in the browser?',
         a: 'No installation is needed. The guided interview runs in the browser with live voice via the Gemini Live API, and results arrive in real time over WebSockets.',
     },
 ];
@@ -419,6 +435,10 @@ export default function Welcome() {
     const [menuOpen, setMenuOpen] = useState(false);
     const primaryHref = auth.user ? dashboard() : register();
 
+    // Parallax Effect Hooks
+    const { scrollYProgress } = useScroll();
+    const parallaxY = useTransform(scrollYProgress, [0, 3], [0, -550]);
+
     const navLinks = [
         { href: '#features', label: 'Features' },
         { href: '#how-it-works', label: 'How it works' },
@@ -426,28 +446,69 @@ export default function Welcome() {
         { href: '#faq', label: 'FAQ' },
     ];
 
+    useEffect(() => {
+        const lenis = new Lenis({
+            lerp: 0.05,
+            wheelMultiplier: 0.7,
+            smoothWheel: true,
+        });
+
+        function raf(time: number) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        const handleAnchorClick = (e: MouseEvent) => {
+            const target = e.currentTarget as HTMLAnchorElement;
+            const href = target.getAttribute('href');
+
+            if (href && href.startsWith('#')) {
+                e.preventDefault();
+                lenis.scrollTo(href, { offset: -80, duration: 1.2 });
+            }
+        };
+
+        const anchorLinks = document.querySelectorAll('a[href^="#"]');
+        anchorLinks.forEach((link) => {
+            link.addEventListener('click', handleAnchorClick as EventListener);
+        });
+
+        return () => {
+            anchorLinks.forEach((link) => {
+                link.removeEventListener('click', handleAnchorClick as EventListener);
+            });
+            lenis.destroy();
+        };
+    }, []);
+
     return (
         <>
-            <Head title="Respair — The guided pre-visit for primary care" />
+            <Head title="Respir — The guided pre-visit for primary care" />
 
-            <div className="min-h-screen bg-black antialiased">
+            <div className="min-h-screen bg-black antialiased" style={{ fontFamily: 'Geist, sans-serif' }}>
                 <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur-md">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                        <Link href={dashboard()} aria-label="Respair home">
+                        <Link href={dashboard()} aria-label="Respir home">
                             <Logo />
                         </Link>
 
-                        <nav className="hidden items-center gap-1 md:flex">
+                        <motion.nav
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.1 }}
+                            className="hidden items-center gap-3 md:flex"
+                        >
                             {navLinks.map((link) => (
                                 <a
                                     key={link.href}
                                     href={link.href}
-                                    className="rounded-[14px] px-3 py-2 text-sm font-medium text-[#A1A1AA] transition-colors hover:bg-white/10 hover:text-white"
+                                    className="rounded-[6px] px-3 py-2 text-sm font-medium text-[#A1A1AA] transition-all duration-200 hover:scale-105 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                                 >
                                     {link.label}
                                 </a>
                             ))}
-                        </nav>
+                        </motion.nav>
 
                         <div className="hidden items-center gap-2 md:flex">
                             {auth.user ? (
@@ -458,7 +519,7 @@ export default function Welcome() {
                                 <>
                                     <Link
                                         href={login()}
-                                        className="rounded-[14px] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                        className="rounded-lg px-1 py-2.5 text-sm font-semibold text-[#e4e4e4] transition-all duration-200 hover:scale-110 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                                     >
                                         Sign in
                                     </Link>
@@ -472,7 +533,7 @@ export default function Welcome() {
                         <button
                             type="button"
                             onClick={() => setMenuOpen((open) => !open)}
-                            className="rounded-[14px] p-2 text-[#A1A1AA] hover:bg-white/10 md:hidden"
+                            className="rounded-lg p-2 text-[#A1A1AA] hover:bg-white/10 md:hidden"
                             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                         >
                             {menuOpen ? (
@@ -483,68 +544,81 @@ export default function Welcome() {
                         </button>
                     </div>
 
-                    {menuOpen && (
-                        <div className="border-t border-white/10 bg-[#0B0B0D] px-6 py-4 md:hidden">
-                            <nav className="flex flex-col gap-1">
-                                {navLinks.map((link) => (
-                                    <a
-                                        key={link.href}
-                                        href={link.href}
-                                        onClick={() => setMenuOpen(false)}
-                                        className="rounded-md px-3 py-2 text-sm font-medium text-[#A1A1AA] hover:bg-white/10"
-                                    >
-                                        {link.label}
-                                    </a>
-                                ))}
-                            </nav>
-                            <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
-                                {auth.user ? (
-                                    <PrimaryButton href={primaryHref}>
-                                        Open dashboard
-                                    </PrimaryButton>
-                                ) : (
-                                    <>
-                                        <SecondaryButton href={login()}>
-                                            Sign in
-                                        </SecondaryButton>
-                                        <PrimaryButton href={register()}>
-                                            Get started
-                                        </PrimaryButton>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <AnimatePresence>
+                        {menuOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden border-t border-white/10 bg-[#0B0B0D] md:hidden"
+                            >
+                                <div className="px-6 py-4">
+                                    <nav className="flex flex-col gap-1">
+                                        {navLinks.map((link) => (
+                                            <a
+                                                key={link.href}
+                                                href={link.href}
+                                                onClick={() => setMenuOpen(false)}
+                                                className="origin-left rounded-[6px] px-3 py-2 text-sm font-medium text-[#A1A1AA] transition-all duration-200 hover:scale-105 hover:text-white"
+                                            >
+                                                {link.label}
+                                            </a>
+                                        ))}
+                                    </nav>
+                                    <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
+                                        {auth.user ? (
+                                            <PrimaryButton href={primaryHref}>
+                                                Open dashboard
+                                            </PrimaryButton>
+                                        ) : (
+                                            <>
+                                                <SecondaryButton href={login()}>
+                                                    Sign in
+                                                </SecondaryButton>
+                                                <PrimaryButton href={register()}>
+                                                    Get started
+                                                </PrimaryButton>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </header>
 
                 <main>
                     <section className="relative overflow-hidden">
+                        {/* Efek Cahaya Senter Bulat dari Bawah */}
                         <div
                             aria-hidden
-                            className="pointer-events-none absolute inset-x-0 -top-32 h-[480px] bg-[radial-gradient(55%_100%_at_50%_0%,rgba(148,163,184,0.14),transparent)]"
+                            className="pointer-events-none absolute left-1/2 top-[45vh] h-500px w-500px -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12),transparent_60%)] blur-2xl"
                         />
-                        <div className="relative mx-auto max-w-6xl px-6 pt-16 pb-20 sm:pt-20 lg:pt-24">
-                            <div className="mx-auto max-w-3xl text-center">
-                                <Reveal>
-                                    <Eyebrow>Now in clinical use</Eyebrow>
-                                </Reveal>
+
+                        {/* Kontainer setinggi layar penuh */}
+                        <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center pb-20 pt-8 z-10">
+
+                            <BannerEyebrow text="Now in clinical use" />
+
+                            {/* Jarak container atas (pt) diperkecil dari pt-10 menjadi pt-5 */}
+                            <div className="relative mx-auto max-w-3xl px-6 pt-5 text-center">
                                 <Reveal delay={80}>
                                     <h1
-                                        className="mt-6 text-4xl font-medium tracking-[-0.02em] sm:text-5xl lg:text-6xl lg:leading-[1.08]"
-                                        style={{ color: INK }}
+
+                                        className="mt-2 text-4xl font-normal tracking-[-0.02em] sm:text-5xl lg:text-6xl lg:leading-[1.08] bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent"
                                     >
-                                        The pre-visit, guided.{' '}
-                                        <span style={{ color: ACCENT }}>
-                                            Before the door opens.
+                                        Guided pre-visits,{' '}
+                                        <span>
+                                            before the door opens.
                                         </span>
                                     </h1>
                                 </Reveal>
                                 <Reveal delay={160}>
                                     <p
-                                        className="mx-auto mt-6 max-w-2xl text-base leading-[1.7] sm:text-lg lg:leading-[1.6]"
+                                        className="mx-auto mt-6 max-w-2xl font-light text-base leading-[1.7] sm:text-lg lg:leading-[1.6]"
                                         style={{ color: MUTED }}
                                     >
-                                        Respair guides patients through a private
+                                        Respir guides patients through a private
                                         voice interview, screens a recorded
                                         cough for TB risk, and hands your
                                         clinicians an organized briefing. Less
@@ -570,14 +644,15 @@ export default function Welcome() {
                                     </p>
                                 </Reveal>
                             </div>
-
-                            <Reveal
-                                delay={200}
-                                className="mx-auto mt-16 max-w-5xl"
-                            >
-                                <ProductMockup />
-                            </Reveal>
                         </div>
+
+                        {/* Parallax murni berbasis scroll */}
+                        <motion.div
+                            style={{ y: parallaxY }}
+                            className="relative z-20 mx-auto w-full max-w-[95%] pb-20 xl:max-w-1200px"
+                        >
+                            <ProductMockup />
+                        </motion.div>
                     </section>
 
                     <section className="border-y border-white/10 bg-[#060607]">
@@ -614,7 +689,6 @@ export default function Welcome() {
                     >
                         <Reveal>
                             <div className="max-w-2xl">
-                                <Eyebrow>Why Respair</Eyebrow>
                                 <h2
                                     className="mt-5 text-3xl font-medium tracking-[-0.02em] sm:text-4xl"
                                     style={{ color: INK }}
@@ -627,7 +701,7 @@ export default function Welcome() {
                                     style={{ color: MUTED }}
                                 >
                                     The visit starts before the patient arrives.
-                                    Respair collects the story, screens the cough,
+                                    Respir collects the story, screens the cough,
                                     and prepares the file — so the clinician
                                     reads, not transcribes.
                                 </p>
@@ -640,9 +714,9 @@ export default function Welcome() {
                                     key={feature.title}
                                     delay={(i % 3) * 80}
                                 >
-                                    <article className="group h-full rounded-[14px] border border-white/10 bg-[#0B0B0D] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_20px_40px_-24px_rgba(0,0,0,0.9)]">
+                                    <article className="group h-full border border-white/10 bg-[#0B0B0D] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_20px_40px_-24px_rgba(0,0,0,0.9)]">
                                         <div className="flex items-center justify-between">
-                                            <span className="flex h-10 w-10 items-center justify-center rounded-[14px] border border-white/10 bg-white/5">
+                                            <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5">
                                                 <feature.icon
                                                     className="h-5 w-5"
                                                     style={{ color: ACCENT }}
@@ -677,7 +751,6 @@ export default function Welcome() {
                         <div className="mx-auto max-w-6xl px-6 py-20 lg:py-28">
                             <Reveal>
                                 <div className="max-w-2xl">
-                                    <Eyebrow>How it works</Eyebrow>
                                     <h2
                                         className="mt-5 text-3xl font-medium tracking-[-0.02em] sm:text-4xl"
                                         style={{ color: INK }}
@@ -698,7 +771,7 @@ export default function Welcome() {
                             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
                                 {steps.map((step, i) => (
                                     <Reveal key={step} delay={i * 80}>
-                                        <div className="relative h-full rounded-[14px] border border-white/10 bg-[#0B0B0D] p-6">
+                                        <div className="relative h-full border border-white/10 bg-[#0B0B0D] p-6">
                                             <div
                                                 className="font-mono text-xs font-semibold"
                                                 style={{ color: ACCENT }}
@@ -738,7 +811,7 @@ export default function Welcome() {
                         className="mx-auto max-w-6xl scroll-mt-20 px-6 py-20 lg:py-28"
                     >
                         <Reveal>
-                            <div className="overflow-hidden rounded-[14px] border border-white/10 bg-[#0B0B0D]">
+                            <div className="overflow-hidden border border-white/10 bg-[#0B0B0D]">
                                 <div className="grid gap-8 p-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:p-12">
                                     <div>
                                         <p className="flex items-center gap-2 font-mono text-[11px] font-semibold text-[#CBD5E1]">
@@ -798,7 +871,6 @@ export default function Welcome() {
                         <div className="mx-auto max-w-3xl px-6 py-20 lg:py-28">
                             <Reveal>
                                 <div className="text-center">
-                                    <Eyebrow>FAQ</Eyebrow>
                                     <h2
                                         className="mt-5 text-3xl font-medium tracking-[-0.02em] sm:text-4xl"
                                         style={{ color: INK }}
@@ -808,7 +880,7 @@ export default function Welcome() {
                                 </div>
                             </Reveal>
 
-                            <div className="mt-10 divide-y divide-white/10 rounded-[14px] border border-white/10 bg-[#0B0B0D] px-6">
+                            <div className="mt-10 divide-y divide-white/10 border border-white/10 bg-[#0B0B0D] px-6">
                                 {faqs.map((faq, i) => (
                                     <Reveal key={faq.q} delay={i * 40}>
                                         <details className="group py-5">
@@ -831,7 +903,7 @@ export default function Welcome() {
 
                     <section className="mx-auto max-w-6xl px-6 pb-20 lg:pb-28">
                         <Reveal>
-                            <div className="rounded-[14px] bg-[#F4F4F5] p-10 text-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] lg:p-14">
+                            <div className="rounded-[6px] bg-[#F4F4F5] p-10 text-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] lg:p-14">
                                 <div className="grid gap-8 lg:grid-cols-[1.4fr_0.6fr] lg:items-center">
                                     <div>
                                         <p className="flex items-center gap-2 font-mono text-[11px] font-semibold text-[#71717A]">
@@ -852,14 +924,14 @@ export default function Welcome() {
                                     <div className="flex flex-col gap-3 lg:items-end">
                                         <Link
                                             href={primaryHref}
-                                            className="group inline-flex items-center gap-2 rounded-[14px] bg-black px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#27272A]"
+                                            className="group inline-flex items-center gap-2 rounded-[6px] bg-black px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:scale-[0.98] hover:bg-[#27272A] active:scale-95"
                                         >
                                             Create account
                                             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                                         </Link>
                                         <Link
                                             href={login()}
-                                            className="inline-flex items-center justify-center rounded-[14px] border border-black/20 px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-black/5"
+                                            className="inline-flex items-center justify-center rounded-[6px] border border-black/20 px-5 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:scale-[0.98] hover:bg-black/5 active:scale-95"
                                         >
                                             Sign in
                                         </Link>
@@ -957,7 +1029,7 @@ export default function Welcome() {
                             </div>
                         </div>
                         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-[#71717A] sm:flex-row">
-                            <span>© 2026 Respair Health</span>
+                            <span>© 2026 Respir Health</span>
                             <span className="font-mono text-xs">
                                 Built with Gemini Live · HeAR · MedGemma
                             </span>

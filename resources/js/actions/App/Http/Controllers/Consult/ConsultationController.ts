@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::index
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:62
+* @see app/Http/Controllers/Consult/ConsultationController.php:72
 * @route '/consult'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:62
+* @see app/Http/Controllers/Consult/ConsultationController.php:72
 * @route '/consult'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:62
+* @see app/Http/Controllers/Consult/ConsultationController.php:72
 * @route '/consult'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:62
+* @see app/Http/Controllers/Consult/ConsultationController.php:72
 * @route '/consult'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::store
-* @see app/Http/Controllers/Consult/ConsultationController.php:62
+* @see app/Http/Controllers/Consult/ConsultationController.php:72
 * @route '/consult'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -138,7 +138,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consent
-* @see app/Http/Controllers/Consult/ConsultationController.php:72
+* @see app/Http/Controllers/Consult/ConsultationController.php:82
 * @route '/consult/{consultation}/consent'
 */
 export const consent = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -153,7 +153,7 @@ consent.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consent
-* @see app/Http/Controllers/Consult/ConsultationController.php:72
+* @see app/Http/Controllers/Consult/ConsultationController.php:82
 * @route '/consult/{consultation}/consent'
 */
 consent.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -186,7 +186,7 @@ consent.url = (args: { consultation: number | { id: number } } | [consultation: 
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consent
-* @see app/Http/Controllers/Consult/ConsultationController.php:72
+* @see app/Http/Controllers/Consult/ConsultationController.php:82
 * @route '/consult/{consultation}/consent'
 */
 consent.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -196,7 +196,7 @@ consent.post = (args: { consultation: number | { id: number } } | [consultation:
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consent
-* @see app/Http/Controllers/Consult/ConsultationController.php:72
+* @see app/Http/Controllers/Consult/ConsultationController.php:82
 * @route '/consult/{consultation}/consent'
 */
 const consentForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -206,7 +206,7 @@ const consentForm = (args: { consultation: number | { id: number } } | [consulta
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consent
-* @see app/Http/Controllers/Consult/ConsultationController.php:72
+* @see app/Http/Controllers/Consult/ConsultationController.php:82
 * @route '/consult/{consultation}/consent'
 */
 consentForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -218,7 +218,7 @@ consent.form = consentForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::chat
-* @see app/Http/Controllers/Consult/ConsultationController.php:93
+* @see app/Http/Controllers/Consult/ConsultationController.php:103
 * @route '/consult/{consultation}/chat'
 */
 export const chat = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -233,7 +233,7 @@ chat.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::chat
-* @see app/Http/Controllers/Consult/ConsultationController.php:93
+* @see app/Http/Controllers/Consult/ConsultationController.php:103
 * @route '/consult/{consultation}/chat'
 */
 chat.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -266,7 +266,7 @@ chat.url = (args: { consultation: number | { id: number } } | [consultation: num
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::chat
-* @see app/Http/Controllers/Consult/ConsultationController.php:93
+* @see app/Http/Controllers/Consult/ConsultationController.php:103
 * @route '/consult/{consultation}/chat'
 */
 chat.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -276,7 +276,7 @@ chat.post = (args: { consultation: number | { id: number } } | [consultation: nu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::chat
-* @see app/Http/Controllers/Consult/ConsultationController.php:93
+* @see app/Http/Controllers/Consult/ConsultationController.php:103
 * @route '/consult/{consultation}/chat'
 */
 const chatForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -286,7 +286,7 @@ const chatForm = (args: { consultation: number | { id: number } } | [consultatio
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::chat
-* @see app/Http/Controllers/Consult/ConsultationController.php:93
+* @see app/Http/Controllers/Consult/ConsultationController.php:103
 * @route '/consult/{consultation}/chat'
 */
 chatForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -298,7 +298,7 @@ chat.form = chatForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::voice
-* @see app/Http/Controllers/Consult/ConsultationController.php:139
+* @see app/Http/Controllers/Consult/ConsultationController.php:153
 * @route '/consult/{consultation}/voice'
 */
 export const voice = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -313,7 +313,7 @@ voice.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::voice
-* @see app/Http/Controllers/Consult/ConsultationController.php:139
+* @see app/Http/Controllers/Consult/ConsultationController.php:153
 * @route '/consult/{consultation}/voice'
 */
 voice.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -346,7 +346,7 @@ voice.url = (args: { consultation: number | { id: number } } | [consultation: nu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::voice
-* @see app/Http/Controllers/Consult/ConsultationController.php:139
+* @see app/Http/Controllers/Consult/ConsultationController.php:153
 * @route '/consult/{consultation}/voice'
 */
 voice.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -356,7 +356,7 @@ voice.post = (args: { consultation: number | { id: number } } | [consultation: n
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::voice
-* @see app/Http/Controllers/Consult/ConsultationController.php:139
+* @see app/Http/Controllers/Consult/ConsultationController.php:153
 * @route '/consult/{consultation}/voice'
 */
 const voiceForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -366,7 +366,7 @@ const voiceForm = (args: { consultation: number | { id: number } } | [consultati
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::voice
-* @see app/Http/Controllers/Consult/ConsultationController.php:139
+* @see app/Http/Controllers/Consult/ConsultationController.php:153
 * @route '/consult/{consultation}/voice'
 */
 voiceForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -378,7 +378,7 @@ voice.form = voiceForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 export const liveToken = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -393,7 +393,7 @@ liveToken.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 liveToken.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -426,7 +426,7 @@ liveToken.url = (args: { consultation: number | { id: number } } | [consultation
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 liveToken.get = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -436,7 +436,7 @@ liveToken.get = (args: { consultation: number | { id: number } } | [consultation
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 liveToken.head = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -446,7 +446,7 @@ liveToken.head = (args: { consultation: number | { id: number } } | [consultatio
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 const liveTokenForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -456,7 +456,7 @@ const liveTokenForm = (args: { consultation: number | { id: number } } | [consul
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 liveTokenForm.get = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -466,7 +466,7 @@ liveTokenForm.get = (args: { consultation: number | { id: number } } | [consulta
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::liveToken
-* @see app/Http/Controllers/Consult/ConsultationController.php:316
+* @see app/Http/Controllers/Consult/ConsultationController.php:330
 * @route '/consult/{consultation}/live/token'
 */
 liveTokenForm.head = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -483,7 +483,7 @@ liveToken.form = liveTokenForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 export const conversationContext = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -498,7 +498,7 @@ conversationContext.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 conversationContext.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -531,7 +531,7 @@ conversationContext.url = (args: { consultation: number | { id: number } } | [co
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 conversationContext.get = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -541,7 +541,7 @@ conversationContext.get = (args: { consultation: number | { id: number } } | [co
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 conversationContext.head = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -551,7 +551,7 @@ conversationContext.head = (args: { consultation: number | { id: number } } | [c
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 const conversationContextForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -561,7 +561,7 @@ const conversationContextForm = (args: { consultation: number | { id: number } }
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 conversationContextForm.get = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -571,7 +571,7 @@ conversationContextForm.get = (args: { consultation: number | { id: number } } |
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::conversationContext
-* @see app/Http/Controllers/Consult/ConsultationController.php:223
+* @see app/Http/Controllers/Consult/ConsultationController.php:237
 * @route '/consult/{consultation}/context'
 */
 conversationContextForm.head = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -588,7 +588,7 @@ conversationContext.form = conversationContextForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::sessionLog
-* @see app/Http/Controllers/Consult/ConsultationController.php:199
+* @see app/Http/Controllers/Consult/ConsultationController.php:213
 * @route '/consult/{consultation}/sessions'
 */
 export const sessionLog = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -603,7 +603,7 @@ sessionLog.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::sessionLog
-* @see app/Http/Controllers/Consult/ConsultationController.php:199
+* @see app/Http/Controllers/Consult/ConsultationController.php:213
 * @route '/consult/{consultation}/sessions'
 */
 sessionLog.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -636,7 +636,7 @@ sessionLog.url = (args: { consultation: number | { id: number } } | [consultatio
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::sessionLog
-* @see app/Http/Controllers/Consult/ConsultationController.php:199
+* @see app/Http/Controllers/Consult/ConsultationController.php:213
 * @route '/consult/{consultation}/sessions'
 */
 sessionLog.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -646,7 +646,7 @@ sessionLog.post = (args: { consultation: number | { id: number } } | [consultati
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::sessionLog
-* @see app/Http/Controllers/Consult/ConsultationController.php:199
+* @see app/Http/Controllers/Consult/ConsultationController.php:213
 * @route '/consult/{consultation}/sessions'
 */
 const sessionLogForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -656,7 +656,7 @@ const sessionLogForm = (args: { consultation: number | { id: number } } | [consu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::sessionLog
-* @see app/Http/Controllers/Consult/ConsultationController.php:199
+* @see app/Http/Controllers/Consult/ConsultationController.php:213
 * @route '/consult/{consultation}/sessions'
 */
 sessionLogForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -668,7 +668,7 @@ sessionLog.form = sessionLogForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::cough
-* @see app/Http/Controllers/Consult/ConsultationController.php:251
+* @see app/Http/Controllers/Consult/ConsultationController.php:265
 * @route '/consult/{consultation}/cough'
 */
 export const cough = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -683,7 +683,7 @@ cough.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::cough
-* @see app/Http/Controllers/Consult/ConsultationController.php:251
+* @see app/Http/Controllers/Consult/ConsultationController.php:265
 * @route '/consult/{consultation}/cough'
 */
 cough.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -716,7 +716,7 @@ cough.url = (args: { consultation: number | { id: number } } | [consultation: nu
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::cough
-* @see app/Http/Controllers/Consult/ConsultationController.php:251
+* @see app/Http/Controllers/Consult/ConsultationController.php:265
 * @route '/consult/{consultation}/cough'
 */
 cough.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -726,7 +726,7 @@ cough.post = (args: { consultation: number | { id: number } } | [consultation: n
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::cough
-* @see app/Http/Controllers/Consult/ConsultationController.php:251
+* @see app/Http/Controllers/Consult/ConsultationController.php:265
 * @route '/consult/{consultation}/cough'
 */
 const coughForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -736,7 +736,7 @@ const coughForm = (args: { consultation: number | { id: number } } | [consultati
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::cough
-* @see app/Http/Controllers/Consult/ConsultationController.php:251
+* @see app/Http/Controllers/Consult/ConsultationController.php:265
 * @route '/consult/{consultation}/cough'
 */
 coughForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -748,7 +748,7 @@ cough.form = coughForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::capture
-* @see app/Http/Controllers/Consult/ConsultationController.php:268
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/captures'
 */
 export const capture = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -763,7 +763,7 @@ capture.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::capture
-* @see app/Http/Controllers/Consult/ConsultationController.php:268
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/captures'
 */
 capture.url = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -796,7 +796,7 @@ capture.url = (args: { consultation: number | { id: number } } | [consultation: 
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::capture
-* @see app/Http/Controllers/Consult/ConsultationController.php:268
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/captures'
 */
 capture.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -806,7 +806,7 @@ capture.post = (args: { consultation: number | { id: number } } | [consultation:
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::capture
-* @see app/Http/Controllers/Consult/ConsultationController.php:268
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/captures'
 */
 const captureForm = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -816,7 +816,7 @@ const captureForm = (args: { consultation: number | { id: number } } | [consulta
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::capture
-* @see app/Http/Controllers/Consult/ConsultationController.php:268
+* @see app/Http/Controllers/Consult/ConsultationController.php:282
 * @route '/consult/{consultation}/captures'
 */
 captureForm.post = (args: { consultation: number | { id: number } } | [consultation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -828,7 +828,7 @@ capture.form = captureForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 export const captureDownload = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -843,7 +843,7 @@ captureDownload.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 captureDownload.url = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions) => {
@@ -871,7 +871,7 @@ captureDownload.url = (args: { consultation: number | { id: number }, capture: s
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 captureDownload.get = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -881,7 +881,7 @@ captureDownload.get = (args: { consultation: number | { id: number }, capture: s
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 captureDownload.head = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -891,7 +891,7 @@ captureDownload.head = (args: { consultation: number | { id: number }, capture: 
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 const captureDownloadForm = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -901,7 +901,7 @@ const captureDownloadForm = (args: { consultation: number | { id: number }, capt
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 captureDownloadForm.get = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -911,7 +911,7 @@ captureDownloadForm.get = (args: { consultation: number | { id: number }, captur
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::captureDownload
-* @see app/Http/Controllers/Consult/ConsultationController.php:291
+* @see app/Http/Controllers/Consult/ConsultationController.php:305
 * @route '/consult/{consultation}/captures/{capture}/download'
 */
 captureDownloadForm.head = (args: { consultation: number | { id: number }, capture: string | number } | [consultation: number | { id: number }, capture: string | number ], options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

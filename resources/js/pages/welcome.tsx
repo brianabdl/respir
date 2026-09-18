@@ -1,7 +1,12 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import {
+    motion,
+    useScroll,
+    useTransform,
+    AnimatePresence,
+} from 'framer-motion';
 import {
     Activity,
     ArrowRight,
@@ -142,7 +147,7 @@ function TypewriterText({ text }: { text: string }) {
 
 function BannerEyebrow({ text }: { text: string }) {
     return (
-        <div className="w-full border-y border-white/[0.08] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent py-2.5 flex justify-center items-center shadow-sm backdrop-blur-sm">
+        <div className="flex w-full items-center justify-center border-y border-white/[0.08] bg-gradient-to-r from-transparent via-white/[0.04] to-transparent py-2.5 shadow-sm backdrop-blur-sm">
             <p className="flex items-center gap-2 font-mono text-xs font-medium tracking-wide text-white/80">
                 <Sparkles className="h-3.5 w-3.5 text-[#A1A1AA]" />
                 <TypewriterText text={text} />
@@ -179,7 +184,10 @@ function ProductMockup() {
                 </span>
                 <span className="mx-auto flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-0.5 font-mono text-[10px] font-medium text-[#94A3B8]">
                     <Lock className="h-2.5 w-2.5" />
-                    app.respir.health/consult
+                    {typeof window !== 'undefined'
+                        ? window.location.host
+                        : 'app.respir.health'}
+                    /consult
                 </span>
                 <span className="w-10" />
             </div>
@@ -476,7 +484,10 @@ export default function Welcome() {
 
         return () => {
             anchorLinks.forEach((link) => {
-                link.removeEventListener('click', handleAnchorClick as EventListener);
+                link.removeEventListener(
+                    'click',
+                    handleAnchorClick as EventListener,
+                );
             });
             lenis.destroy();
         };
@@ -486,7 +497,10 @@ export default function Welcome() {
         <>
             <Head title="Respir — The guided pre-visit for primary care" />
 
-            <div className="min-h-screen bg-black antialiased" style={{ fontFamily: 'Geist, sans-serif' }}>
+            <div
+                className="min-h-screen bg-black antialiased"
+                style={{ fontFamily: 'Geist, sans-serif' }}
+            >
                 <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur-md">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
                         <Link href={dashboard()} aria-label="Respir home">
@@ -558,7 +572,9 @@ export default function Welcome() {
                                             <a
                                                 key={link.href}
                                                 href={link.href}
-                                                onClick={() => setMenuOpen(false)}
+                                                onClick={() =>
+                                                    setMenuOpen(false)
+                                                }
                                                 className="origin-left rounded-[6px] px-3 py-2 text-sm font-medium text-[#A1A1AA] transition-all duration-200 hover:scale-105 hover:text-white"
                                             >
                                                 {link.label}
@@ -575,7 +591,9 @@ export default function Welcome() {
                                                 <SecondaryButton href={login()}>
                                                     Sign in
                                                 </SecondaryButton>
-                                                <PrimaryButton href={register()}>
+                                                <PrimaryButton
+                                                    href={register()}
+                                                >
                                                     Get started
                                                 </PrimaryButton>
                                             </>
@@ -592,30 +610,24 @@ export default function Welcome() {
                         {/* Efek Cahaya Senter Bulat dari Bawah */}
                         <div
                             aria-hidden
-                            className="pointer-events-none absolute left-1/2 top-[45vh] h-500px w-500px -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12),transparent_60%)] blur-2xl"
+                            className="h-500px w-500px pointer-events-none absolute top-[45vh] left-1/2 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12),transparent_60%)] blur-2xl"
                         />
 
                         {/* Kontainer setinggi layar penuh */}
-                        <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center pb-20 pt-8 z-10">
-
+                        <div className="z-10 flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center pt-8 pb-20">
                             <BannerEyebrow text="Now in clinical use" />
 
                             {/* Jarak container atas (pt) diperkecil dari pt-10 menjadi pt-5 */}
                             <div className="relative mx-auto max-w-3xl px-6 pt-5 text-center">
                                 <Reveal delay={80}>
-                                    <h1
-
-                                        className="mt-2 text-4xl font-normal tracking-[-0.02em] sm:text-5xl lg:text-6xl lg:leading-[1.08] bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent"
-                                    >
+                                    <h1 className="mt-2 bg-linear-to-r from-white to-neutral-400 bg-clip-text text-4xl font-normal tracking-[-0.02em] text-transparent sm:text-5xl lg:text-6xl lg:leading-[1.08]">
                                         Guided pre-visits,{' '}
-                                        <span>
-                                            before the door opens.
-                                        </span>
+                                        <span>before the door opens.</span>
                                     </h1>
                                 </Reveal>
                                 <Reveal delay={160}>
                                     <p
-                                        className="mx-auto mt-6 max-w-2xl font-light text-base leading-[1.7] sm:text-lg lg:leading-[1.6]"
+                                        className="mx-auto mt-6 max-w-2xl text-base leading-[1.7] font-light sm:text-lg lg:leading-[1.6]"
                                         style={{ color: MUTED }}
                                     >
                                         Respir guides patients through a private
@@ -649,7 +661,7 @@ export default function Welcome() {
                         {/* Parallax murni berbasis scroll */}
                         <motion.div
                             style={{ y: parallaxY }}
-                            className="relative z-20 mx-auto w-full max-w-[95%] pb-20 xl:max-w-1200px"
+                            className="xl:max-w-1200px relative z-20 mx-auto w-full max-w-[95%] pb-20"
                         >
                             <ProductMockup />
                         </motion.div>
@@ -701,9 +713,9 @@ export default function Welcome() {
                                     style={{ color: MUTED }}
                                 >
                                     The visit starts before the patient arrives.
-                                    Respir collects the story, screens the cough,
-                                    and prepares the file — so the clinician
-                                    reads, not transcribes.
+                                    Respir collects the story, screens the
+                                    cough, and prepares the file — so the
+                                    clinician reads, not transcribes.
                                 </p>
                             </div>
                         </Reveal>

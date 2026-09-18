@@ -21,20 +21,24 @@ export default function Login({ status, canResetPassword }: Props) {
         <>
             <Head title="Log in" />
 
-            <div 
-                className="dark relative flex min-h-screen w-full bg-black text-white" 
+            <div
+                className="dark relative flex min-h-screen w-full bg-black text-white"
                 style={{ fontFamily: 'Geist, sans-serif' }}
             >
                 {/* LOGO DI POJOK KIRI ATAS */}
-                <div className="absolute left-8 top-8 z-50">
-                    <img src="/Respir logo.png" alt="Respir Logo" className="h-10 w-auto" />
+                <div className="absolute top-8 left-8 z-50">
+                    <img
+                        src="/Respir logo.png"
+                        alt="Respir Logo"
+                        className="h-10 w-auto"
+                    />
                 </div>
 
                 {/* SISI KIRI: Gambar 65% */}
                 <div className="relative hidden w-full lg:block lg:w-[65%]">
-                    <img 
-                        src="/images/auth-bg.png" 
-                        alt="Background Lungs" 
+                    <img
+                        src="/images/auth-bg.png"
+                        alt="Background Lungs"
                         className="absolute inset-0 h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/50 to-black" />
@@ -44,7 +48,9 @@ export default function Login({ status, canResetPassword }: Props) {
                 <div className="flex w-full flex-col justify-center px-8 sm:px-12 lg:w-[35%]">
                     <div className="mx-auto w-full max-w-sm">
                         <div className="mb-10 flex flex-col items-start">
-                            <h1 className="text-3xl font-semibold tracking-tight">Log in to your account</h1>
+                            <h1 className="text-3xl font-semibold tracking-tight">
+                                Log in to your account
+                            </h1>
                             <p className="mt-2 text-sm text-[#A1A1AA]">
                                 Enter your email and password below to log in
                             </p>
@@ -65,7 +71,12 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <>
                                     <div className="grid gap-6">
                                         <div className="grid gap-2">
-                                            <Label htmlFor="email" className="text-gray-300">Email address</Label>
+                                            <Label
+                                                htmlFor="email"
+                                                className="text-gray-300"
+                                            >
+                                                Email address
+                                            </Label>
                                             <Input
                                                 id="email"
                                                 type="email"
@@ -77,12 +88,19 @@ export default function Login({ status, canResetPassword }: Props) {
                                                 placeholder="email@example.com"
                                                 className="rounded-[6px] border border-white/20 bg-white/5 text-white placeholder:text-gray-600 focus-visible:border-white focus-visible:ring-1 focus-visible:ring-white focus-visible:ring-offset-0"
                                             />
-                                            <InputError message={errors.email} />
+                                            <InputError
+                                                message={errors.email}
+                                            />
                                         </div>
 
                                         <div className="grid gap-2">
                                             <div className="flex items-center">
-                                                <Label htmlFor="password" className="text-gray-300">Password</Label>
+                                                <Label
+                                                    htmlFor="password"
+                                                    className="text-gray-300"
+                                                >
+                                                    Password
+                                                </Label>
                                                 {canResetPassword && (
                                                     <TextLink
                                                         href={request()}
@@ -102,7 +120,9 @@ export default function Login({ status, canResetPassword }: Props) {
                                                 placeholder="••••••••"
                                                 className="rounded-[6px] border border-white/20 bg-white/5 text-white placeholder:text-gray-600 focus-visible:border-white focus-visible:ring-1 focus-visible:ring-white focus-visible:ring-offset-0"
                                             />
-                                            <InputError message={errors.password} />
+                                            <InputError
+                                                message={errors.password}
+                                            />
                                         </div>
 
                                         <div className="flex items-center space-x-3">
@@ -110,26 +130,37 @@ export default function Login({ status, canResetPassword }: Props) {
                                                 id="remember"
                                                 name="remember"
                                                 tabIndex={3}
-                                                className="rounded-[6px] border-white/20 bg-white/5 data-[state=checked]:bg-white data-[state=checked]:text-black focus-visible:ring-1 focus-visible:ring-white focus-visible:ring-offset-0"
+                                                className="rounded-[6px] border-white/20 bg-white/5 focus-visible:ring-1 focus-visible:ring-white focus-visible:ring-offset-0 data-[state=checked]:bg-white data-[state=checked]:text-black"
                                             />
-                                            <Label htmlFor="remember" className="text-gray-300">Remember me</Label>
+                                            <Label
+                                                htmlFor="remember"
+                                                className="text-gray-300"
+                                            >
+                                                Remember me
+                                            </Label>
                                         </div>
 
                                         <Button
                                             type="submit"
-                                            className="mt-4 w-full h-11 rounded-[6px] bg-white font-semibold text-black transition-colors hover:bg-gray-200"
+                                            className="mt-4 h-11 w-full rounded-[6px] bg-white font-semibold text-black transition-colors hover:bg-gray-200"
                                             tabIndex={4}
                                             disabled={processing}
                                             data-test="login-button"
                                         >
-                                            {processing && <Spinner className="mr-2" />}
+                                            {processing && (
+                                                <Spinner className="mr-2" />
+                                            )}
                                             Log in
                                         </Button>
                                     </div>
 
                                     <div className="mt-2 text-center text-sm text-[#A1A1AA]">
                                         Don't have an account?{' '}
-                                        <TextLink href={register()} tabIndex={5} className="font-medium text-white hover:underline">
+                                        <TextLink
+                                            href={register()}
+                                            tabIndex={5}
+                                            className="font-medium text-white hover:underline"
+                                        >
                                             Sign up
                                         </TextLink>
                                     </div>

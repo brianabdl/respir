@@ -1,8 +1,8 @@
 ---
 paths:
-  - resources/js/pages/consult.tsx
-  - resources/js/pages/welcome.tsx
-  - 'resources/js/pages/**'
+    - resources/js/pages/consult.tsx
+    - resources/js/pages/welcome.tsx
+    - 'resources/js/pages/**'
 ---
 
 # Pages
@@ -32,4 +32,5 @@ The clinic agentic-AI product is branded "Respir". Landing/landing copy must use
 Close the Gemini Live session only through the end_consultation tool call. Never teardownLiveSession directly after a cough upload (that instant-kills the socket before Sage speaks). Flow: successful cough -> tool response note (tool path) or promptModelWrapUp sendText (manual path) -> model delivers closing turn and calls end_consultation -> handleEndConsultation sets closingRef -> turnComplete/audio drain triggers beginGracefulClose. beginGracefulClose drains the speaker (<=20s) then teardown. scheduleForcedClose (20s) is a safety net for a model that never calls the tool. Transcript string matching (handleAssistantCue/microphone) is NOT a session-close trigger.
 
 ## Echo listeners need leading dot for custom broadcastAs names
+
 Custom broadcastAs() names must be subscribed with a leading dot (e.g. '.cough.analysis'). Without it, laravel-echo prepends the App.Events namespace, the handler silently never fires, and the UI hangs (proven live: consult page looped "analysing" while the backend had finished).

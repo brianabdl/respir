@@ -129,7 +129,7 @@ function ConsultationRowItem({
     );
 
     return (
-        <div className="hover:bg-muted/50 block rounded-xl border p-4 transition relative">
+        <div className="hover:bg-muted/50 relative block rounded-xl border p-4 transition">
             <div className="flex items-start gap-3">
                 <input
                     type="checkbox"
@@ -145,7 +145,9 @@ function ConsultationRowItem({
                     className="flex-1"
                 >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-medium">{consultation.patient.name}</span>
+                        <span className="font-medium">
+                            {consultation.patient.name}
+                        </span>
                         <span className="flex flex-wrap gap-2">
                             {coughRisk ? (
                                 <Badge
@@ -171,7 +173,9 @@ function ConsultationRowItem({
                                 <Badge variant="outline">briefing ready</Badge>
                             ) : (
                                 coughRisk && (
-                                    <Badge variant="outline">needs briefing</Badge>
+                                    <Badge variant="outline">
+                                        needs briefing
+                                    </Badge>
                                 )
                             )}
                         </span>
@@ -179,8 +183,8 @@ function ConsultationRowItem({
                     <p className="text-sm text-neutral-500">
                         {timeAgo(consultation.updated_at)} · {status} ·{' '}
                         {consultation.sessions.length} session
-                        {consultation.sessions.length === 1 ? '' : 's'} · {totalTurns}{' '}
-                        turn{totalTurns === 1 ? '' : 's'} ·{' '}
+                        {consultation.sessions.length === 1 ? '' : 's'} ·{' '}
+                        {totalTurns} turn{totalTurns === 1 ? '' : 's'} ·{' '}
                         {consultation.captures_count} capture
                         {consultation.captures_count === 1 ? '' : 's'}
                     </p>
@@ -216,13 +220,13 @@ export default function DoctorConsultations({
     const [bulkReviewing, setBulkReviewing] = useState(false);
 
     const toggleSelect = (id: number) => {
-        setSelectedIds(prev => 
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
         );
     };
 
     const selectAll = () => {
-        setSelectedIds(visible.map(c => c.id));
+        setSelectedIds(visible.map((c) => c.id));
     };
 
     const clearSelection = () => {
@@ -231,30 +235,41 @@ export default function DoctorConsultations({
 
     const handleBulkMarkReviewed = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select at least one consultation to mark as reviewed');
+            toast.warning(
+                'Please select at least one consultation to mark as reviewed',
+            );
             return;
         }
 
-        const confirmed = confirm(`Mark ${selectedIds.length} consultation(s) as reviewed?`);
+        const confirmed = confirm(
+            `Mark ${selectedIds.length} consultation(s) as reviewed?`,
+        );
         if (!confirmed) return;
 
         setBulkReviewing(true);
         try {
             await Promise.all(
-                selectedIds.map(id => 
+                selectedIds.map((id) =>
                     fetch(`/doctor/consultations/${id}/review`, {
                         method: 'POST',
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                            'X-CSRF-TOKEN':
+                                document
+                                    .querySelector('meta[name="csrf-token"]')
+                                    ?.getAttribute('content') ?? '',
                         },
-                    })
-                )
+                    }),
+                ),
             );
-            toast.success(`${selectedIds.length} consultation(s) marked as reviewed successfully`);
+            toast.success(
+                `${selectedIds.length} consultation(s) marked as reviewed successfully`,
+            );
             window.location.reload();
         } catch (error) {
             console.error('Bulk review failed', error);
-            toast.error('Failed to mark consultations as reviewed. Please try again.');
+            toast.error(
+                'Failed to mark consultations as reviewed. Please try again.',
+            );
         } finally {
             setBulkReviewing(false);
         }
@@ -368,23 +383,30 @@ export default function DoctorConsultations({
                 ) : isDefaultView ? (
                     <>
                         {selectedIds.length > 0 && (
-                            <div className="sticky top-0 z-10 rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-600/10 backdrop-blur-sm p-4 flex items-center justify-between shadow-lg">
+                            <div className="sticky top-0 z-10 flex items-center justify-between rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-600/10 p-4 shadow-lg backdrop-blur-sm">
                                 <div className="flex items-center gap-3">
                                     <span className="font-semibold text-orange-600 dark:text-orange-400">
                                         {selectedIds.length} selected
                                     </span>
-                                    <Button size="sm" variant="outline" onClick={clearSelection} disabled={bulkReviewing}>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={clearSelection}
+                                        disabled={bulkReviewing}
+                                    >
                                         Clear
                                     </Button>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button 
-                                        size="sm" 
+                                    <Button
+                                        size="sm"
                                         onClick={handleBulkMarkReviewed}
                                         disabled={bulkReviewing}
-                                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                                        className="bg-orange-500 text-white hover:bg-orange-600"
                                     >
-                                        {bulkReviewing ? 'Processing...' : 'Mark as Reviewed'}
+                                        {bulkReviewing
+                                            ? 'Processing...'
+                                            : 'Mark as Reviewed'}
                                     </Button>
                                 </div>
                             </div>
@@ -395,7 +417,11 @@ export default function DoctorConsultations({
                                     <h2 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">
                                         Needs attention
                                     </h2>
-                                    <Button size="sm" variant="ghost" onClick={selectAll}>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={selectAll}
+                                    >
                                         Select all
                                     </Button>
                                 </div>
@@ -403,7 +429,9 @@ export default function DoctorConsultations({
                                     <ConsultationRowItem
                                         key={consultation.id}
                                         consultation={consultation}
-                                        isSelected={selectedIds.includes(consultation.id)}
+                                        isSelected={selectedIds.includes(
+                                            consultation.id,
+                                        )}
                                         onToggleSelect={toggleSelect}
                                     />
                                 ))}
@@ -417,7 +445,9 @@ export default function DoctorConsultations({
                                 <ConsultationRowItem
                                     key={consultation.id}
                                     consultation={consultation}
-                                    isSelected={selectedIds.includes(consultation.id)}
+                                    isSelected={selectedIds.includes(
+                                        consultation.id,
+                                    )}
                                     onToggleSelect={toggleSelect}
                                 />
                             ))}
@@ -429,7 +459,9 @@ export default function DoctorConsultations({
                             <ConsultationRowItem
                                 key={consultation.id}
                                 consultation={consultation}
-                                isSelected={selectedIds.includes(consultation.id)}
+                                isSelected={selectedIds.includes(
+                                    consultation.id,
+                                )}
                                 onToggleSelect={toggleSelect}
                             />
                         ))}

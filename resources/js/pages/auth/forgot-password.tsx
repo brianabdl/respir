@@ -14,17 +14,22 @@ export default function ForgotPassword({ status }: { status?: string }) {
             <Head title="Forgot password" />
 
             {/* Latar Belakang Hitam Penuh dengan Flex Center */}
-            <div 
-                className="dark flex min-h-screen w-full items-center justify-center bg-black p-4 text-white" 
+            <div
+                className="dark flex min-h-screen w-full items-center justify-center bg-black p-4 text-white"
                 style={{ fontFamily: 'Geist, sans-serif' }}
             >
                 {/* Floating Card dengan warna Dark Gray */}
                 <div className="w-full max-w-md rounded-[6px] border border-white/10 bg-[#0B0B0D] p-8 shadow-[0_20px_40px_-24px_rgba(0,0,0,0.9)]">
-                    
                     {/* Header Card: Logo Besar & Teks di Tengah */}
                     <div className="mb-8 flex flex-col items-center text-center">
-                        <img src="/Respir logo.png" alt="Respir Logo" className="mb-12 h-15 w-auto" />
-                        <h1 className="text-2xl font-semibold tracking-tight">Forgot password</h1>
+                        <img
+                            src="/Respir logo.png"
+                            alt="Respir Logo"
+                            className="mb-12 h-15 w-auto"
+                        />
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            Forgot password
+                        </h1>
                         <p className="mt-2 text-sm text-[#A1A1AA]">
                             Enter your email to receive a password reset link
                         </p>
@@ -41,7 +46,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             {({ processing, errors }) => (
                                 <>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="email" className="text-gray-300">Email address</Label>
+                                        <Label
+                                            htmlFor="email"
+                                            className="text-gray-300"
+                                        >
+                                            Email address
+                                        </Label>
                                         <Input
                                             id="email"
                                             type="email"
@@ -72,7 +82,10 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                         <div className="text-center text-sm text-[#A1A1AA]">
                             <span>Or, return to </span>
-                            <TextLink href={login()} className="font-medium text-white hover:underline">
+                            <TextLink
+                                href={login()}
+                                className="font-medium text-white hover:underline"
+                            >
                                 log in
                             </TextLink>
                         </div>

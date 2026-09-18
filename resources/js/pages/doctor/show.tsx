@@ -491,11 +491,11 @@ export default function DoctorConsultationShow({
                                                         </div>
                                                     )}
 
-                                                    {consultation.cough_analysis.explanation && (
+                                                    {consultation.cough_analysis.findings && (
                                                         <Card className="border-white/10 bg-[#0B0B0D]">
                                                             <CardContent className="p-5">
                                                                 <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">MedGemma Analysis</h4>
-                                                                <p className="mt-2 text-[#FFFFFF]">{consultation.cough_analysis.explanation}</p>
+                                                                <p className="mt-2 text-[#FFFFFF]">{consultation.cough_analysis.findings}</p>
                                                             </CardContent>
                                                         </Card>
                                                     )}
@@ -712,6 +712,85 @@ export default function DoctorConsultationShow({
                                                     )}
                                                 </div>
                                             )}
+
+                                            {activeTab === 'notes' && (
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                Doctor's Clinical Notes
+                                                            </h4>
+                                                            {saveSuccess && (
+                                                                <span className="text-xs text-green-400 flex items-center gap-1 font-mono">
+                                                                    <CheckCircle2 className="size-3" /> Saved successfully
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <textarea
+                                                            value={clinicalNotes}
+                                                            onChange={(e) => setClinicalNotes(e.target.value)}
+                                                            placeholder="Write your clinical assessment, diagnosis, prescription details, or general notes here..."
+                                                            rows={6}
+                                                            className="w-full rounded-[14px] border border-white/10 bg-[#000000]/60 p-4 text-sm text-white placeholder:text-[#71717A] focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide mb-3">
+                                                            Follow-up Actions Required
+                                                        </h4>
+                                                        <div className="grid gap-2 sm:grid-cols-2">
+                                                            {followUpOptions.map((action) => {
+                                                                const isChecked = followUpActions.includes(action);
+                                                                return (
+                                                                    <button
+                                                                        key={action}
+                                                                        type="button"
+                                                                        onClick={() => toggleFollowUpAction(action)}
+                                                                        className={cn(
+                                                                            'flex items-center gap-3 rounded-[10px] border p-3 text-left text-sm transition-all',
+                                                                            isChecked
+                                                                                ? 'border-white/30 bg-white/10 text-white'
+                                                                                : 'border-white/5 bg-[#000000]/30 text-[#A1A1AA] hover:border-white/15'
+                                                                        )}
+                                                                    >
+                                                                        <div className={cn(
+                                                                            'flex size-4 shrink-0 items-center justify-center rounded border',
+                                                                            isChecked ? 'border-white bg-white text-black' : 'border-white/20'
+                                                                        )}>
+                                                                            {isChecked && <CheckCircle2 className="size-3" />}
+                                                                        </div>
+                                                                        <span className="text-xs">{action}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 pt-2">
+                                                        <Button
+                                                            onClick={handleSaveNotes}
+                                                            disabled={savingNotes}
+                                                            className="rounded-full bg-white text-black hover:bg-white/90"
+                                                        >
+                                                            <Save className="mr-2 size-4" />
+                                                            {savingNotes ? 'Saving...' : 'Save Notes'}
+                                                        </Button>
+
+                                                        {!consultation.is_reviewed && (
+                                                            <Button
+                                                                onClick={handleMarkReviewed}
+                                                                disabled={reviewing}
+                                                                variant="outline"
+                                                                className="rounded-full border-green-500/20 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                                                            >
+                                                                <CheckCircle2 className="mr-2 size-4" />
+                                                                {reviewing ? 'Marking...' : 'Mark as Reviewed'}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </CardContent>
@@ -839,11 +918,11 @@ export default function DoctorConsultationShow({
                                                 </span>
                                             </div>
                                         )}
-                                        {consultation.cough_analysis?.explanation && (
+                                        {consultation.cough_analysis?.findings && (
                                             <div className="mt-3 rounded-[14px] bg-[#000000]/50 p-3">
                                                 <p className="text-xs text-[#71717A]">AI Explanation</p>
                                                 <p className="mt-1 text-sm text-[#FFFFFF]">
-                                                    {consultation.cough_analysis.explanation.substring(0, 100)}...
+                                                    {consultation.cough_analysis.findings.substring(0, 100)}...
                                                 </p>
                                             </div>
                                         )}

@@ -1,6 +1,8 @@
 <?php
 
 use App\Ai\Agents\ConsultAgent;
+use App\Domain\Consult\DTOs\CoughAnalysisResult;
+use App\Domain\Consult\Events\CoughAnalysisCompleted;
 use App\Domain\Consult\Jobs\AnalyseCough;
 use App\Models\Consultation;
 use App\Models\User;
@@ -37,7 +39,7 @@ test('first visit creates a consultation and shows the consult page', function (
 
 test('subsequent visits reuse the in-progress consultation', function () {
     $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create();
+    $consultation = Consultation::factory()->for($user)->create(['status' => 'chatting']);
     $this->actingAs($user);
 
     $this->get(route('consult'))->assertOk();
@@ -330,4 +332,20 @@ test('cough analysis is blocked without recorded consent', function () {
     expect($consultation->captures()->count())->toBe(0);
 
     Queue::assertNothingPushed();
+});
+
+test('cough completion broadcasts the wire event name the frontend subscribes to', function () {
+    $user = User::factory()->create();
+    $consultation = Consultation::factory()->for($user)->create();
+
+    $event = new CoughAnalysisCompleted($consultation, CoughAnalysisResult::unanalysed([]));
+
+    // The frontend subscribes with a leading dot ('.cough.analysis'), which
+    // tells Echo to use this name verbatim. If broadcastAs() ever drifts,
+    // the consult page goes back to looping "analysing" forever.
+    expect($event->broadcastAs())->toBe('cough.analysis');
+
+    $channels = collect($event->broadcastOn())->map(fn ($channel): string => $channel->name);
+
+    expect($channels->contains(fn (string $name): bool => str_contains($name, "consultation.{$consultation->id}")))->toBeTrue();
 });

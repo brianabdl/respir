@@ -101,7 +101,9 @@ function ConsultationRowItem({
 
     useEcho<ConsultationEvent>(
         `consultation.${consultation.id}`,
-        ['cough.analysis', 'consultation.updated'],
+        // Leading dots: must match broadcastAs() verbatim, or Echo prepends
+        // the App.Events namespace and this handler never fires.
+        ['.cough.analysis', '.consultation.updated'],
         (payload) => {
             const risk = payload.cough_risk ?? payload.risk_level;
 

@@ -223,7 +223,9 @@ export default function Consult({
         cough_analysis?: CoughAnalysis;
     }>(
         `consultation.${consultation.id}`,
-        'cough.analysis',
+        // Leading dot: must match broadcastAs() verbatim. Without it Echo
+        // prepends the App.Events namespace and this handler never fires.
+        '.cough.analysis',
         (payload) => {
             if (payload.cough_analysis) {
                 setAnalysis(payload.cough_analysis);

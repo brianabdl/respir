@@ -210,6 +210,7 @@ export default function DoctorConsultations({
     const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
     const [query, setQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkReviewing, setBulkReviewing] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => 
@@ -226,8 +227,16 @@ export default function DoctorConsultations({
     };
 
     const handleBulkMarkReviewed = async () => {
-        if (selectedIds.length === 0) return;
+        if (selectedIds.length === 0) {
+            alert('Please select at least one consultation to mark as reviewed');
+            return;
+        }
         
+        if (!confirm(`Mark ${selectedIds.length} consultation(s) as reviewed?`)) {
+            return;
+        }
+
+        setBulkReviewing(true);
         try {
             await Promise.all(
                 selectedIds.map(id => 
@@ -242,6 +251,9 @@ export default function DoctorConsultations({
             window.location.reload();
         } catch (error) {
             console.error('Bulk review failed', error);
+            alert('Failed to mark consultations as reviewed. Please try again.');
+        } finally {
+            setBulkReviewing(false);
         }
     };
 
@@ -353,16 +365,23 @@ export default function DoctorConsultations({
                 ) : isDefaultView ? (
                     <>
                         {selectedIds.length > 0 && (
-                            <div className="sticky top-0 z-10 rounded-xl border bg-blue-50 p-4 flex items-center justify-between">
+                            <div className="sticky top-0 z-10 rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-600/10 backdrop-blur-sm p-4 flex items-center justify-between shadow-lg">
                                 <div className="flex items-center gap-3">
-                                    <span className="font-medium">{selectedIds.length} selected</span>
-                                    <Button size="sm" variant="outline" onClick={clearSelection}>
+                                    <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                        {selectedIds.length} selected
+                                    </span>
+                                    <Button size="sm" variant="outline" onClick={clearSelection} disabled={bulkReviewing}>
                                         Clear
                                     </Button>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button size="sm" onClick={handleBulkMarkReviewed}>
-                                        Mark as Reviewed
+                                    <Button 
+                                        size="sm" 
+                                        onClick={handleBulkMarkReviewed}
+                                        disabled={bulkReviewing}
+                                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                                    >
+                                        {bulkReviewing ? 'Processing...' : 'Mark as Reviewed'}
                                     </Button>
                                 </div>
                             </div>

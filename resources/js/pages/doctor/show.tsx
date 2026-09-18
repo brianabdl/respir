@@ -1,6 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
 import {
     Activity,
     AlertTriangle,
@@ -12,6 +14,7 @@ import {
     Download,
     CheckCircle2,
     Save,
+    Maximize2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,7 +86,7 @@ export default function DoctorConsultationShow({
         captures: Capture[];
     };
 }) {
-    const [activeTab, setActiveTab] = useState<'briefing' | 'transcript' | 'cough' | 'media' | 'notes'>(
+    const [activeTab, setActiveTab] = useState<'briefing' | 'transcript' | 'cough' | 'media' | 'notes' | 'similar'>(
         'briefing',
     );
     const [requestingBriefing, setRequestingBriefing] = useState(false);
@@ -92,6 +95,10 @@ export default function DoctorConsultationShow({
     const [savingNotes, setSavingNotes] = useState(false);
     const [reviewing, setReviewing] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [similarCases, setSimilarCases] = useState<any[]>([]);
+    const [loadingSimilar, setLoadingSimilar] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
 
     useEcho(
         'doctor-queue',
@@ -173,6 +180,23 @@ export default function DoctorConsultationShow({
         }
     };
 
+    const loadSimilarCases = async () => {
+        if (similarCases.length > 0) return; // Already loaded
+        
+        setLoadingSimilar(true);
+        try {
+            const response = await fetch(`/doctor/consultations/${consultation.id}/similar`);
+            if (!response.ok) throw new Error('Failed to load similar cases');
+            
+            const data = await response.json();
+            setSimilarCases(data.similar || []);
+        } catch (error) {
+            console.error('Could not load similar cases', error);
+        } finally {
+            setLoadingSimilar(false);
+        }
+    };
+
     const toggleFollowUpAction = (action: string) => {
         setFollowUpActions(prev =>
             prev.includes(action)
@@ -192,6 +216,13 @@ export default function DoctorConsultationShow({
 
     const riskScore = consultation.cough_analysis?.risk_score ?? 0;
     const riskPercentage = Math.round(riskScore * 100);
+
+    // Prepare lightbox slides from captures - simplified to images only
+    const lightboxSlides = consultation.captures
+        .filter(capture => capture.type === 'image' || capture.mime_type.startsWith('image/'))
+        .map((capture) => ({
+            src: capture.download,
+        }));
 
     return (
         <>
@@ -315,6 +346,17 @@ export default function DoctorConsultationShow({
                                             >
                                                 <FileText className="mr-2 size-4" />
                                                 Clinical Notes
+                                            </Button>
+                                            <Button
+                                                variant={activeTab === 'similar' ? 'default' : 'ghost'}
+                                                onClick={() => {
+                                                    setActiveTab('similar');
+                                                    loadSimilarCases();
+                                                }}
+                                                className="rounded-[14px]"
+                                            >
+                                                <Activity className="mr-2 size-4" />
+                                                Similar Cases
                                             </Button>
                                         </nav>
 
@@ -469,38 +511,61 @@ export default function DoctorConsultationShow({
                                             )}
 
                                             {activeTab === 'media' && (
-                                                <div className="grid gap-4 sm:grid-cols-2">
-                                                    {consultation.captures.map((capture) => (
-                                                        <Card key={capture.id} className="border-white/10 bg-[#0B0B0D]">
-                                                            <CardContent className="p-5">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-2">
-                                                                        {capture.type === 'video' || capture.mime_type.startsWith('video/') ? (
-                                                                            <Video className="size-5 text-[#94A3B8]" />
-                                                                        ) : (
-                                                                            <FileText className="size-5 text-[#94A3B8]" />
-                                                                        )}
-                                                                        <span className="text-sm font-medium">{capture.type}</span>
+                                                <>
+                                                    <div className="grid gap-4 sm:grid-cols-2">
+                                                        {consultation.captures.map((capture, idx) => (
+                                                            <Card key={capture.id} className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors cursor-pointer">
+                                                                <CardContent className="p-5">
+                                                                    <div className="flex items-center justify-between mb-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            {capture.type === 'video' || capture.mime_type.startsWith('video/') ? (
+                                                                                <Video className="size-5 text-[#94A3B8]" />
+                                                                            ) : (
+                                                                                <FileText className="size-5 text-[#94A3B8]" />
+                                                                            )}
+                                                                            <span className="text-sm font-medium">{capture.type}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Button 
+                                                                                variant="outline" 
+                                                                                size="sm" 
+                                                                                className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20"
+                                                                                onClick={() => {
+                                                                                    setLightboxIndex(idx);
+                                                                                    setLightboxOpen(true);
+                                                                                }}
+                                                                            >
+                                                                                <Maximize2 className="size-3" />
+                                                                                <span className="sr-only">View</span>
+                                                                            </Button>
+                                                                            <a href={capture.download}>
+                                                                                <Button variant="outline" size="sm" className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20">
+                                                                                    <Download className="size-3" />
+                                                                                    <span className="sr-only">Download</span>
+                                                                                </Button>
+                                                                            </a>
+                                                                        </div>
                                                                     </div>
-                                                                    <a href={capture.download}>
-                                                                        <Button variant="outline" size="sm" className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20">
-                                                                            <Download className="size-3" />
-                                                                            <span className="sr-only">Download</span>
-                                                                        </Button>
-                                                                    </a>
-                                                                </div>
-                                                                <p className="mt-3 text-xs text-[#71717A]">
-                                                                    {capture.captured_at}
-                                                                </p>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))}
-                                                    {consultation.captures.length === 0 && (
-                                                        <p className="col-span-2 text-center text-[#71717A]">
-                                                            No media captures available
-                                                        </p>
-                                                    )}
-                                                </div>
+                                                                    <p className="text-xs text-[#71717A]">
+                                                                        {capture.captured_at}
+                                                                    </p>
+                                                                </CardContent>
+                                                            </Card>
+                                                        ))}
+                                                        {consultation.captures.length === 0 && (
+                                                            <p className="col-span-2 text-center text-[#71717A]">
+                                                                No media captures available
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <Lightbox
+                                                        open={lightboxOpen}
+                                                        close={() => setLightboxOpen(false)}
+                                                        slides={lightboxSlides}
+                                                        index={lightboxIndex}
+                                                    />
+                                                </>
                                             )}
 
                                             {activeTab === 'notes' && (
@@ -579,6 +644,72 @@ export default function DoctorConsultationShow({
                                                             </Button>
                                                         )}
                                                     </div>
+                                                </div>
+                                            )}
+
+                                            {activeTab === 'similar' && (
+                                                <div className="space-y-4">
+                                                    {loadingSimilar ? (
+                                                        <Card className="border-white/10 bg-[#0B0B0D]">
+                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                                <p className="text-[#A1A1AA]">Loading similar cases...</p>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ) : similarCases.length > 0 ? (
+                                                        <>
+                                                            <p className="text-sm text-[#71717A]">
+                                                                Found {similarCases.length} cases with similar cough patterns (based on acoustic analysis)
+                                                            </p>
+                                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                                {similarCases.map((similar: any, idx: number) => (
+                                                                    <Card key={idx} className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors">
+                                                                        <CardContent className="p-5">
+                                                                            <div className="flex items-center justify-between mb-3">
+                                                                                <h4 className="font-medium text-white">
+                                                                                    {similar.patient}
+                                                                                </h4>
+                                                                                {similar.risk_level && (
+                                                                                    <Badge className={cn(
+                                                                                        'rounded-full text-xs',
+                                                                                        similar.risk_level === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                                                        similar.risk_level === 'medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                                                                                        'bg-green-500/10 text-green-400 border-green-500/20'
+                                                                                    )}>
+                                                                                        {similar.risk_level.toUpperCase()}
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="space-y-2 text-sm">
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-[#71717A]">Similarity:</span>
+                                                                                    <span className="font-mono text-[#94A3B8]">
+                                                                                        {((1 - similar.distance) * 100).toFixed(1)}%
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-[#71717A]">Consultation ID:</span>
+                                                                                    <Link 
+                                                                                        href={`/doctor/consultations/${similar.consultation_id}`}
+                                                                                        className="font-mono text-xs text-blue-400 hover:text-blue-300"
+                                                                                    >
+                                                                                        #{similar.consultation_id}
+                                                                                    </Link>
+                                                                                </div>
+                                                                            </div>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <Card className="border-white/10 bg-[#0B0B0D]">
+                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                                <AlertTriangle className="size-12 text-[#71717A]" />
+                                                                <p className="mt-4 text-[#FFFFFF]">No similar cases found</p>
+                                                                <p className="mt-1 text-sm text-[#71717A]">This cough pattern is unique or no embeddings available</p>
+                                                            </CardContent>
+                                                        </Card>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

@@ -86,8 +86,12 @@ function timeAgo(value: string): string {
 
 function ConsultationRowItem({
     consultation,
+    isSelected,
+    onToggleSelect,
 }: {
     consultation: ConsultationRow;
+    isSelected: boolean;
+    onToggleSelect: (id: number) => void;
 }) {
     const [coughRisk, setCoughRisk] = useState<string | null>(
         consultation.cough_risk ?? null,
@@ -122,51 +126,64 @@ function ConsultationRowItem({
     );
 
     return (
-        <Link
-            href={show.url({ consultation: consultation.id })}
-            className="hover:bg-muted/50 block rounded-xl border p-4 transition"
-        >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">{consultation.patient.name}</span>
-                <span className="flex flex-wrap gap-2">
-                    {coughRisk ? (
-                        <Badge
-                            variant={
-                                coughRisk === 'high'
-                                    ? 'destructive'
-                                    : 'secondary'
-                            }
-                        >
-                            cough risk: {coughRisk}
-                        </Badge>
-                    ) : (
-                        <span className="text-xs text-neutral-500">
-                            no result yet
+        <div className="hover:bg-muted/50 block rounded-xl border p-4 transition relative">
+            <div className="flex items-start gap-3">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                        e.stopPropagation();
+                        onToggleSelect(consultation.id);
+                    }}
+                    className="mt-1 size-4 rounded border-gray-300"
+                />
+                <Link
+                    href={show.url({ consultation: consultation.id })}
+                    className="flex-1"
+                >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{consultation.patient.name}</span>
+                        <span className="flex flex-wrap gap-2">
+                            {coughRisk ? (
+                                <Badge
+                                    variant={
+                                        coughRisk === 'high'
+                                            ? 'destructive'
+                                            : 'secondary'
+                                    }
+                                >
+                                    cough risk: {coughRisk}
+                                </Badge>
+                            ) : (
+                                <span className="text-xs text-neutral-500">
+                                    no result yet
+                                </span>
+                            )}
+                            {consultation.is_reviewed && (
+                                <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
+                                    reviewed
+                                </Badge>
+                            )}
+                            {hasBriefing ? (
+                                <Badge variant="outline">briefing ready</Badge>
+                            ) : (
+                                coughRisk && (
+                                    <Badge variant="outline">needs briefing</Badge>
+                                )
+                            )}
                         </span>
-                    )}
-                    {consultation.is_reviewed && (
-                        <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
-                            reviewed
-                        </Badge>
-                    )}
-                    {hasBriefing ? (
-                        <Badge variant="outline">briefing ready</Badge>
-                    ) : (
-                        coughRisk && (
-                            <Badge variant="outline">needs briefing</Badge>
-                        )
-                    )}
-                </span>
+                    </div>
+                    <p className="text-sm text-neutral-500">
+                        {timeAgo(consultation.updated_at)} · {status} ·{' '}
+                        {consultation.sessions.length} session
+                        {consultation.sessions.length === 1 ? '' : 's'} · {totalTurns}{' '}
+                        turn{totalTurns === 1 ? '' : 's'} ·{' '}
+                        {consultation.captures_count} capture
+                        {consultation.captures_count === 1 ? '' : 's'}
+                    </p>
+                </Link>
             </div>
-            <p className="text-sm text-neutral-500">
-                {timeAgo(consultation.updated_at)} · {status} ·{' '}
-                {consultation.sessions.length} session
-                {consultation.sessions.length === 1 ? '' : 's'} · {totalTurns}{' '}
-                turn{totalTurns === 1 ? '' : 's'} ·{' '}
-                {consultation.captures_count} capture
-                {consultation.captures_count === 1 ? '' : 's'}
-            </p>
-        </Link>
+        </div>
     );
 }
 
@@ -192,6 +209,41 @@ export default function DoctorConsultations({
 }) {
     const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
     const [query, setQuery] = useState('');
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const selectAll = () => {
+        setSelectedIds(visible.map(c => c.id));
+    };
+
+    const clearSelection = () => {
+        setSelectedIds([]);
+    };
+
+    const handleBulkMarkReviewed = async () => {
+        if (selectedIds.length === 0) return;
+        
+        try {
+            await Promise.all(
+                selectedIds.map(id => 
+                    fetch(`/doctor/consultations/${id}/review`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                        },
+                    })
+                )
+            );
+            window.location.reload();
+        } catch (error) {
+            console.error('Bulk review failed', error);
+        }
+    };
 
     const visible = useMemo(() => {
         const needle = query.trim().toLowerCase();
@@ -300,15 +352,37 @@ export default function DoctorConsultations({
                     </div>
                 ) : isDefaultView ? (
                     <>
+                        {selectedIds.length > 0 && (
+                            <div className="sticky top-0 z-10 rounded-xl border bg-blue-50 p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <span className="font-medium">{selectedIds.length} selected</span>
+                                    <Button size="sm" variant="outline" onClick={clearSelection}>
+                                        Clear
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button size="sm" onClick={handleBulkMarkReviewed}>
+                                        Mark as Reviewed
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                         {attention.length > 0 && (
                             <section className="flex flex-col gap-3">
-                                <h2 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">
-                                    Needs attention
-                                </h2>
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">
+                                        Needs attention
+                                    </h2>
+                                    <Button size="sm" variant="ghost" onClick={selectAll}>
+                                        Select all
+                                    </Button>
+                                </div>
                                 {attention.map((consultation) => (
                                     <ConsultationRowItem
                                         key={consultation.id}
                                         consultation={consultation}
+                                        isSelected={selectedIds.includes(consultation.id)}
+                                        onToggleSelect={toggleSelect}
                                     />
                                 ))}
                             </section>
@@ -321,6 +395,8 @@ export default function DoctorConsultations({
                                 <ConsultationRowItem
                                     key={consultation.id}
                                     consultation={consultation}
+                                    isSelected={selectedIds.includes(consultation.id)}
+                                    onToggleSelect={toggleSelect}
                                 />
                             ))}
                         </section>
@@ -331,6 +407,8 @@ export default function DoctorConsultations({
                             <ConsultationRowItem
                                 key={consultation.id}
                                 consultation={consultation}
+                                isSelected={selectedIds.includes(consultation.id)}
+                                onToggleSelect={toggleSelect}
                             />
                         ))}
                     </section>

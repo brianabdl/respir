@@ -177,8 +177,24 @@ function SageSpectrum({
 
         const BAR_COUNT = 64;
         const bins = new Uint8Array(BAR_COUNT);
+        const magnitudes = new Float32Array(BAR_COUNT);
+        const smoothed = new Float32Array(BAR_COUNT);
         const startTime = performance.now();
         let raf = 0;
+
+        // Spreads any single spiky bar into its neighbors so the ring
+        // reads as one continuous wave, not sawtoothed peaks — raw FFT
+        // bins and the procedural noise both spike bar-to-bar otherwise.
+        function smoothCircular(src: Float32Array, out: Float32Array) {
+            for (let pass = 0; pass < 2; pass++) {
+                for (let i = 0; i < BAR_COUNT; i++) {
+                    const prev = src[(i - 1 + BAR_COUNT) % BAR_COUNT];
+                    const next = src[(i + 1) % BAR_COUNT];
+                    out[i] = prev * 0.25 + src[i] * 0.5 + next * 0.25;
+                }
+                src.set(out);
+            }
+        }
 
         function resize() {
             const rect = canvas!.getBoundingClientRect();
@@ -249,9 +265,14 @@ function SageSpectrum({
             let rms = 0;
 
             for (let i = 0; i < BAR_COUNT; i++) {
-                const magnitude = live
+                magnitudes[i] = live
                     ? bins[i] / 255
                     : proceduralBar(i, t, energy);
+            }
+            smoothCircular(magnitudes, smoothed);
+
+            for (let i = 0; i < BAR_COUNT; i++) {
+                const magnitude = magnitudes[i];
                 rms += magnitude;
 
                 const angle = (i / BAR_COUNT) * Math.PI * 2 - Math.PI / 2;

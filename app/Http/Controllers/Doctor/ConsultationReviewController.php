@@ -237,7 +237,7 @@ class ConsultationReviewController extends Controller
     /**
      * Export consultation report as PDF.
      */
-    public function exportPdf(Request $request, Consultation $consultation)
+    public function exportPdf(Request $request, Consultation $consultation): \Symfony\Component\HttpFoundation\Response
     {
         $consultation->load(['user', 'reviewer']);
 

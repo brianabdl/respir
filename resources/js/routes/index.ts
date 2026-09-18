@@ -219,7 +219,7 @@ register.form = registerForm
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 export const consult = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ consult.definition = {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 consult.url = (options?: RouteQueryOptions) => {
@@ -243,7 +243,7 @@ consult.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 consult.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -253,7 +253,7 @@ consult.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 consult.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -263,7 +263,7 @@ consult.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 const consultForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -273,7 +273,7 @@ const consultForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 consultForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -283,7 +283,7 @@ consultForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\Consult\ConsultationController::consult
-* @see app/Http/Controllers/Consult/ConsultationController.php:47
+* @see app/Http/Controllers/Consult/ConsultationController.php:57
 * @route '/consult'
 */
 consultForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

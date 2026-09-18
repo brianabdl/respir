@@ -18,5 +18,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/app.tsx | .ai/rules/js.md |
 | resources/js/lib/gemini-live.ts | .ai/rules/lib.md |
 | database/migrations/** | .ai/rules/migrations.md |
-| resources/js/pages/consult.tsx, resources/js/pages/welcome.tsx | .ai/rules/pages.md |
+| resources/js/pages/consult.tsx, resources/js/pages/welcome.tsx, resources/js/pages/** | .ai/rules/pages.md |
 | routes/web.php | .ai/rules/routes.md |
+| tests/** | .ai/rules/tests.md |

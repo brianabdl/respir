@@ -130,7 +130,7 @@
 
     <div class="header">
         <h1>TB SCREENING CONSULTATION REPORT</h1>
-        <p>Respair Health System</p>
+        <p>Respir Health System</p>
         <p>Generated on {{ now()->timezone('Asia/Jakarta')->format('F d, Y h:i A') }} WIB</p>
     </div>
 

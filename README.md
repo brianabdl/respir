@@ -1,8 +1,8 @@
-# Respair
+# Respir
 
 **Agentic pre-visit AI for primary care — TB screening & structured clinician briefings.**
 
-Respair is a clinic-facing platform that runs patients through a private pre-visit:
+Respir is a clinic-facing platform that runs patients through a private pre-visit:
 a guided voice interview with an AI assistant, a cough-based tuberculosis screen,
 and a structured briefing prepared for the clinician before consultation.
 
@@ -33,7 +33,7 @@ external model.
 
 ## Overview
 
-Respair helps primary-care clinics move the patient interview ahead of the visit.
+Respir helps primary-care clinics move the patient interview ahead of the visit.
 
 A patient consents, sits in front of the camera, and speaks with **Sage** — the
 voice agent — who asks pre-visit questions one at a time, then captures a cough
@@ -110,8 +110,8 @@ tests/                  Feature tests, security tests, audio fixtures
 ### Setup
 
 ```bash
-git clone <repository-url> respair
-cd respair
+git clone <repository-url> respir
+cd respir
 
 composer setup    # composer install · .env · key · migrate · bun install · build
 ```

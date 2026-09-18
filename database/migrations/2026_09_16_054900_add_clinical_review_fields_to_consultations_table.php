@@ -13,7 +13,7 @@ return new class extends Migration
             $table->json('follow_up_actions')->nullable()->after('clinical_notes');
             $table->boolean('is_reviewed')->default(false)->after('follow_up_actions');
             $table->timestamp('reviewed_at')->nullable()->after('is_reviewed');
-            $table->foreignId('reviewed_by')->nullable()->constrained('users')->after('reviewed_at');
+            $table->foreignId('reviewed_by')->nullable()->constrained('users');
         });
     }
 

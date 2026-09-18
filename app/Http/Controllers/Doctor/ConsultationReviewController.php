@@ -157,7 +157,7 @@ class ConsultationReviewController extends Controller
             AuditAction::ConsultationUpdated,
             actor: $request->user(),
             subject: $consultation,
-            metadata: ['action' => 'notes_saved'],
+            context: ['action' => 'notes_saved'],
         );
 
         return response()->json([

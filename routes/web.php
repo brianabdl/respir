@@ -19,7 +19,7 @@ Route::middleware(['auth', 'verified', EnsurePatient::class])->group(function ()
         ->name('consult.voice');
     Route::get('consult/{consultation}/live/token', [ConsultationController::class, 'liveToken'])->name('consult.live.token');
     Route::get('consult/{consultation}/context', [ConsultationController::class, 'conversationContext'])
-        ->middleware('throttle:consult-chat')
+        ->middleware('throttle:consult-context')
         ->name('consult.context');
     Route::post('consult/{consultation}/sessions', [ConsultationController::class, 'sessionLog'])->name('consult.sessions.log');
     Route::post('consult/{consultation}/cough', [ConsultationController::class, 'cough'])

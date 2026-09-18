@@ -5,6 +5,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | Applies to | Rule file |
 | --- | --- |
 | resources/js/actions/** | .ai/rules/actions.md |
+| app/Http/Controllers/Consult/**,app/Ai/Agents/**,resources/js/pages/consult.tsx | .ai/rules/agents-js-pages.md |
 | ai-service/** | .ai/rules/ai-service.md |
 | app/Domain/Audit/** | .ai/rules/audit.md |
 | config/database.php | .ai/rules/config.md |

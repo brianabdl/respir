@@ -67,15 +67,15 @@ questions, red flags) is generated for the clinician.
 
 ## Technology Stack
 
-| Layer | Technology |
-| --- | --- |
-| Backend | Laravel 13 · PHP 8.5 · `laravel/ai` agent SDK · Pest · Larastan · Pint |
-| Frontend | Inertia v3 · React 19 · TypeScript · Tailwind CSS 4 · Vite 8 · Wayfinder |
-| Realtime | Gemini Live API (interaction) · Laravel Reverb + `@laravel/echo-react` |
-| AI service | Python 3.12 · FastAPI · HeAR · TB dual-head classifier · EmbeddingGemma |
-| Clinical LLM | MedGemma on Google Vertex AI (Model Garden) |
-| Data | PostgreSQL 18 + pgvector · Valkey (queues & cache, Redis-compatible) |
-| Audio | HeAR (local cough embeddings) · ffmpeg (decoding) |
+| Layer        | Technology                                                               |
+| ------------ | ------------------------------------------------------------------------ |
+| Backend      | Laravel 13 · PHP 8.5 · `laravel/ai` agent SDK · Pest · Larastan · Pint   |
+| Frontend     | Inertia v3 · React 19 · TypeScript · Tailwind CSS 4 · Vite 8 · Wayfinder |
+| Realtime     | Gemini Live API (interaction) · Laravel Reverb + `@laravel/echo-react`   |
+| AI service   | Python 3.12 · FastAPI · HeAR · TB dual-head classifier · EmbeddingGemma  |
+| Clinical LLM | MedGemma on Google Vertex AI (Model Garden)                              |
+| Data         | PostgreSQL 18 + pgvector · Valkey (queues & cache, Redis-compatible)     |
+| Audio        | HeAR (local cough embeddings) · ffmpeg (decoding)                        |
 
 ## Repository Structure
 
@@ -96,16 +96,16 @@ tests/                  Feature tests, security tests, audio fixtures
 
 ### Prerequisites
 
-| Tool | Version / Notes |
-| --- | --- |
-| PHP | 8.5, with `pdo_pgsql`, `redis`, `pcntl` |
-| Composer | 2.x |
-| Bun | 1.4+ |
-| PostgreSQL | 18, with the `pgvector` extension |
-| Valkey | (or Redis) |
-| Python | 3.12, managed by [uv](https://docs.astral.sh/uv/) |
-| ffmpeg | on `PATH` |
-| Google | Gemini API key (realtime interaction); optional HF token for gated HeAR models |
+| Tool       | Version / Notes                                                                |
+| ---------- | ------------------------------------------------------------------------------ |
+| PHP        | 8.5, with `pdo_pgsql`, `redis`, `pcntl`                                        |
+| Composer   | 2.x                                                                            |
+| Bun        | 1.4+                                                                           |
+| PostgreSQL | 18, with the `pgvector` extension                                              |
+| Valkey     | (or Redis)                                                                     |
+| Python     | 3.12, managed by [uv](https://docs.astral.sh/uv/)                              |
+| ffmpeg     | on `PATH`                                                                      |
+| Google     | Gemini API key (realtime interaction); optional HF token for gated HeAR models |
 
 ### Setup
 
@@ -209,24 +209,24 @@ Python FastAPI (ai-service)
 
 Key Laravel environment variables (full list in `.env.example`):
 
-| Variable | Purpose |
-| --- | --- |
-| `DB_*` | PostgreSQL connection (`agen_gemma`) |
-| `QUEUE_CONNECTION=redis` | Valkey-backed queue |
-| `CACHE_STORE=redis` | Valkey-backed cache |
-| `BROADCAST_CONNECTION=reverb` | Reverb WebSocket broadcasting |
-| `REVERB_*` / `VITE_REVERB_*` | Reverb server/client credentials |
+| Variable                              | Purpose                                 |
+| ------------------------------------- | --------------------------------------- |
+| `DB_*`                                | PostgreSQL connection (`agen_gemma`)    |
+| `QUEUE_CONNECTION=redis`              | Valkey-backed queue                     |
+| `CACHE_STORE=redis`                   | Valkey-backed cache                     |
+| `BROADCAST_CONNECTION=reverb`         | Reverb WebSocket broadcasting           |
+| `REVERB_*` / `VITE_REVERB_*`          | Reverb server/client credentials        |
 | `AI_SERVICE_URL` / `AI_SERVICE_TOKEN` | Python service endpoint + shared secret |
-| `GEMINI_API_KEY` / `GEMINI_URL` | Realtime interaction layer only |
+| `GEMINI_API_KEY` / `GEMINI_URL`       | Realtime interaction layer only         |
 
 Key Python service variables (full list in `ai-service/.env.example`):
 
-| Variable | Purpose |
-| --- | --- |
-| `AI_DEVICE` | `auto`, `cpu`, or `cuda` |
-| `HF_TOKEN` / `HEAR_MODEL` / `TB_CLASSIFIER_MODEL` / `EMBEDDING_MODEL` | Model sources |
-| `VERTEX_PROJECT` / `VERTEX_LOCATION` / `VERTEX_ENDPOINT_ID` | Vertex MedGemma endpoint |
-| `PRELOAD_MODELS` | Adapters to load at startup |
+| Variable                                                              | Purpose                     |
+| --------------------------------------------------------------------- | --------------------------- |
+| `AI_DEVICE`                                                           | `auto`, `cpu`, or `cuda`    |
+| `HF_TOKEN` / `HEAR_MODEL` / `TB_CLASSIFIER_MODEL` / `EMBEDDING_MODEL` | Model sources               |
+| `VERTEX_PROJECT` / `VERTEX_LOCATION` / `VERTEX_ENDPOINT_ID`           | Vertex MedGemma endpoint    |
+| `PRELOAD_MODELS`                                                      | Adapters to load at startup |
 
 ## Testing
 

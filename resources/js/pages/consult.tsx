@@ -45,6 +45,15 @@ type Capture = {
 // Band cutoffs mirror TbClassifier in ai-service (HIGH 0.66, MEDIUM 0.33).
 const RISK_BAND_CUTOFFS = { medium: 0.33, high: 0.66 } as const;
 
+// Upper bound on the cough upload fetch, so a dead network can't block Sage's
+// turn forever — the tool call must always resolve and hand control back.
+const COUGH_UPLOAD_TIMEOUT_MS = 10_000;
+// Last-resort safety net for the tool-call recording wait: covers the 4s
+// capture plus the upload timeout above, with headroom for a MediaRecorder
+// that never fires 'stop' or 'error' at all.
+const COUGH_TOOL_CALL_SAFETY_MS = 16_000;
+const CONTEXT_FETCH_TIMEOUT_MS = 8_000;
+
 const COUGH_CAPTURE_TOOL: LiveTool = {
     functionDeclarations: [
         {
@@ -198,6 +207,7 @@ export default function Consult({
     const toolCoughRef = useRef(false);
     const coughUploadOkRef = useRef(false);
     const closingRef = useRef(false);
+    const closingInProgressRef = useRef(false);
     const closingTimerRef = useRef<number | null>(null);
     const meterRef = useRef<{
         context: AudioContext;
@@ -268,21 +278,33 @@ export default function Consult({
         [],
     );
 
-    function handleAssistantCue(said: string) {
-        const normalized = said.toLowerCase();
-        const requestsCoughSample = normalized.includes('microphone');
+    /**
+     * Start the cough-capture countdown. Guarded by coughStartedRef so the
+     * explicit start_cough_capture tool signal and the handleAssistantCue
+     * keyword backup can never both fire.
+     */
+    function triggerCoughCapture() {
+        if (coughStartedRef.current) return;
 
-        if (!coughStartedRef.current && requestsCoughSample) {
-            setCoughPhase('prompted');
-            setVoiceHint('Get ready — recording your cough sample next');
-            coughStartedRef.current = true;
-            micRef.current?.stop();
-            micRef.current = null;
-            speakerRef.current?.interrupt();
-            coughTimerRef.current = window.setTimeout(() => {
-                coughTimerRef.current = null;
-                void startCough();
-            }, 900);
+        setCoughPhase('prompted');
+        setVoiceHint('Get ready — recording your cough sample next');
+        coughStartedRef.current = true;
+        micRef.current?.stop();
+        micRef.current = null;
+        speakerRef.current?.interrupt();
+        coughTimerRef.current = window.setTimeout(() => {
+            coughTimerRef.current = null;
+            void startCough();
+        }, 900);
+    }
+
+    // Backup only: the SSE /chat stream now also emits an explicit 'tool'
+    // event when the agent calls start_cough_capture (see send()). This
+    // keyword check just covers the rare case where that event doesn't
+    // decode client-side.
+    function handleAssistantCue(said: string) {
+        if (said.toLowerCase().includes('microphone')) {
+            triggerCoughCapture();
         }
     }
 
@@ -356,6 +378,7 @@ export default function Consult({
     async function startVoiceConsult() {
         resetCoughAssessment();
         closingRef.current = false;
+        closingInProgressRef.current = false;
         toolCoughRef.current = false;
         coughUploadOkRef.current = false;
         if (closingTimerRef.current !== null) {
@@ -606,6 +629,12 @@ export default function Consult({
                             return copy;
                         });
                     }
+                    if (
+                        event.type === 'tool' &&
+                        event.name === 'start_cough_capture'
+                    ) {
+                        triggerCoughCapture();
+                    }
                     if (event.type === 'done') {
                         setStreaming(false);
                         handleAssistantCue(reply);
@@ -801,6 +830,7 @@ export default function Consult({
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: formData,
+                    signal: AbortSignal.timeout(COUGH_UPLOAD_TIMEOUT_MS),
                 },
             );
 
@@ -866,11 +896,35 @@ export default function Consult({
 
         if (recorder) {
             await new Promise<void>((resolve) => {
-                const original = recorder.onstop;
-                recorder.onstop = (event) => {
-                    original?.call(recorder, event);
+                let settled = false;
+                const finish = () => {
+                    if (settled) return;
+                    settled = true;
                     resolve();
                 };
+
+                // onstop's handler (set in startCough) awaits analyzeCough's
+                // upload — wait for that promise too, not just the event,
+                // otherwise coughUploadOkRef below reads stale before the
+                // upload has actually finished.
+                const originalStop = recorder.onstop;
+                recorder.onstop = async (event) => {
+                    try {
+                        await originalStop?.call(recorder, event);
+                    } finally {
+                        finish();
+                    }
+                };
+
+                // A recorder error never fires 'stop', so without this the
+                // tool call — and Sage's turn — would hang forever.
+                const originalError = recorder.onerror;
+                recorder.onerror = (event) => {
+                    originalError?.call(recorder, event);
+                    finish();
+                };
+
+                window.setTimeout(finish, COUGH_TOOL_CALL_SAFETY_MS);
             });
         }
 
@@ -915,7 +969,8 @@ export default function Consult({
 
     async function beginGracefulClose(): Promise<void> {
         const live = liveRef.current;
-        if (!live) return;
+        if (!live || closingInProgressRef.current) return;
+        closingInProgressRef.current = true;
 
         if (closingTimerRef.current !== null) {
             window.clearTimeout(closingTimerRef.current);
@@ -952,7 +1007,10 @@ export default function Consult({
                     consultation.id,
                     { query: { q: query } },
                 ),
-                { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
+                {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: AbortSignal.timeout(CONTEXT_FETCH_TIMEOUT_MS),
+                },
             );
 
             if (!response.ok) {

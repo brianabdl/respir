@@ -112,6 +112,11 @@ class ConsultationReviewController extends Controller
             subject: $consultation,
         );
 
+        // Auto-generate briefing if not exists and consultation is completed
+        if ($consultation->status === 'completed' && $consultation->report === null) {
+            GenerateClinicianBriefing::dispatch($consultation->id);
+        }
+
         return inertia('doctor/show', [
             'consultation' => [
                 'id' => $consultation->id,

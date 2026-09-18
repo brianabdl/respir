@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { useEcho } from '@laravel/echo-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -86,8 +87,12 @@ function timeAgo(value: string): string {
 
 function ConsultationRowItem({
     consultation,
+    isSelected,
+    onToggleSelect,
 }: {
     consultation: ConsultationRow;
+    isSelected: boolean;
+    onToggleSelect: (id: number) => void;
 }) {
     const [coughRisk, setCoughRisk] = useState<string | null>(
         consultation.cough_risk ?? null,
@@ -124,51 +129,64 @@ function ConsultationRowItem({
     );
 
     return (
-        <Link
-            href={show.url({ consultation: consultation.id })}
-            className="hover:bg-muted/50 block rounded-xl border p-4 transition"
-        >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">{consultation.patient.name}</span>
-                <span className="flex flex-wrap gap-2">
-                    {coughRisk ? (
-                        <Badge
-                            variant={
-                                coughRisk === 'high'
-                                    ? 'destructive'
-                                    : 'secondary'
-                            }
-                        >
-                            cough risk: {coughRisk}
-                        </Badge>
-                    ) : (
-                        <span className="text-xs text-neutral-500">
-                            no result yet
+        <div className="hover:bg-muted/50 block rounded-xl border p-4 transition relative">
+            <div className="flex items-start gap-3">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                        e.stopPropagation();
+                        onToggleSelect(consultation.id);
+                    }}
+                    className="mt-1 size-4 rounded border-gray-300"
+                />
+                <Link
+                    href={show.url({ consultation: consultation.id })}
+                    className="flex-1"
+                >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{consultation.patient.name}</span>
+                        <span className="flex flex-wrap gap-2">
+                            {coughRisk ? (
+                                <Badge
+                                    variant={
+                                        coughRisk === 'high'
+                                            ? 'destructive'
+                                            : 'secondary'
+                                    }
+                                >
+                                    cough risk: {coughRisk}
+                                </Badge>
+                            ) : (
+                                <span className="text-xs text-neutral-500">
+                                    no result yet
+                                </span>
+                            )}
+                            {consultation.is_reviewed && (
+                                <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
+                                    reviewed
+                                </Badge>
+                            )}
+                            {hasBriefing ? (
+                                <Badge variant="outline">briefing ready</Badge>
+                            ) : (
+                                coughRisk && (
+                                    <Badge variant="outline">needs briefing</Badge>
+                                )
+                            )}
                         </span>
-                    )}
-                    {consultation.is_reviewed && (
-                        <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
-                            reviewed
-                        </Badge>
-                    )}
-                    {hasBriefing ? (
-                        <Badge variant="outline">briefing ready</Badge>
-                    ) : (
-                        coughRisk && (
-                            <Badge variant="outline">needs briefing</Badge>
-                        )
-                    )}
-                </span>
+                    </div>
+                    <p className="text-sm text-neutral-500">
+                        {timeAgo(consultation.updated_at)} · {status} ·{' '}
+                        {consultation.sessions.length} session
+                        {consultation.sessions.length === 1 ? '' : 's'} · {totalTurns}{' '}
+                        turn{totalTurns === 1 ? '' : 's'} ·{' '}
+                        {consultation.captures_count} capture
+                        {consultation.captures_count === 1 ? '' : 's'}
+                    </p>
+                </Link>
             </div>
-            <p className="text-sm text-neutral-500">
-                {timeAgo(consultation.updated_at)} · {status} ·{' '}
-                {consultation.sessions.length} session
-                {consultation.sessions.length === 1 ? '' : 's'} · {totalTurns}{' '}
-                turn{totalTurns === 1 ? '' : 's'} ·{' '}
-                {consultation.captures_count} capture
-                {consultation.captures_count === 1 ? '' : 's'}
-            </p>
-        </Link>
+        </div>
     );
 }
 
@@ -194,6 +212,53 @@ export default function DoctorConsultations({
 }) {
     const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
     const [query, setQuery] = useState('');
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkReviewing, setBulkReviewing] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const selectAll = () => {
+        setSelectedIds(visible.map(c => c.id));
+    };
+
+    const clearSelection = () => {
+        setSelectedIds([]);
+    };
+
+    const handleBulkMarkReviewed = async () => {
+        if (selectedIds.length === 0) {
+            toast.warning('Please select at least one consultation to mark as reviewed');
+            return;
+        }
+
+        const confirmed = confirm(`Mark ${selectedIds.length} consultation(s) as reviewed?`);
+        if (!confirmed) return;
+
+        setBulkReviewing(true);
+        try {
+            await Promise.all(
+                selectedIds.map(id => 
+                    fetch(`/doctor/consultations/${id}/review`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                        },
+                    })
+                )
+            );
+            toast.success(`${selectedIds.length} consultation(s) marked as reviewed successfully`);
+            window.location.reload();
+        } catch (error) {
+            console.error('Bulk review failed', error);
+            toast.error('Failed to mark consultations as reviewed. Please try again.');
+        } finally {
+            setBulkReviewing(false);
+        }
+    };
 
     const visible = useMemo(() => {
         const needle = query.trim().toLowerCase();
@@ -302,15 +367,44 @@ export default function DoctorConsultations({
                     </div>
                 ) : isDefaultView ? (
                     <>
+                        {selectedIds.length > 0 && (
+                            <div className="sticky top-0 z-10 rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-600/10 backdrop-blur-sm p-4 flex items-center justify-between shadow-lg">
+                                <div className="flex items-center gap-3">
+                                    <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                        {selectedIds.length} selected
+                                    </span>
+                                    <Button size="sm" variant="outline" onClick={clearSelection} disabled={bulkReviewing}>
+                                        Clear
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button 
+                                        size="sm" 
+                                        onClick={handleBulkMarkReviewed}
+                                        disabled={bulkReviewing}
+                                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                                    >
+                                        {bulkReviewing ? 'Processing...' : 'Mark as Reviewed'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                         {attention.length > 0 && (
                             <section className="flex flex-col gap-3">
-                                <h2 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">
-                                    Needs attention
-                                </h2>
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">
+                                        Needs attention
+                                    </h2>
+                                    <Button size="sm" variant="ghost" onClick={selectAll}>
+                                        Select all
+                                    </Button>
+                                </div>
                                 {attention.map((consultation) => (
                                     <ConsultationRowItem
                                         key={consultation.id}
                                         consultation={consultation}
+                                        isSelected={selectedIds.includes(consultation.id)}
+                                        onToggleSelect={toggleSelect}
                                     />
                                 ))}
                             </section>
@@ -323,6 +417,8 @@ export default function DoctorConsultations({
                                 <ConsultationRowItem
                                     key={consultation.id}
                                     consultation={consultation}
+                                    isSelected={selectedIds.includes(consultation.id)}
+                                    onToggleSelect={toggleSelect}
                                 />
                             ))}
                         </section>
@@ -333,6 +429,8 @@ export default function DoctorConsultations({
                             <ConsultationRowItem
                                 key={consultation.id}
                                 consultation={consultation}
+                                isSelected={selectedIds.includes(consultation.id)}
+                                onToggleSelect={toggleSelect}
                             />
                         ))}
                     </section>

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Consultation;
 use App\Models\ConsultCapture;
 use App\Models\ConsultSessionLog;
+use App\Models\CoughEmbedding;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -74,6 +75,11 @@ class DemoConsultationSeeder extends Seeder
 
         $this->createSessionLogs($consultation->id);
         $this->createCaptures($consultation->id);
+
+        // Create dummy cough embeddings for similar cases feature
+        if ($risk) {
+            $this->createCoughEmbedding($consultation->id, $risk, $score);
+        }
     }
 
     private function getChiefComplaint(?string $risk): string
@@ -134,18 +140,82 @@ class DemoConsultationSeeder extends Seeder
 
     private function createCaptures(int $consultationId): void
     {
-        $types = ['video', 'image', 'audio'];
-        $mimes = ['video/webm', 'image/jpeg', 'audio/webm'];
+        $types = ['image', 'video'];
 
         for ($i = 0; $i < 2; $i++) {
-            ConsultCapture::create([
-                'consultation_id' => $consultationId,
-                'type' => $types[$i % 3],
-                'path' => 'captures/'.uniqid().'.webm',
-                'disk' => 'local',
-                'mime_type' => $mimes[$i % 3],
-                'captured_at' => now()->subDays(rand(1, 6))->setTime(rand(8, 18), rand(0, 59), 0),
-            ]);
+            $type = $types[$i % 2];
+
+            if ($type === 'image') {
+                // Create a simple placeholder image
+                $image = imagecreate(400, 300);
+                if ($image === false) {
+                    continue;
+                }
+
+                $bgColor = imagecolorallocate($image, rand(200, 255), rand(200, 255), rand(200, 255));
+                $textColor = imagecolorallocate($image, 50, 50, 50);
+
+                if ($bgColor === false || $textColor === false) {
+                    imagedestroy($image);
+
+                    continue;
+                }
+
+                imagefilledrectangle($image, 0, 0, 400, 300, $bgColor);
+                imagestring($image, 5, 100, 140, 'Demo Image #'.$consultationId, $textColor);
+
+                ob_start();
+                imagepng($image);
+                $imageData = ob_get_clean();
+                imagedestroy($image);
+
+                $filename = 'captures/demo-'.uniqid().'.png';
+                \Storage::disk('local')->put($filename, $imageData);
+
+                ConsultCapture::create([
+                    'consultation_id' => $consultationId,
+                    'type' => 'image',
+                    'path' => $filename,
+                    'disk' => 'local',
+                    'mime_type' => 'image/png',
+                    'captured_at' => now()->subDays(rand(1, 6))->setTime(rand(8, 18), rand(0, 59), 0),
+                ]);
+            } else {
+                // For video, just create metadata (real video generation is complex)
+                ConsultCapture::create([
+                    'consultation_id' => $consultationId,
+                    'type' => 'video',
+                    'path' => 'captures/demo-video-'.uniqid().'.webm',
+                    'disk' => 'local',
+                    'mime_type' => 'video/webm',
+                    'captured_at' => now()->subDays(rand(1, 6))->setTime(rand(8, 18), rand(0, 59), 0),
+                ]);
+            }
         }
+    }
+
+    private function createCoughEmbedding(int $consultationId, string $riskLevel, float $riskScore): void
+    {
+        // Generate dummy embedding vector (512 dimensions to match database schema)
+        // Similar risk levels will have similar embeddings
+        $baseVector = match ($riskLevel) {
+            'high' => array_fill(0, 512, 0.8),
+            'medium' => array_fill(0, 512, 0.5),
+            'low' => array_fill(0, 512, 0.2),
+            default => array_fill(0, 512, 0.1),
+        };
+
+        // Add random noise to make each embedding unique but similar within risk group
+        $embedding = array_map(
+            fn ($val) => $val + (rand(-10, 10) / 100),
+            $baseVector
+        );
+
+        CoughEmbedding::create([
+            'consultation_id' => $consultationId,
+            'embedding' => $embedding,
+            'risk_level' => $riskLevel,
+            'created_at' => now()->subDays(rand(1, 6)),
+        ]);
     }
 }

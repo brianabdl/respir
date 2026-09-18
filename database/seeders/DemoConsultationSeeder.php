@@ -146,10 +146,21 @@ class DemoConsultationSeeder extends Seeder
             $type = $types[$i % 2];
 
             if ($type === 'image') {
-                // Create a simple 1x1 placeholder image
+                // Create a simple placeholder image
                 $image = imagecreate(400, 300);
+                if ($image === false) {
+                    continue;
+                }
+
                 $bgColor = imagecolorallocate($image, rand(200, 255), rand(200, 255), rand(200, 255));
                 $textColor = imagecolorallocate($image, 50, 50, 50);
+
+                if ($bgColor === false || $textColor === false) {
+                    imagedestroy($image);
+
+                    continue;
+                }
+
                 imagefilledrectangle($image, 0, 0, 400, 300, $bgColor);
                 imagestring($image, 5, 100, 140, 'Demo Image #'.$consultationId, $textColor);
 

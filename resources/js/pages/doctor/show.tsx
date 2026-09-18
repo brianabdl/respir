@@ -94,12 +94,14 @@ export default function DoctorConsultationShow({
     const [saveSuccess, setSaveSuccess] = useState(false);
 
     useEcho(
-        'doctor-queue',
-        ['.consultation.updated', 'consultation.updated'],
+        `consultation.${consultation.id}`,
+        // Leading dot: must match broadcastAs() verbatim, or Echo prepends
+        // the App.Events namespace and this handler never fires.
+        '.consultation.updated',
         () => {
             router.reload({ only: ['consultation'] });
         },
-        [],
+        [consultation.id],
     );
 
     const handleRequestBriefing = async () => {
@@ -449,11 +451,11 @@ export default function DoctorConsultationShow({
                                                         </div>
                                                     )}
 
-                                                    {consultation.cough_analysis.explanation && (
+                                                    {consultation.cough_analysis.findings && (
                                                         <Card className="border-white/10 bg-[#0B0B0D]">
                                                             <CardContent className="p-5">
                                                                 <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">MedGemma Analysis</h4>
-                                                                <p className="mt-2 text-[#FFFFFF]">{consultation.cough_analysis.explanation}</p>
+                                                                <p className="mt-2 text-[#FFFFFF]">{consultation.cough_analysis.findings}</p>
                                                             </CardContent>
                                                         </Card>
                                                     )}
@@ -708,11 +710,11 @@ export default function DoctorConsultationShow({
                                                 </span>
                                             </div>
                                         )}
-                                        {consultation.cough_analysis?.explanation && (
+                                        {consultation.cough_analysis?.findings && (
                                             <div className="mt-3 rounded-[14px] bg-[#000000]/50 p-3">
                                                 <p className="text-xs text-[#71717A]">AI Explanation</p>
                                                 <p className="mt-1 text-sm text-[#FFFFFF]">
-                                                    {consultation.cough_analysis.explanation.substring(0, 100)}...
+                                                    {consultation.cough_analysis.findings.substring(0, 100)}...
                                                 </p>
                                             </div>
                                         )}

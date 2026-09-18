@@ -1293,18 +1293,16 @@ export default function Consult({
                 <div className="pointer-events-none absolute inset-0 bg-black/20" />
 
                 <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4 sm:p-5">
-                    <div className="flex items-center gap-2.5">
-                        <span className="flex size-8 items-center justify-center rounded-[14px] bg-white text-xs font-bold text-black">
-                            S
+                    <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/40 py-1.5 pr-3 pl-2.5 backdrop-blur">
+                        <img
+                            src="/Respir logo.png"
+                            alt="Respir"
+                            className="h-4 w-auto"
+                        />
+                        <span className="h-3 w-px bg-white/15" />
+                        <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
+                            pre-visit · voice consult
                         </span>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-semibold">
-                                Respair
-                            </span>
-                            <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
-                                pre-visit · voice consult
-                            </span>
-                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1400,18 +1398,15 @@ export default function Consult({
 
                 {!sessionStarted && !connecting && !awaitingSpeech && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-black/55 px-4 backdrop-blur-sm">
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex size-10 items-center justify-center rounded-[14px] bg-white text-sm font-bold text-black">
-                                S
+                        <div className="flex flex-col items-center gap-2">
+                            <img
+                                src="/Respir logo.png"
+                                alt="Respir"
+                                className="h-7 w-auto"
+                            />
+                            <span className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
+                                pre-visit consult
                             </span>
-                            <div className="flex flex-col">
-                                <span className="text-base font-semibold">
-                                    Respair
-                                </span>
-                                <span className="font-mono text-[10px] tracking-widest text-[#71717A] uppercase">
-                                    pre-visit consult
-                                </span>
-                            </div>
                         </div>
                         <p className="max-w-sm text-center text-sm text-[#A1A1AA]">
                             Sage, your voice assistant, will greet you live —
@@ -1424,33 +1419,20 @@ export default function Consult({
                                 previous cough screening on file
                             </p>
                         )}
-                        <div className="flex flex-col items-center gap-3">
-                            <Button
-                                className="rounded-[14px] bg-white px-6 font-semibold text-black hover:bg-[#CBD5E1]"
-                                size="lg"
-                                onClick={() => {
-                                    if (consented) {
-                                        void startVoiceConsult();
-                                    } else {
-                                        setConsentOpen(true);
-                                    }
-                                }}
-                            >
-                                <Mic className="size-5" />
-                                Start voice consult
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className="rounded-[14px] border border-white/15 bg-black/30 font-semibold text-white hover:bg-white/10"
-                                size="sm"
-                                onClick={toggleCamera}
-                            >
-                                <Video className="size-4" />
-                                {cameraOn
-                                    ? 'Camera on — tap to stop'
-                                    : 'Start camera'}
-                            </Button>
-                        </div>
+                        <Button
+                            className="rounded-[14px] bg-white px-6 font-semibold text-black transition-all duration-200 hover:scale-105 hover:bg-[#CBD5E1] active:scale-95"
+                            size="lg"
+                            onClick={() => {
+                                if (consented) {
+                                    void startVoiceConsult();
+                                } else {
+                                    setConsentOpen(true);
+                                }
+                            }}
+                        >
+                            <Mic className="size-5" />
+                            Start session
+                        </Button>
                     </div>
                 )}
 
@@ -1471,7 +1453,7 @@ export default function Consult({
                                 }
                                 onClick={toggleCamera}
                                 className={cn(
-                                    'rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10',
+                                    'rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95',
                                     cameraOn &&
                                         'bg-white text-black hover:bg-[#CBD5E1]',
                                 )}
@@ -1484,7 +1466,7 @@ export default function Consult({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => void capturePhoto()}
-                                    className="rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10"
+                                    className="rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
                                 >
                                     Save photo
                                 </Button>
@@ -1498,7 +1480,7 @@ export default function Consult({
                                     setChatOpen(true);
                                     setUnreadCount(0);
                                 }}
-                                className="relative rounded-full border border-white/10 bg-black/40 text-white backdrop-blur hover:bg-white/10"
+                                className="relative rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
                             >
                                 <MessageSquare className="size-5" />
                                 {unreadCount > 0 && (
@@ -1543,7 +1525,7 @@ export default function Consult({
                                 setChatOpen(false);
                                 setUnreadCount(0);
                             }}
-                            className="rounded-[14px] text-[#A1A1AA] hover:bg-white/10 hover:text-white"
+                            className="rounded-[14px] text-[#A1A1AA] transition-all duration-200 hover:scale-105 hover:bg-white/10 hover:text-white active:scale-95"
                         >
                             <X className="size-5" />
                         </Button>
@@ -1611,7 +1593,7 @@ export default function Consult({
                         <Button
                             type="submit"
                             size="icon"
-                            className="self-end rounded-[14px] bg-white text-black hover:bg-[#CBD5E1]"
+                            className="self-end rounded-[14px] bg-white text-black transition-all duration-200 hover:scale-105 hover:bg-[#CBD5E1] active:scale-95 disabled:hover:scale-100"
                             disabled={streaming || !message.trim()}
                             aria-label="Send message"
                         >

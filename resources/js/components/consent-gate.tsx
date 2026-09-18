@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, ShieldCheck } from 'lucide-react';
 import ConsultationController from '@/actions/App/Http/Controllers/Consult/ConsultationController';
 
 export default function ConsentGate({
@@ -46,18 +44,26 @@ export default function ConsentGate({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-            <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto">
-                <CardHeader>
-                    <CardTitle>Before we start</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                    <p>
+            <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[14px] border border-white/10 bg-[#0B0B0D] text-white shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
+                <div className="border-b border-white/10 p-6">
+                    <p className="flex items-center gap-2 font-mono text-[10px] font-semibold tracking-widest text-[#94A3B8] uppercase">
+                        <ShieldCheck className="size-3.5" />
+                        Before we start
+                    </p>
+                    <img
+                        src="/Respir logo.png"
+                        alt="Respir"
+                        className="mt-3 h-5 w-auto"
+                    />
+                </div>
+                <div className="space-y-4 p-6 text-sm">
+                    <p className="text-[#D4D4D8]">
                         This pre-visit assistant helps collect your symptoms and
                         screen a cough sample before you see the doctor. Nothing
                         here is a diagnosis.
                     </p>
 
-                    <ul className="list-disc space-y-2 pl-4 text-neutral-600 dark:text-neutral-300">
+                    <ul className="list-disc space-y-2 pl-4 text-[#A1A1AA]">
                         <li>
                             The live voice conversation (and camera if you turn
                             it on) is processed by Google Gemini for this
@@ -80,12 +86,13 @@ export default function ConsentGate({
                         </li>
                     </ul>
 
-                    {error && <p className="text-destructive">{error}</p>}
+                    {error && <p className="text-sm text-[#F87171]">{error}</p>}
 
-                    <Button
-                        className="w-full"
+                    <button
+                        type="button"
                         onClick={() => void submit()}
                         disabled={submitting}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] bg-white px-4 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:bg-[#CBD5E1] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
                     >
                         {submitting && (
                             <Loader2 className="size-4 animate-spin" />
@@ -93,9 +100,9 @@ export default function ConsentGate({
                         {submitting
                             ? 'Recording consent…'
                             : 'I understand and consent'}
-                    </Button>
-                </CardContent>
-            </Card>
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

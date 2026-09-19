@@ -793,7 +793,7 @@ function DoctorDashboard({ summary }: { summary: QueueSummary }) {
                     </CardContent>
                 </Card>
             </div>
-            <Card>
+            {/* <Card>
                 <CardHeader>
                     <CardTitle>Review queue</CardTitle>
                 </CardHeader>
@@ -811,7 +811,7 @@ function DoctorDashboard({ summary }: { summary: QueueSummary }) {
                         </Button>
                     </div>
                 </CardContent>
-            </Card>
+            </Card> */}
         </div>
     );
 }

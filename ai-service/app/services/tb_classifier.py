@@ -5,7 +5,11 @@ from app.errors import ModelNotAvailable
 from app.schemas.models import RiskLevel
 
 HIGH_THRESHOLD = 0.66
-MEDIUM_THRESHOLD = 0.33
+# Calibrated 2026-09-19 on healthy-volunteer takes (scores clustered
+# 0.31-0.51): the upstream 0.33 floor overcalled them as medium. Narrowing
+# the medium band trades sensitivity for specificity — revalidate on a
+# labelled negatives set before clinical use.
+MEDIUM_THRESHOLD = 0.55
 
 JOBLIB_FILENAME = "hear_tb_prize_domain_aware.joblib"
 

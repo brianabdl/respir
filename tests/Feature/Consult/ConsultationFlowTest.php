@@ -39,12 +39,47 @@ test('first visit creates a consultation and shows the consult page', function (
 
 test('subsequent visits reuse the in-progress consultation', function () {
     $user = User::factory()->create();
-    $consultation = Consultation::factory()->for($user)->create(['status' => 'chatting']);
+    $consultation = Consultation::factory()->for($user)->create([
+        'status' => 'chatting',
+        'cough_analysis' => null,
+    ]);
     $this->actingAs($user);
 
     $this->get(route('consult'))->assertOk();
 
     expect($user->consultations()->count())->toBe(1);
+});
+
+test('a finished visit is closed and a fresh one starts', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $finished = Consultation::factory()->for($user)->create([
+        'status' => 'chatting',
+        'cough_analysis' => ['risk_level' => 'low'],
+    ]);
+
+    $this->get(route('consult'))->assertOk();
+
+    expect($user->consultations()->count())->toBe(2);
+    expect($finished->refresh()->status)->toBe('completed');
+    expect($user->consultations()->where('status', 'chatting')->count())->toBe(1);
+});
+
+test('a reviewed visit is closed and a fresh one starts', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $reviewed = Consultation::factory()->for($user)->create([
+        'status' => 'chatting',
+        'cough_analysis' => null,
+        'is_reviewed' => true,
+    ]);
+
+    $this->get(route('consult'))->assertOk();
+
+    expect($user->consultations()->count())->toBe(2);
+    expect($reviewed->refresh()->status)->toBe('completed');
 });
 
 test('chat is denied when the user does not own the consultation', function () {

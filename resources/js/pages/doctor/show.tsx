@@ -259,19 +259,19 @@ export default function DoctorConsultationShow({
                                 </Button>
                             </a>
                             {consultation.is_reviewed && (
-                                <Badge className="rounded-full border border-green-500/20 bg-green-500/10 text-green-400">
+                                <Badge className="rounded-full border border-white/20 bg-white/10 text-white">
                                     <CheckCircle2 className="mr-1 size-3" />
                                     REVIEWED
                                 </Badge>
                             )}
                             {consultation.cough_risk === 'high' && (
-                                <Badge className="rounded-full border border-red-500/20 bg-red-500/10 text-red-400">
+                                <Badge className="rounded-full border border-white/40 bg-white/30 text-white">
                                     <Activity className="mr-1 size-3" />
                                     HIGH RISK
                                 </Badge>
                             )}
                             {consultation.cough_risk === 'medium' && (
-                                <Badge className="rounded-full border border-yellow-500/20 bg-yellow-500/10 text-yellow-400">
+                                <Badge className="rounded-full border border-white/30 bg-white/20 text-white/80">
                                     <Activity className="mr-1 size-3" />
                                     MEDIUM RISK
                                 </Badge>
@@ -406,9 +406,9 @@ export default function DoctorConsultationShow({
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <Card className="border-yellow-500/20 bg-yellow-500/5">
+                                                        <Card className="border-white/20 bg-white/5">
                                                             <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
-                                                                <AlertTriangle className="size-12 text-yellow-400" />
+                                                                <AlertTriangle className="size-12 text-white/60" />
                                                                 <p className="mt-4 text-[#FFFFFF] font-semibold">AI Briefing Not Available Yet</p>
                                                                 <p className="mt-2 text-sm text-[#71717A] text-center max-w-md">
                                                                     AI Briefing will be automatically generated after patient completes the consultation:
@@ -420,7 +420,7 @@ export default function DoctorConsultationShow({
                                                                     <li>✓ Close/finish consultation</li>
                                                                 </ul>
                                                                 <p className="mt-4 text-xs text-[#71717A] text-center">
-                                                                    Status: <span className="font-mono text-yellow-400">{consultation.status}</span>
+                                                                    Status: <span className="font-mono text-white/60">{consultation.status}</span>
                                                                     {!consultation.cough_risk && <span className="ml-2">| Missing: <strong className="text-white">Cough Recording</strong></span>}
                                                                 </p>
                                                             </CardContent>
@@ -599,7 +599,7 @@ export default function DoctorConsultationShow({
                                                                 Doctor's Clinical Notes
                                                             </h4>
                                                             {saveSuccess && (
-                                                                <span className="text-xs text-green-400 flex items-center gap-1 font-mono">
+                                                                <span className="text-xs text-white flex items-center gap-1 font-mono">
                                                                     <CheckCircle2 className="size-3" /> Saved successfully
                                                                 </span>
                                                             )}
@@ -660,7 +660,7 @@ export default function DoctorConsultationShow({
                                                                 onClick={() => setConfirmDialogOpen(true)}
                                                                 disabled={reviewing}
                                                                 variant="outline"
-                                                                className="rounded-full border-green-500/20 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                                                                className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
                                                             >
                                                                 <CheckCircle2 className="mr-2 size-4" />
                                                                 {reviewing ? 'Marking...' : 'Mark as Reviewed'}
@@ -694,9 +694,9 @@ export default function DoctorConsultationShow({
                                                                                 {similar.risk_level && (
                                                                                     <Badge className={cn(
                                                                                         'rounded-full text-xs',
-                                                                                        similar.risk_level === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                                                                        similar.risk_level === 'medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                                                                                        'bg-green-500/10 text-green-400 border-green-500/20'
+                                                                                        similar.risk_level === 'high' ? 'bg-white/30 text-white border-white/40' :
+                                                                                        similar.risk_level === 'medium' ? 'bg-white/20 text-white/80 border-white/30' :
+                                                                                        'bg-white/10 text-white/60 border-white/20'
                                                                                     )}>
                                                                                         {similar.risk_level.toUpperCase()}
                                                                                     </Badge>
@@ -749,11 +749,11 @@ export default function DoctorConsultationShow({
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-[#71717A]">Review Status</span>
                                             {consultation.is_reviewed ? (
-                                                <span className="rounded-full bg-green-500/10 text-green-400 px-2 py-0.5 text-xs font-mono">
+                                                <span className="rounded-full bg-white/10 text-white px-2 py-0.5 text-xs font-mono">
                                                     REVIEWED
                                                 </span>
                                             ) : (
-                                                <span className="rounded-full bg-yellow-500/10 text-yellow-400 px-2 py-0.5 text-xs font-mono">
+                                                <span className="rounded-full bg-white/10 text-white/60 px-2 py-0.5 text-xs font-mono">
                                                     PENDING
                                                 </span>
                                             )}
@@ -782,8 +782,8 @@ export default function DoctorConsultationShow({
                                             <span className="text-[#71717A]">Status</span>
                                             <span className={cn(
                                                 'rounded-full px-2 py-0.5 text-xs font-mono',
-                                                consultation.status === 'completed' ? 'bg-green-500/10 text-green-400' :
-                                                consultation.status === 'chatting' ? 'bg-blue-500/10 text-blue-400' :
+                                                consultation.status === 'completed' ? 'bg-white/10 text-white' :
+                                                consultation.status === 'chatting' ? 'bg-white/10 text-white/60' :
                                                 'bg-[#71717A]/10 text-[#71717A]'
                                             )}>
                                                 {consultation.status}
@@ -843,9 +843,9 @@ export default function DoctorConsultationShow({
                                             {consultation.cough_risk ? (
                                                 <span className={cn(
                                                     'rounded-full px-2 py-0.5 text-xs font-mono',
-                                                    consultation.cough_risk === 'high' ? 'bg-red-500/10 text-red-400' :
-                                                    consultation.cough_risk === 'medium' ? 'bg-yellow-500/10 text-yellow-400' :
-                                                    consultation.cough_risk === 'low' ? 'bg-green-500/10 text-green-400' :
+                                                    consultation.cough_risk === 'high' ? 'bg-white/30 text-white' :
+                                                    consultation.cough_risk === 'medium' ? 'bg-white/20 text-white/80' :
+                                                    consultation.cough_risk === 'low' ? 'bg-white/10 text-white/60' :
                                                     'bg-[#71717A]/10 text-[#71717A]'
                                                 )}>
                                                     {consultation.cough_risk.toUpperCase()}
@@ -883,7 +883,7 @@ export default function DoctorConsultationShow({
                 <DialogContent className="border-white/10 bg-[#0B0B0D] text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl">
-                            <CheckCircle2 className="size-6 text-green-400" />
+                            <CheckCircle2 className="size-6 text-white" />
                             Mark as Reviewed
                         </DialogTitle>
                         <DialogDescription className="text-[#94A3B8] pt-2">
@@ -906,10 +906,10 @@ export default function DoctorConsultationShow({
                                     <span className="text-[#71717A]">Risk Level:</span>
                                     <Badge className={
                                         consultation.cough_risk === 'high' 
-                                            ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                            ? 'bg-white/30 text-white border-white/40' 
                                             : consultation.cough_risk === 'medium'
-                                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                                            : 'bg-green-500/10 text-green-400 border-green-500/20'
+                                            ? 'bg-white/20 text-white/80 border-white/30'
+                                            : 'bg-white/10 text-white/60 border-white/20'
                                     }>
                                         {consultation.cough_risk.toUpperCase()}
                                     </Badge>
@@ -929,7 +929,7 @@ export default function DoctorConsultationShow({
                         <Button
                             onClick={handleMarkReviewed}
                             disabled={reviewing}
-                            className="rounded-full bg-green-500 text-white hover:bg-green-600"
+                            className="rounded-full bg-white text-black hover:bg-white/90"
                         >
                             {reviewing ? 'Processing...' : 'Confirm'}
                         </Button>

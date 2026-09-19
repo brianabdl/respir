@@ -346,21 +346,26 @@ export default function DoctorConsultations({
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <div className="flex flex-wrap gap-2">
-                        {RISK_FILTERS.map((filter) => (
-                            <Button
-                                key={filter.value}
-                                type="button"
-                                size="sm"
-                                variant={
-                                    riskFilter === filter.value
-                                        ? 'default'
-                                        : 'outline'
-                                }
-                                onClick={() => setRiskFilter(filter.value)}
-                            >
-                                {filter.label}
-                            </Button>
-                        ))}
+                        {RISK_FILTERS.map((filter) => {
+                            const isActive = riskFilter === filter.value;
+        
+                            return (
+                                <Button
+                                    key={filter.value}
+                                    type="button"
+                                    size="sm"
+                                    variant={isActive ? 'default' : 'outline'}
+                                    onClick={() => setRiskFilter(filter.value)}
+                                    className={`rounded-full transition-colors ${
+                                        isActive
+                                            ? 'bg-white text-black hover:bg-white'
+                                            : 'border-white bg-transparent text-white hover:bg-white hover:text-black'
+                                    }`}
+                                >
+                                    {filter.label}
+                                </Button>
+                            );
+                        })}
                     </div>
                     <Input
                         aria-label="Search patients"
@@ -389,9 +394,9 @@ export default function DoctorConsultations({
                 ) : isDefaultView ? (
                     <>
                         {selectedIds.length > 0 && (
-                            <div className="sticky top-0 z-10 flex items-center justify-between rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-600/10 p-4 shadow-lg backdrop-blur-sm">
+                            <div className="sticky top-0 z-10 flex items-center justify-between rounded-xl border border-white/20 bg-linear-to-r from-white/5 to-white/10 p-4 shadow-lg backdrop-blur-sm">
                                 <div className="flex items-center gap-3">
-                                    <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                    <span className="font-semibold text-white">
                                         {selectedIds.length} selected
                                     </span>
                                     <Button
@@ -408,7 +413,7 @@ export default function DoctorConsultations({
                                         size="sm"
                                         onClick={() => setConfirmDialogOpen(true)}
                                         disabled={bulkReviewing}
-                                        className="bg-orange-500 text-white hover:bg-orange-600"
+                                        className="bg-white text-black hover:bg-white/90"
                                     >
                                         {bulkReviewing
                                             ? 'Processing...'
@@ -518,7 +523,7 @@ export default function DoctorConsultations({
                 <DialogContent className="border-white/10 bg-[#0B0B0D] text-white sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl">
-                            <svg className="size-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="size-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             Bulk Mark as Reviewed
@@ -532,7 +537,7 @@ export default function DoctorConsultations({
                         <div className="rounded-lg border border-white/10 bg-[#000000]/50 p-4 space-y-3">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-[#71717A]">Total Selected:</span>
-                                <span className="font-mono text-lg font-semibold text-orange-400">{selectedIds.length}</span>
+                                <span className="font-mono text-lg font-semibold text-white">{selectedIds.length}</span>
                             </div>
                             <div className="pt-2 border-t border-white/5">
                                 <p className="text-xs text-[#71717A]">
@@ -554,7 +559,7 @@ export default function DoctorConsultations({
                         <Button
                             onClick={handleBulkMarkReviewed}
                             disabled={bulkReviewing}
-                            className="rounded-full bg-orange-500 text-white hover:bg-orange-600"
+                            className="rounded-full bg-white text-black hover:bg-white/90"
                         >
                             {bulkReviewing ? 'Processing...' : 'Confirm Review'}
                         </Button>

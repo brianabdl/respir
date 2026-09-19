@@ -1,13 +1,17 @@
 import {
+    ArrowLeft,
     LoaderCircle,
     MessageSquare,
     Mic,
+    RotateCcw,
     SendHorizontal,
     Video,
     VideoOff,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from '@inertiajs/react';
+import { dashboard } from '@/routes';
 import { useEcho } from '@laravel/echo-react';
 import { Button } from '@/components/ui/button';
 import ConsentGate from '@/components/consent-gate';
@@ -43,8 +47,8 @@ type Capture = {
     mime_type?: string;
 } | null;
 
-// Band cutoffs mirror TbClassifier in ai-service (HIGH 0.66, MEDIUM 0.33).
-const RISK_BAND_CUTOFFS = { medium: 0.33, high: 0.66 } as const;
+// Band cutoffs mirror TbClassifier in ai-service (HIGH 0.66, MEDIUM 0.55).
+const RISK_BAND_CUTOFFS = { medium: 0.55, high: 0.66 } as const;
 
 // Upper bound on the cough upload fetch, so a dead network can't block Sage's
 // turn forever — the tool call must always resolve and hand control back.
@@ -374,6 +378,8 @@ export default function Consult({
     );
     const [micLevel, setMicLevel] = useState(0);
     const [quietSample, setQuietSample] = useState(false);
+    const [waveformPeaks, setWaveformPeaks] = useState<number[]>([]);
+    const [resultDismissed, setResultDismissed] = useState(false);
     const [chatOpen, setChatOpen] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -522,6 +528,8 @@ export default function Consult({
         setAnalysis(null);
         setCoughRisk(null);
         setCoughPhase('idle');
+        setWaveformPeaks([]);
+        setResultDismissed(false);
         coughStartedRef.current = false;
         if (coughTimerRef.current !== null) {
             window.clearTimeout(coughTimerRef.current);
@@ -768,6 +776,16 @@ export default function Consult({
         clearLiveTranscript();
     }
 
+    /**
+     * Leaving for the dashboard mid-visit: persist the transcript, then
+     * release mic, speaker, and socket so nothing keeps running behind
+     * the dashboard.
+     */
+    function leaveToDashboard(): void {
+        void saveSessionLog(true);
+        teardownLiveSession();
+    }
+
     async function send(text: string) {
         if (!text.trim() || streaming) return;
 
@@ -1011,6 +1029,7 @@ export default function Consult({
             setQuietSample(peak < 0.02);
             setCoughPhase('processing');
             setVoiceHint('Sample received — analysing securely');
+            void computeWaveformPeaks(blob);
             await analyzeCough(blob);
         };
 
@@ -1024,6 +1043,56 @@ export default function Consult({
                 recorder.stop();
             }
         }, 4000);
+    }
+
+    /**
+     * Best-effort waveform preview of the recorded sample for the result
+     * card. Visualization only — failures leave the card without a
+     * waveform instead of breaking the flow.
+     */
+    async function computeWaveformPeaks(blob: Blob): Promise<void> {
+        try {
+            const Context =
+                window.AudioContext ??
+                (
+                    window as unknown as {
+                        webkitAudioContext?: typeof AudioContext;
+                    }
+                ).webkitAudioContext;
+
+            if (!Context) {
+                return;
+            }
+
+            const context = new Context();
+            const buffer = await context.decodeAudioData(
+                await blob.arrayBuffer(),
+            );
+            const data = buffer.getChannelData(0);
+            const buckets = 64;
+            const step = Math.max(1, Math.floor(data.length / buckets));
+            const peaks: number[] = [];
+
+            for (let i = 0; i < data.length; i += step) {
+                let max = 0;
+                const end = Math.min(data.length, i + step);
+
+                for (let j = i; j < end; j += 4) {
+                    const value = Math.abs(data[j]);
+
+                    if (value > max) {
+                        max = value;
+                    }
+                }
+
+                peaks.push(Math.min(1, max));
+            }
+
+            setWaveformPeaks(peaks);
+            await context.close().catch(() => undefined);
+        } catch (error) {
+            console.error('Could not build waveform preview', error);
+        }
     }
 
     async function analyzeCough(blob: Blob): Promise<void> {
@@ -1263,6 +1332,8 @@ export default function Consult({
     const awaitingCough = coughPhase === 'prompted';
     const recordingCough = coughPhase === 'recording';
     const analysisPending = coughPhase === 'processing';
+    const coughBusy =
+        coughPhase === 'recording' || coughPhase === 'processing';
     const showingPreviousAssessment =
         !sessionStarted && Boolean(consultation.cough_analysis);
 
@@ -1319,7 +1390,16 @@ export default function Consult({
                 <div className="pointer-events-none absolute inset-0 bg-black/20" />
 
                 <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 p-4 sm:p-5">
-                    <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/40 py-1.5 pr-3 pl-2.5 backdrop-blur">
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href={dashboard().url}
+                            onClick={leaveToDashboard}
+                            aria-label="Back to dashboard"
+                            className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition-all duration-200 hover:scale-105 hover:bg-white/10 active:scale-95"
+                        >
+                            <ArrowLeft className="size-4" />
+                        </Link>
+                        <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/40 py-1.5 pr-3 pl-2.5 backdrop-blur">
                         <img
                             src="/Respir logo.png"
                             alt="Respir"
@@ -1329,6 +1409,7 @@ export default function Consult({
                         <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
                             pre-visit · voice consult
                         </span>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1422,6 +1503,181 @@ export default function Consult({
                     </div>
                 )}
 
+                {analysis && !analysisPending && !resultDismissed && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-black/55 px-4 py-8 backdrop-blur-sm">
+                        <div className="animate-panel-in w-full max-w-md rounded-[14px] border border-white/10 bg-[#0B0B0D] p-5 shadow-2xl sm:p-6">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="font-mono text-[10px] tracking-widest text-[#94A3B8] uppercase">
+                                        Cough result
+                                    </p>
+                                    <h2 className="mt-1 text-lg font-semibold text-white">
+                                        {coughRisk ? (
+                                            <span className="capitalize">
+                                                {coughRisk} risk
+                                            </span>
+                                        ) : (
+                                            'Sample analysed'
+                                        )}
+                                    </h2>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {coughRisk && (
+                                        <StatusPill>
+                                            {coughRisk} risk
+                                        </StatusPill>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label="Dismiss result"
+                                        onClick={() =>
+                                            setResultDismissed(true)
+                                        }
+                                        className="rounded-[14px] text-[#A1A1AA] hover:bg-white/10 hover:text-white"
+                                    >
+                                        <X className="size-5" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {waveformPeaks.length > 0 && (
+                                <div
+                                    className="mt-4 flex h-16 items-end gap-[3px]"
+                                    role="img"
+                                    aria-label="Recorded cough waveform"
+                                >
+                                    {waveformPeaks.map((peak, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex-1 rounded-full bg-white/40"
+                                            style={{
+                                                height: `${Math.max(6, Math.round(peak * 100))}%`,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-4 flex flex-col gap-2.5 text-sm text-[#E4E4E7]">
+                                {typeof analysis.risk_score === 'number' &&
+                                    analysis.risk_level !== 'unclear' && (
+                                        <div>
+                                            <div
+                                                className="relative flex h-2 overflow-visible rounded-full"
+                                                role="img"
+                                                aria-label={`Estimated risk score ${Math.round(Math.min(100, Math.max(0, analysis.risk_score * 100)))} out of 100, ${analysis.risk_level} band`}
+                                            >
+                                                <div
+                                                    className="rounded-l-full bg-white/10"
+                                                    style={{
+                                                        width: `${RISK_BAND_CUTOFFS.medium * 100}%`,
+                                                    }}
+                                                />
+                                                <div
+                                                    className="bg-white/25"
+                                                    style={{
+                                                        width: `${(RISK_BAND_CUTOFFS.high - RISK_BAND_CUTOFFS.medium) * 100}%`,
+                                                    }}
+                                                />
+                                                <div className="flex-1 rounded-r-full bg-white/50" />
+                                                <div
+                                                    className={`absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black ${RISK_MARKER_STYLES[analysis.risk_level ?? 'unclear'] ?? 'bg-white/40'}`}
+                                                    style={{
+                                                        left: `${Math.min(100, Math.max(0, analysis.risk_score * 100))}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="mt-1 flex text-xs text-[#A1A1AA]">
+                                                <span
+                                                    style={{
+                                                        width: `${RISK_BAND_CUTOFFS.medium * 100}%`,
+                                                    }}
+                                                >
+                                                    Low
+                                                </span>
+                                                <span
+                                                    className="text-center"
+                                                    style={{
+                                                        width: `${(RISK_BAND_CUTOFFS.high - RISK_BAND_CUTOFFS.medium) * 100}%`,
+                                                    }}
+                                                >
+                                                    Medium
+                                                </span>
+                                                <span className="flex-1 text-right">
+                                                    High
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                {analysis.risk_level &&
+                                    RISK_MEANINGS[analysis.risk_level] && (
+                                        <p>
+                                            <span className="font-medium">
+                                                What this means:{' '}
+                                            </span>
+                                            {
+                                                RISK_MEANINGS[
+                                                    analysis.risk_level
+                                                ]
+                                            }
+                                        </p>
+                                    )}
+                                {analysis.findings && (
+                                    <p>
+                                        <span className="font-medium">
+                                            Findings:{' '}
+                                        </span>
+                                        {analysis.findings}
+                                    </p>
+                                )}
+                                {analysis.recommendation && (
+                                    <p>
+                                        <span className="font-medium">
+                                            Recommendation:{' '}
+                                        </span>
+                                        {analysis.recommendation}
+                                    </p>
+                                )}
+                                {typeof analysis.duration_s === 'number' &&
+                                    analysis.duration_s > 0 && (
+                                        <p className="text-xs text-[#71717A]">
+                                            Sample length:{' '}
+                                            {analysis.duration_s.toFixed(1)}{' '}
+                                            seconds.
+                                        </p>
+                                    )}
+                                <p className="text-xs text-[#71717A] italic">
+                                    This is not a diagnosis. Please see a
+                                    doctor for a clinical assessment.
+                                </p>
+                            </div>
+
+                            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                                <Button
+                                    onClick={() => {
+                                        resetCoughAssessment();
+                                        void startCough();
+                                    }}
+                                    disabled={coughBusy}
+                                    className="flex-1 rounded-[14px] bg-white font-semibold text-black hover:bg-[#CBD5E1]"
+                                >
+                                    <RotateCcw className="size-4" />
+                                    Record again
+                                </Button>
+                                <Link
+                                    href={dashboard().url}
+                                    onClick={leaveToDashboard}
+                                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-white/15 bg-transparent px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                                >
+                                    <ArrowLeft className="size-4" />
+                                    Back to dashboard
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {!sessionStarted && !connecting && !awaitingSpeech && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-black/55 px-4 backdrop-blur-sm">
                         <div className="flex flex-col items-center gap-2">
@@ -1459,6 +1715,13 @@ export default function Consult({
                             <Mic className="size-5" />
                             Start session
                         </Button>
+                        <Link
+                            href={dashboard().url}
+                            className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-widest text-[#71717A] uppercase underline-offset-4 transition-colors hover:text-white hover:underline"
+                        >
+                            <ArrowLeft className="size-3.5" />
+                            Back to dashboard
+                        </Link>
                     </div>
                 )}
 
@@ -1611,6 +1874,15 @@ export default function Consult({
                             onChange={(
                                 e: React.ChangeEvent<HTMLTextAreaElement>,
                             ) => setMessage(e.target.value)}
+                            onKeyDown={(
+                                e: React.KeyboardEvent<HTMLTextAreaElement>,
+                            ) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    void send(message);
+                                    setMessage('');
+                                }
+                            }}
                             placeholder="Type here — replies stream the same way…"
                             disabled={streaming}
                             className="flex-1 resize-none rounded-[14px] border border-white/10 bg-white/5 px-3 py-2 text-sm text-white shadow-none outline-none placeholder:text-[#71717A] focus-visible:border-white/30 focus-visible:ring-[3px] focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50"

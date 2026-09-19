@@ -11,30 +11,50 @@ export default function VerifyEmail({ status }: { status?: string }) {
         <>
             <Head title="Email verification" />
 
-            {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
+            <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6">
+                <div className="mb-8 flex flex-col items-start">
+                    <img
+                        src="/Respir logo.png"
+                        alt="Respir logo"
+                        className="mb-6 h-8 w-auto"
+                    />
+                    <h1 className="text-3xl font-semibold tracking-tight text-white">
+                        Email verification
+                    </h1>
+                    <p className="mt-2 text-sm text-[#A1A1AA]">
+                        Please verify your email address by clicking on the
+                        link we just emailed to you.
+                    </p>
                 </div>
-            )}
 
-            <Form {...send.form()} className="space-y-6 text-center">
-                {({ processing }) => (
-                    <>
-                        <Button disabled={processing} variant="secondary">
-                            {processing && <Spinner />}
-                            Resend verification email
-                        </Button>
-
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm"
-                        >
-                            Log out
-                        </TextLink>
-                    </>
+                {status === 'verification-link-sent' && (
+                    <div className="mb-6 text-sm font-medium text-green-500">
+                        A new verification link has been sent to the email
+                        address you provided during registration.
+                    </div>
                 )}
-            </Form>
+
+                <Form {...send.form()} className="flex flex-col gap-4">
+                    {({ processing }) => (
+                        <>
+                            <Button
+                                disabled={processing}
+                                className="h-11 w-full rounded-[6px] bg-white font-semibold text-black transition-colors hover:bg-gray-200"
+                            >
+                                {processing && <Spinner />}
+                                Resend verification email
+                            </Button>
+
+                            <TextLink
+                                href={logout()}
+                                className="mx-auto block text-sm text-[#A1A1AA] hover:text-white"
+                            >
+                                Log out
+                            </TextLink>
+                        </>
+                    )}
+                </Form>
+            </div>
         </>
     );
 }

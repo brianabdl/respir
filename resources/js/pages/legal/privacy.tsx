@@ -5,23 +5,23 @@ export default function Privacy() {
         <>
             <Head title="Privacy Policy" />
 
-            <div className="bg-background text-foreground min-h-screen w-full">
+            <div className="min-h-screen w-full bg-black text-white">
                 <div className="mx-auto max-w-2xl px-6 py-16">
                     <Link
                         href="/"
-                        className="text-muted-foreground text-sm hover:underline"
+                        className="text-sm text-[#71717A] hover:text-white hover:underline"
                     >
                         ← Back
                     </Link>
 
-                    <h1 className="mt-6 text-3xl font-semibold tracking-tight">
+                    <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white">
                         Privacy Policy
                     </h1>
-                    <p className="text-muted-foreground mt-2 text-sm">
+                    <p className="mt-2 text-sm text-[#71717A]">
                         Last updated: September 2026
                     </p>
 
-                    <div className="border-border bg-muted/50 mt-6 rounded-md border p-4 text-sm">
+                    <div className="mt-6 rounded-[14px] border border-white/10 bg-[#0B0B0D] p-4 text-sm text-[#E4E4E7]">
                         <strong>Draft notice.</strong> This is a working
                         description of what Respir actually collects and how it
                         is processed, written for the development build. It has
@@ -30,9 +30,9 @@ export default function Privacy() {
                         patient data.
                     </div>
 
-                    <div className="mt-8 flex flex-col gap-8 text-sm leading-relaxed">
+                    <div className="mt-8 flex flex-col gap-8 text-sm leading-relaxed text-[#A1A1AA]">
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 1. What we collect
                             </h2>
                             <p className="mt-2">
@@ -54,7 +54,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 2. How your health data is processed
                             </h2>
                             <p className="mt-2">
@@ -80,7 +80,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 3. Consent
                             </h2>
                             <p className="mt-2">
@@ -95,7 +95,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 4. Who can see your data
                             </h2>
                             <p className="mt-2">
@@ -110,7 +110,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 5. Downloads and sharing
                             </h2>
                             <p className="mt-2">
@@ -122,7 +122,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 6. Your choices
                             </h2>
                             <p className="mt-2">
@@ -134,7 +134,7 @@ export default function Privacy() {
                         </section>
 
                         <section>
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-lg font-semibold text-white">
                                 7. Changes to this policy
                             </h2>
                             <p className="mt-2">

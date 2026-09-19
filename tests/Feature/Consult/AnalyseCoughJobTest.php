@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Audit\AuditLogger;
+use App\Domain\Consult\Enums\RiskLevel;
 use App\Domain\Consult\Events\CoughAnalysisCompleted;
 use App\Domain\Consult\Exceptions\AiServiceUnavailable;
 use App\Domain\Consult\Jobs\AnalyseCough;
@@ -115,7 +116,7 @@ test('analysis job reports the median over the last three takes', function () {
     Storage::fake('local');
     Http::fake(['*/v1/cough/analyze' => Http::response(array_merge(analyseCoughPayload(), [
         'risk_level' => 'medium',
-        'risk_score' => 0.5,
+        'risk_score' => 0.6,
         'findings' => 'Third take',
     ]))]);
 
@@ -130,7 +131,7 @@ test('analysis job reports the median over the last three takes', function () {
     $consultation->refresh();
 
     expect($consultation->cough_risk)->toBe('medium')
-        ->and($consultation->cough_analysis['risk_score'])->toBe(0.5)
+        ->and($consultation->cough_analysis['risk_score'])->toBe(0.6)
         ->and($consultation->cough_analysis['findings'])->toBe('Third take');
 
     Event::assertDispatched(CoughAnalysisCompleted::class);
@@ -160,4 +161,12 @@ test('failed analysis falls back to the median of previous takes', function () {
         ->and($consultation->cough_analysis['findings'])->toBe('Newer take');
 
     Event::assertDispatched(CoughAnalysisCompleted::class);
+});
+
+test('risk bands follow the calibrated cutoffs', function () {
+    expect(RiskLevel::fromScore(0.2))->toBe(RiskLevel::Low)
+        ->and(RiskLevel::fromScore(0.54))->toBe(RiskLevel::Low)
+        ->and(RiskLevel::fromScore(0.55))->toBe(RiskLevel::Medium)
+        ->and(RiskLevel::fromScore(0.65))->toBe(RiskLevel::Medium)
+        ->and(RiskLevel::fromScore(0.66))->toBe(RiskLevel::High);
 });

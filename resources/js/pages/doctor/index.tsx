@@ -173,7 +173,7 @@ function ConsultationRowItem({
                                 </span>
                             )}
                             {consultation.is_reviewed && (
-                                <Badge className="border-green-500/20 bg-green-500/10 text-green-400">
+                                <Badge className="border-white/20 bg-white/10 text-white">
                                     reviewed
                                 </Badge>
                             )}
@@ -326,7 +326,7 @@ export default function DoctorConsultations({
     return (
         <>
             <Head title="Consultation reviews" />
-            <div className="flex flex-col gap-4 p-4">
+            <div className="dark flex flex-col gap-4 p-4">
                 <h1 className="text-lg font-semibold">Patient consultations</h1>
 
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">

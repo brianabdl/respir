@@ -5,11 +5,18 @@ node_modules
 .agents
 .claude
 .zed
+.DS_Store
 vendor
+bootstrap/cache/*.php
+public/build
+public/hot
+public/storage
+storage/app/*
+storage/backups
+storage/framework/*
+storage/inertia-devtools
 storage/logs/*
-storage/framework/cache/*
-storage/framework/sessions/*
-storage/framework/views/*
+storage/pail
 .env
 .env.*
 *.md
@@ -21,3 +28,4 @@ phpunit.xml
 phpstan.neon
 pint.json
 ai-service
+docker-compose*.yml

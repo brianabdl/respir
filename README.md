@@ -35,16 +35,16 @@ informally, by whichever clinician is on duty.
 
 ## What Respir does
 
-Respir is a **triage layer that runs before confirmatory testing** and costs
+Respir is a triage layer that runs before confirmatory testing and costs
 close to nothing per patient.
 
-1. **Guided voice interview.** The patient talks to Sage, an AI voice agent that
+1. Guided voice interview: The patient talks to Sage, an AI voice agent that
    asks pre-visit questions one at a time, handles interruptions, and records
    the transcript.
-2. **Cough screen.** The patient coughs toward an ordinary phone or clinic
+2. Cough screen: The patient coughs toward an ordinary phone or clinic
    microphone. The recording is analyzed locally into a `low` / `medium` /
    `high` / `unclear` TB risk band.
-3. **Clinician briefing.** The doctor opens a decision-ready summary — chief
+3. Clinician briefing: The doctor opens a decision-ready summary — chief
    complaint, history, risk factors, cough findings, suggested questions, red
    flags — plus a similarity lookup against comparable past coughs.
 

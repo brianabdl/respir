@@ -1,8 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
-import { useEcho } from '@laravel/echo-react';
-import Lightbox from 'yet-another-react-lightbox';
-import 'yet-another-react-lightbox/styles.css';
+import { Head, Link, router } from "@inertiajs/react";
+import { useState } from "react";
+import { useEcho } from "@laravel/echo-react";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 import {
     Activity,
     AlertTriangle,
@@ -15,10 +15,10 @@ import {
     CheckCircle2,
     Save,
     Maximize2,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Dialog,
     DialogContent,
@@ -26,11 +26,11 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import { briefing as briefingRoute } from '@/actions/App/Http/Controllers/Doctor/ConsultationReviewController';
-import { dashboard } from '@/routes';
-import { index as doctorIndexRoute } from '@/routes/doctor/consultations';
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { briefing as briefingRoute } from "@/actions/App/Http/Controllers/Doctor/ConsultationReviewController";
+import { dashboard } from "@/routes";
+import { index as doctorIndexRoute } from "@/routes/doctor/consultations";
 
 type Turn = { role: string; text: string };
 
@@ -94,12 +94,16 @@ export default function DoctorConsultationShow({
         captures: Capture[];
     };
 }) {
-    const [activeTab, setActiveTab] = useState<'briefing' | 'transcript' | 'cough' | 'media' | 'notes' | 'similar'>(
-        'briefing',
-    );
+    const [activeTab, setActiveTab] = useState<
+        "briefing" | "transcript" | "cough" | "media" | "notes" | "similar"
+    >("briefing");
     const [requestingBriefing, setRequestingBriefing] = useState(false);
-    const [clinicalNotes, setClinicalNotes] = useState(consultation.clinical_notes || '');
-    const [followUpActions, setFollowUpActions] = useState<string[]>(consultation.follow_up_actions || []);
+    const [clinicalNotes, setClinicalNotes] = useState(
+        consultation.clinical_notes || "",
+    );
+    const [followUpActions, setFollowUpActions] = useState<string[]>(
+        consultation.follow_up_actions || [],
+    );
     const [savingNotes, setSavingNotes] = useState(false);
     const [reviewing, setReviewing] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -110,10 +114,10 @@ export default function DoctorConsultationShow({
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
     useEcho(
-        'doctor-queue',
-        ['.consultation.updated', 'consultation.updated'],
+        "doctor-queue",
+        [".consultation.updated", "consultation.updated"],
         () => {
-            router.reload({ only: ['consultation'] });
+            router.reload({ only: ["consultation"] });
         },
         [],
     );
@@ -121,18 +125,24 @@ export default function DoctorConsultationShow({
     const handleRequestBriefing = async () => {
         setRequestingBriefing(true);
         try {
-            const response = await fetch(briefingRoute.url({ consultation: consultation.id }), {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            const response = await fetch(
+                briefingRoute.url({ consultation: consultation.id }),
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN":
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute("content") ?? "",
+                    },
                 },
-            });
+            );
 
             if (!response.ok) {
-                throw new Error('briefing request failed');
+                throw new Error("briefing request failed");
             }
         } catch (error) {
-            console.error('Could not request the briefing', error);
+            console.error("Could not request the briefing", error);
         } finally {
             setRequestingBriefing(false);
         }
@@ -142,26 +152,32 @@ export default function DoctorConsultationShow({
         setSavingNotes(true);
         setSaveSuccess(false);
         try {
-            const response = await fetch(`/doctor/consultations/${consultation.id}/notes`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            const response = await fetch(
+                `/doctor/consultations/${consultation.id}/notes`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN":
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute("content") ?? "",
+                    },
+                    body: JSON.stringify({
+                        clinical_notes: clinicalNotes,
+                        follow_up_actions: followUpActions,
+                    }),
                 },
-                body: JSON.stringify({
-                    clinical_notes: clinicalNotes,
-                    follow_up_actions: followUpActions,
-                }),
-            });
+            );
 
             if (!response.ok) {
-                throw new Error('Failed to save notes');
+                throw new Error("Failed to save notes");
             }
 
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error) {
-            console.error('Could not save notes', error);
+            console.error("Could not save notes", error);
         } finally {
             setSavingNotes(false);
         }
@@ -170,22 +186,28 @@ export default function DoctorConsultationShow({
     const handleMarkReviewed = async () => {
         setReviewing(true);
         setConfirmDialogOpen(false);
-        
+
         try {
-            const response = await fetch(`/doctor/consultations/${consultation.id}/review`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            const response = await fetch(
+                `/doctor/consultations/${consultation.id}/review`,
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN":
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute("content") ?? "",
+                    },
                 },
-            });
+            );
 
             if (!response.ok) {
-                throw new Error('Failed to mark as reviewed');
+                throw new Error("Failed to mark as reviewed");
             }
 
-            router.reload({ only: ['consultation'] });
+            router.reload({ only: ["consultation"] });
         } catch (error) {
-            console.error('Could not mark as reviewed', error);
+            console.error("Could not mark as reviewed", error);
         } finally {
             setReviewing(false);
         }
@@ -193,36 +215,38 @@ export default function DoctorConsultationShow({
 
     const loadSimilarCases = async () => {
         if (similarCases.length > 0) return; // Already loaded
-        
+
         setLoadingSimilar(true);
         try {
-            const response = await fetch(`/doctor/consultations/${consultation.id}/similar`);
-            if (!response.ok) throw new Error('Failed to load similar cases');
-            
+            const response = await fetch(
+                `/doctor/consultations/${consultation.id}/similar`,
+            );
+            if (!response.ok) throw new Error("Failed to load similar cases");
+
             const data = await response.json();
             setSimilarCases(data.similar || []);
         } catch (error) {
-            console.error('Could not load similar cases', error);
+            console.error("Could not load similar cases", error);
         } finally {
             setLoadingSimilar(false);
         }
     };
 
     const toggleFollowUpAction = (action: string) => {
-        setFollowUpActions(prev =>
+        setFollowUpActions((prev) =>
             prev.includes(action)
-                ? prev.filter(a => a !== action)
-                : [...prev, action]
+                ? prev.filter((a) => a !== action)
+                : [...prev, action],
         );
     };
 
     const followUpOptions = [
-        'Order chest X-ray',
-        'TB test (sputum culture)',
-        'Schedule follow-up appointment (2 weeks)',
-        'Refer to pulmonologist',
-        'Prescribe standard antibiotics',
-        'Advise home isolation until test results',
+        "Order chest X-ray",
+        "TB test (sputum culture)",
+        "Schedule follow-up appointment (2 weeks)",
+        "Refer to pulmonologist",
+        "Prescribe standard antibiotics",
+        "Advise home isolation until test results",
     ];
 
     const riskScore = consultation.cough_analysis?.risk_score ?? 0;
@@ -230,7 +254,11 @@ export default function DoctorConsultationShow({
 
     // Prepare lightbox slides from captures - simplified to images only
     const lightboxSlides = consultation.captures
-        .filter(capture => capture.type === 'image' || capture.mime_type.startsWith('image/'))
+        .filter(
+            (capture) =>
+                capture.type === "image" ||
+                capture.mime_type.startsWith("image/"),
+        )
         .map((capture) => ({
             src: capture.download,
         }));
@@ -238,13 +266,17 @@ export default function DoctorConsultationShow({
     return (
         <>
             <Head title={`Consultation #${consultation.id}`} />
-            
+
             <div className="min-h-screen bg-black text-white">
                 <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <div className="mb-6 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Link href={doctorIndexRoute()}>
-                                <Button variant="outline" size="sm" className="rounded-full border-white/10 bg-transparent text-[#94A3B8] hover:border-white/20 hover:bg-white/5">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-full border-white/10 bg-transparent text-[#94A3B8] hover:border-white/20 hover:bg-white/5"
+                                >
                                     <ChevronLeft className="mr-2 size-4" />
                                     Back to Triage
                                 </Button>
@@ -252,8 +284,15 @@ export default function DoctorConsultationShow({
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <a href={`/doctor/consultations/${consultation.id}/export`} target="_blank">
-                                <Button variant="outline" size="sm" className="rounded-full border-white/10 bg-transparent text-[#94A3B8] hover:border-white/20 hover:bg-white/5">
+                            <a
+                                href={`/doctor/consultations/${consultation.id}/export`}
+                                target="_blank"
+                            >
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-full border-white/10 bg-transparent text-[#94A3B8] hover:border-white/20 hover:bg-white/5"
+                                >
                                     <Download className="mr-2 size-4" />
                                     Export PDF
                                 </Button>
@@ -264,13 +303,13 @@ export default function DoctorConsultationShow({
                                     REVIEWED
                                 </Badge>
                             )}
-                            {consultation.cough_risk === 'high' && (
+                            {consultation.cough_risk === "high" && (
                                 <Badge className="rounded-full border border-white/40 bg-white/30 text-white">
                                     <Activity className="mr-1 size-3" />
                                     HIGH RISK
                                 </Badge>
                             )}
-                            {consultation.cough_risk === 'medium' && (
+                            {consultation.cough_risk === "medium" && (
                                 <Badge className="rounded-full border border-white/30 bg-white/20 text-white/80">
                                     <Activity className="mr-1 size-3" />
                                     MEDIUM RISK
@@ -293,78 +332,134 @@ export default function DoctorConsultationShow({
                                                     {consultation.patient.name}
                                                 </h2>
                                                 <div className="h-10 w-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
-                                                    <span className="text-xl">👤</span>
+                                                    <span className="text-xl">
+                                                        👤
+                                                    </span>
                                                 </div>
                                             </div>
                                             <p className="mt-1 font-mono text-sm text-[#71717A]">
                                                 {consultation.patient.email}
                                             </p>
                                             <p className="mt-1 text-sm text-[#71717A]">
-                                                Consultation: {consultation.created_at}
+                                                Consultation:{" "}
+                                                {consultation.created_at}
                                             </p>
                                         </div>
 
-                                        {!consultation.report && consultation.status === 'completed' && (
-                                            <Button
-                                                onClick={handleRequestBriefing}
-                                                disabled={requestingBriefing}
-                                                className="rounded-full bg-[#94A3B8] text-black hover:bg-[#A1A1AA]"
-                                            >
-                                                {requestingBriefing ? 'Generating...' : 'Generate Briefing'}
-                                            </Button>
-                                        )}
+                                        {!consultation.report &&
+                                            consultation.status ===
+                                                "completed" && (
+                                                <Button
+                                                    onClick={
+                                                        handleRequestBriefing
+                                                    }
+                                                    disabled={
+                                                        requestingBriefing
+                                                    }
+                                                    className="rounded-full bg-[#94A3B8] text-black hover:bg-[#A1A1AA]"
+                                                >
+                                                    {requestingBriefing
+                                                        ? "Generating..."
+                                                        : "Generate Briefing"}
+                                                </Button>
+                                            )}
                                     </div>
 
                                     <div className="mt-6">
                                         <nav className="flex flex-wrap gap-2">
                                             <Button
-                                                variant={activeTab === 'briefing' ? 'default' : 'ghost'}
-                                                onClick={() => setActiveTab('briefing')}
-                                                className="rounded-[14px]"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setActiveTab("briefing")
+                                                }
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "briefing"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <FileText className="mr-2 size-4" />
                                                 AI Briefing
                                             </Button>
+
                                             <Button
-                                                variant={activeTab === 'transcript' ? 'default' : 'ghost'}
-                                                onClick={() => setActiveTab('transcript')}
-                                                className="rounded-[14px]"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setActiveTab("transcript")
+                                                }
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "transcript"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Activity className="mr-2 size-4" />
-                                                Transcript
-                                                ({consultation.sessions.reduce((acc, s) => acc + s.turns.length, 0)} turns)
+                                                Transcript (
+                                                {consultation.sessions.reduce(
+                                                    (acc, s) =>
+                                                        acc + s.turns.length,
+                                                    0,
+                                                )}{" "}
+                                                turns)
                                             </Button>
+
                                             <Button
-                                                variant={activeTab === 'cough' ? 'default' : 'ghost'}
-                                                onClick={() => setActiveTab('cough')}
-                                                className="rounded-[14px]"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setActiveTab("cough")
+                                                }
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "cough"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Mic className="mr-2 size-4" />
                                                 Cough Analysis
                                             </Button>
+
                                             <Button
-                                                variant={activeTab === 'media' ? 'default' : 'ghost'}
-                                                onClick={() => setActiveTab('media')}
-                                                className="rounded-[14px]"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setActiveTab("media")
+                                                }
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "media"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Video className="mr-2 size-4" />
-                                                Media ({consultation.captures.length})
+                                                Media (
+                                                {consultation.captures.length})
                                             </Button>
+
                                             <Button
-                                                variant={activeTab === 'notes' ? 'default' : 'ghost'}
-                                                onClick={() => setActiveTab('notes')}
-                                                className="rounded-[14px]"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setActiveTab("notes")
+                                                }
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "notes"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <FileText className="mr-2 size-4" />
                                                 Clinical Notes
                                             </Button>
+
                                             <Button
-                                                variant={activeTab === 'similar' ? 'default' : 'ghost'}
+                                                variant="outline"
                                                 onClick={() => {
-                                                    setActiveTab('similar');
+                                                    setActiveTab("similar");
                                                     loadSimilarCases();
                                                 }}
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "similar"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Activity className="mr-2 size-4" />
                                                 Similar Cases
@@ -372,56 +467,157 @@ export default function DoctorConsultationShow({
                                         </nav>
 
                                         <div className="mt-6">
-                                            {activeTab === 'briefing' && (
+                                            {activeTab === "briefing" && (
                                                 <div className="space-y-6">
                                                     {consultation.report ? (
                                                         <div className="space-y-4">
-                                                            {consultation.report.chief_complaint && (
+                                                            {consultation.report
+                                                                .chief_complaint && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Chief Complaint</h3>
-                                                                    <p className="mt-2 text-[#FFFFFF]">{consultation.report.chief_complaint}</p>
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                        Chief
+                                                                        Complaint
+                                                                    </h3>
+                                                                    <p className="mt-2 text-[#FFFFFF]">
+                                                                        {
+                                                                            consultation
+                                                                                .report
+                                                                                .chief_complaint
+                                                                        }
+                                                                    </p>
                                                                 </div>
                                                             )}
-                                                            {consultation.report.history_present_illness && (
+                                                            {consultation.report
+                                                                .history_present_illness && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">History of Present Illness</h3>
-                                                                    <p className="mt-2 text-[#FFFFFF]">{consultation.report.history_present_illness}</p>
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                        History
+                                                                        of
+                                                                        Present
+                                                                        Illness
+                                                                    </h3>
+                                                                    <p className="mt-2 text-[#FFFFFF]">
+                                                                        {
+                                                                            consultation
+                                                                                .report
+                                                                                .history_present_illness
+                                                                        }
+                                                                    </p>
                                                                 </div>
                                                             )}
-                                                            {consultation.report.clinical_impression && (
+                                                            {consultation.report
+                                                                .clinical_impression && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Clinical Impression</h3>
-                                                                    <p className="mt-2 text-[#FFFFFF]">{consultation.report.clinical_impression}</p>
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                        Clinical
+                                                                        Impression
+                                                                    </h3>
+                                                                    <p className="mt-2 text-[#FFFFFF]">
+                                                                        {
+                                                                            consultation
+                                                                                .report
+                                                                                .clinical_impression
+                                                                        }
+                                                                    </p>
                                                                 </div>
                                                             )}
-                                                            {consultation.report.recommendations && (
+                                                            {consultation.report
+                                                                .recommendations && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Recommendations</h3>
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                        Recommendations
+                                                                    </h3>
                                                                     <ul className="mt-2 list-disc space-y-1 pl-6 text-[#FFFFFF]">
-                                                                        {consultation.report.recommendations.split('\n').map((item, i) => (
-                                                                            <li key={i}>{item.trim()}</li>
-                                                                        ))}
+                                                                        {consultation.report.recommendations
+                                                                            .split(
+                                                                                "\n",
+                                                                            )
+                                                                            .map(
+                                                                                (
+                                                                                    item,
+                                                                                    i,
+                                                                                ) => (
+                                                                                    <li
+                                                                                        key={
+                                                                                            i
+                                                                                        }
+                                                                                    >
+                                                                                        {item.trim()}
+                                                                                    </li>
+                                                                                ),
+                                                                            )}
                                                                     </ul>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     ) : (
                                                         <Card className="border-white/20 bg-white/5">
-                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                            <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
                                                                 <AlertTriangle className="size-12 text-white/60" />
-                                                                <p className="mt-4 text-[#FFFFFF] font-semibold">AI Briefing Not Available Yet</p>
+                                                                <p className="mt-4 text-[#FFFFFF] font-semibold">
+                                                                    AI Briefing
+                                                                    Not
+                                                                    Available
+                                                                    Yet
+                                                                </p>
                                                                 <p className="mt-2 text-sm text-[#71717A] text-center max-w-md">
-                                                                    AI Briefing will be automatically generated after patient completes the consultation:
+                                                                    AI Briefing
+                                                                    will be
+                                                                    automatically
+                                                                    generated
+                                                                    after
+                                                                    patient
+                                                                    completes
+                                                                    the
+                                                                    consultation:
                                                                 </p>
                                                                 <ul className="mt-3 text-sm text-[#94A3B8] space-y-1 text-left">
-                                                                    <li>✓ Chat with AI Sage for symptoms screening</li>
-                                                                    <li>✓ <strong className="text-white">Record cough audio</strong> for AI analysis</li>
-                                                                    <li>✓ Upload photos/supporting media (optional)</li>
-                                                                    <li>✓ Close/finish consultation</li>
+                                                                    <li>
+                                                                        ✓ Chat
+                                                                        with AI
+                                                                        Sage for
+                                                                        symptoms
+                                                                        screening
+                                                                    </li>
+                                                                    <li>
+                                                                        ✓{" "}
+                                                                        <strong className="text-white">
+                                                                            Record
+                                                                            cough
+                                                                            audio
+                                                                        </strong>{" "}
+                                                                        for AI
+                                                                        analysis
+                                                                    </li>
+                                                                    <li>
+                                                                        ✓ Upload
+                                                                        photos/supporting
+                                                                        media
+                                                                        (optional)
+                                                                    </li>
+                                                                    <li>
+                                                                        ✓
+                                                                        Close/finish
+                                                                        consultation
+                                                                    </li>
                                                                 </ul>
                                                                 <p className="mt-4 text-xs text-[#71717A] text-center">
-                                                                    Status: <span className="font-mono text-white/60">{consultation.status}</span>
-                                                                    {!consultation.cough_risk && <span className="ml-2">| Missing: <strong className="text-white">Cough Recording</strong></span>}
+                                                                    Status:{" "}
+                                                                    <span className="font-mono text-white/60">
+                                                                        {
+                                                                            consultation.status
+                                                                        }
+                                                                    </span>
+                                                                    {!consultation.cough_risk && (
+                                                                        <span className="ml-2">
+                                                                            |
+                                                                            Missing:{" "}
+                                                                            <strong className="text-white">
+                                                                                Cough
+                                                                                Recording
+                                                                            </strong>
+                                                                        </span>
+                                                                    )}
                                                                 </p>
                                                             </CardContent>
                                                         </Card>
@@ -429,184 +625,336 @@ export default function DoctorConsultationShow({
                                                 </div>
                                             )}
 
-                                            {activeTab === 'transcript' && (
+                                            {activeTab === "transcript" && (
                                                 <div className="space-y-4">
-                                                    {consultation.sessions.map((session) => (
-                                                        <div key={session.id} className="rounded-[14px] border border-white/10 bg-[#000000]/50 p-4">
-                                                            <div className="mb-3 flex items-center gap-2 text-xs text-[#71717A]">
-                                                                <Calendar className="size-3" />
-                                                                <span>Session #{session.id}</span>
-                                                                {session.started_at && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span>{session.started_at}</span>
-                                                                    </>
-                                                                )}
+                                                    {consultation.sessions.map(
+                                                        (session) => (
+                                                            <div
+                                                                key={session.id}
+                                                                className="rounded-[14px] border border-white/10 bg-[#000000]/50 p-4"
+                                                            >
+                                                                <div className="mb-3 flex items-center gap-2 text-xs text-[#71717A]">
+                                                                    <Calendar className="size-3" />
+                                                                    <span>
+                                                                        Session
+                                                                        #
+                                                                        {
+                                                                            session.id
+                                                                        }
+                                                                    </span>
+                                                                    {session.started_at && (
+                                                                        <>
+                                                                            <span>
+                                                                                •
+                                                                            </span>
+                                                                            <span>
+                                                                                {
+                                                                                    session.started_at
+                                                                                }
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    {session.turns.map(
+                                                                        (
+                                                                            turn,
+                                                                            i,
+                                                                        ) => (
+                                                                            <div
+                                                                                key={
+                                                                                    i
+                                                                                }
+                                                                                className={cn(
+                                                                                    "flex gap-3",
+                                                                                    turn.role ===
+                                                                                        "user"
+                                                                                        ? "flex-row-reverse"
+                                                                                        : "flex-row",
+                                                                                )}
+                                                                            >
+                                                                                <div
+                                                                                    className={cn(
+                                                                                        "rounded-[14px] px-4 py-2 text-sm max-w-[85%]",
+                                                                                        turn.role ===
+                                                                                            "user"
+                                                                                            ? "bg-white text-black"
+                                                                                            : "border border-white/10 bg-white/5 text-white",
+                                                                                    )}
+                                                                                >
+                                                                                    {
+                                                                                        turn.text
+                                                                                    }
+                                                                                </div>
+                                                                            </div>
+                                                                        ),
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                            <div className="space-y-3">
-                                                                {session.turns.map((turn, i) => (
-                                                                    <div key={i} className={cn('flex gap-3', turn.role === 'user' ? 'flex-row-reverse' : 'flex-row')}>
-                                                                        <div className={cn('rounded-[14px] px-4 py-2 text-sm max-w-[85%]', turn.role === 'user' ? 'bg-white text-black' : 'border border-white/10 bg-white/5 text-white')}>
-                                                                            {turn.text}
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {consultation.sessions.length === 0 && (
-                                                        <p className="text-center text-[#71717A]">No transcripts available</p>
+                                                        ),
+                                                    )}
+                                                    {consultation.sessions
+                                                        .length === 0 && (
+                                                        <p className="text-center text-[#71717A]">
+                                                            No transcripts
+                                                            available
+                                                        </p>
                                                     )}
                                                 </div>
                                             )}
 
-                                            {activeTab === 'cough' && consultation.cough_analysis && (
-                                                <div className="space-y-6">
-                                                    <div className="rounded-[14px] border border-white/10 bg-[#0B0B0D] p-6">
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">TB Risk Score</h3>
-                                                                <p className="mt-2 text-4xl font-bold">
-                                                                    {riskPercentage}%
-                                                                </p>
-                                                            </div>
-                                                            <div className="flex flex-col items-center">
-                                                                <div className="size-32 rounded-full border-8 border-white/10 flex items-center justify-center bg-gradient-to-br from-[#0B0B0D] to-[#18181B]">
-                                                                    <div className="text-center">
-                                                                        {riskPercentage >= 70 && (
-                                                                            <span className="block text-5xl">🔴</span>
-                                                                        )}
-                                                                        {riskPercentage >= 40 && riskPercentage < 70 && (
-                                                                            <span className="block text-5xl">🟡</span>
-                                                                        )}
-                                                                        {riskPercentage < 40 && (
-                                                                            <span className="block text-5xl">🟢</span>
-                                                                        )}
-                                                                    </div>
+                                            {activeTab === "cough" &&
+                                                consultation.cough_analysis && (
+                                                    <div className="space-y-6">
+                                                        <div className="rounded-[14px] border border-white/10 bg-[#0B0B0D] p-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <div>
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                        TB Risk
+                                                                        Score
+                                                                    </h3>
+                                                                    <p className="mt-2 text-4xl font-bold">
+                                                                        {
+                                                                            riskPercentage
+                                                                        }
+                                                                        %
+                                                                    </p>
                                                                 </div>
-                                                                <p className="mt-3 text-sm font-medium">
-                                                                    {riskPercentage >= 70 ? 'High Risk' : riskPercentage >= 40 ? 'Medium Risk' : riskPercentage > 0 ? 'Low Risk' : 'No Cough Detected'}
-                                                                </p>
+                                                                <div className="flex flex-col items-center">
+                                                                    <div className="size-32 rounded-full border-8 border-white/10 flex items-center justify-center bg-linear-to-br from-[#0B0B0D] to-[#18181B]">
+                                                                        <div className="text-center">
+                                                                            {riskPercentage >=
+                                                                                70 && (
+                                                                                <span className="block text-5xl">
+                                                                                    🔴
+                                                                                </span>
+                                                                            )}
+                                                                            {riskPercentage >=
+                                                                                40 &&
+                                                                                riskPercentage <
+                                                                                    70 && (
+                                                                                    <span className="block text-5xl">
+                                                                                        🟡
+                                                                                    </span>
+                                                                                )}
+                                                                            {riskPercentage <
+                                                                                40 && (
+                                                                                <span className="block text-5xl">
+                                                                                    🟢
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="mt-3 text-sm font-medium">
+                                                                        {riskPercentage >=
+                                                                        70
+                                                                            ? "High Risk"
+                                                                            : riskPercentage >=
+                                                                                40
+                                                                              ? "Medium Risk"
+                                                                              : riskPercentage >
+                                                                                  0
+                                                                                ? "Low Risk"
+                                                                                : "No Cough Detected"}
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    {consultation.cough_analysis.risk_level && (
-                                                        <div className="grid gap-4 sm:grid-cols-2">
-                                                            <Card className="border-white/10 bg-[#0B0B0D]">
-                                                                <CardContent className="p-5">
-                                                                    <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Risk Level</h4>
-                                                                    <p className="mt-2 text-lg font-semibold">
-                                                                        {consultation.cough_analysis.risk_level.toUpperCase()}
-                                                                    </p>
-                                                                </CardContent>
-                                                            </Card>
-                                                            {consultation.cough_analysis.risk_score && (
+                                                        {consultation
+                                                            .cough_analysis
+                                                            .risk_level && (
+                                                            <div className="grid gap-4 sm:grid-cols-2">
                                                                 <Card className="border-white/10 bg-[#0B0B0D]">
                                                                     <CardContent className="p-5">
-                                                                        <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Risk Score</h4>
+                                                                        <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                            Risk
+                                                                            Level
+                                                                        </h4>
                                                                         <p className="mt-2 text-lg font-semibold">
-                                                                            {riskScore.toFixed(2)}
+                                                                            {consultation.cough_analysis.risk_level.toUpperCase()}
                                                                         </p>
                                                                     </CardContent>
                                                                 </Card>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                                {consultation
+                                                                    .cough_analysis
+                                                                    .risk_score && (
+                                                                    <Card className="border-white/10 bg-[#0B0B0D]">
+                                                                        <CardContent className="p-5">
+                                                                            <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                                Risk
+                                                                                Score
+                                                                            </h4>
+                                                                            <p className="mt-2 text-lg font-semibold">
+                                                                                {riskScore.toFixed(
+                                                                                    2,
+                                                                                )}
+                                                                            </p>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                )}
+                                                            </div>
+                                                        )}
 
-                                                    {consultation.cough_analysis.findings && (
-                                                        <Card className="border-white/10 bg-[#0B0B0D]">
-                                                            <CardContent className="p-5">
-                                                                <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">MedGemma Analysis</h4>
-                                                                <p className="mt-2 text-[#FFFFFF]">{consultation.cough_analysis.findings}</p>
-                                                            </CardContent>
-                                                        </Card>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {activeTab === 'cough' && !consultation.cough_analysis && (
-                                                <Card className="border-white/10 bg-[#0B0B0D]">
-                                                    <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
-                                                        <p className="text-[#A1A1AA]">No cough analysis data available</p>
-                                                    </CardContent>
-                                                </Card>
-                                            )}
-
-                                            {activeTab === 'media' && (
-                                                <>
-                                                    <div className="grid gap-4 sm:grid-cols-2">
-                                                        {consultation.captures.map((capture, idx) => (
-                                                            <Card key={capture.id} className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors cursor-pointer">
+                                                        {consultation
+                                                            .cough_analysis
+                                                            .findings && (
+                                                            <Card className="border-white/10 bg-[#0B0B0D]">
                                                                 <CardContent className="p-5">
-                                                                    <div className="flex items-center justify-between mb-3">
-                                                                        <div className="flex items-center gap-2">
-                                                                            {capture.type === 'video' || capture.mime_type.startsWith('video/') ? (
-                                                                                <Video className="size-5 text-[#94A3B8]" />
-                                                                            ) : (
-                                                                                <FileText className="size-5 text-[#94A3B8]" />
-                                                                            )}
-                                                                            <span className="text-sm font-medium">{capture.type}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Button 
-                                                                                variant="outline" 
-                                                                                size="sm" 
-                                                                                className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20"
-                                                                                onClick={() => {
-                                                                                    setLightboxIndex(idx);
-                                                                                    setLightboxOpen(true);
-                                                                                }}
-                                                                            >
-                                                                                <Maximize2 className="size-3" />
-                                                                                <span className="sr-only">View</span>
-                                                                            </Button>
-                                                                            <a href={capture.download}>
-                                                                                <Button variant="outline" size="sm" className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20">
-                                                                                    <Download className="size-3" />
-                                                                                    <span className="sr-only">Download</span>
-                                                                                </Button>
-                                                                            </a>
-                                                                        </div>
-                                                                    </div>
-                                                                    <p className="text-xs text-[#71717A]">
-                                                                        {capture.captured_at}
+                                                                    <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                                                        MedGemma
+                                                                        Analysis
+                                                                    </h4>
+                                                                    <p className="mt-2 text-[#FFFFFF]">
+                                                                        {
+                                                                            consultation
+                                                                                .cough_analysis
+                                                                                .findings
+                                                                        }
                                                                     </p>
                                                                 </CardContent>
                                                             </Card>
-                                                        ))}
-                                                        {consultation.captures.length === 0 && (
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                            {activeTab === "cough" &&
+                                                !consultation.cough_analysis && (
+                                                    <Card className="border-white/10 bg-[#0B0B0D]">
+                                                        <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
+                                                            <p className="text-[#A1A1AA]">
+                                                                No cough
+                                                                analysis data
+                                                                available
+                                                            </p>
+                                                        </CardContent>
+                                                    </Card>
+                                                )}
+
+                                            {activeTab === "media" && (
+                                                <>
+                                                    <div className="grid gap-4 sm:grid-cols-2">
+                                                        {consultation.captures.map(
+                                                            (capture, idx) => (
+                                                                <Card
+                                                                    key={
+                                                                        capture.id
+                                                                    }
+                                                                    className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors cursor-pointer"
+                                                                >
+                                                                    <CardContent className="p-5">
+                                                                        <div className="flex items-center justify-between mb-3">
+                                                                            <div className="flex items-center gap-2">
+                                                                                {capture.type ===
+                                                                                    "video" ||
+                                                                                capture.mime_type.startsWith(
+                                                                                    "video/",
+                                                                                ) ? (
+                                                                                    <Video className="size-5 text-[#94A3B8]" />
+                                                                                ) : (
+                                                                                    <FileText className="size-5 text-[#94A3B8]" />
+                                                                                )}
+                                                                                <span className="text-sm font-medium">
+                                                                                    {
+                                                                                        capture.type
+                                                                                    }
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20"
+                                                                                    onClick={() => {
+                                                                                        setLightboxIndex(
+                                                                                            idx,
+                                                                                        );
+                                                                                        setLightboxOpen(
+                                                                                            true,
+                                                                                        );
+                                                                                    }}
+                                                                                >
+                                                                                    <Maximize2 className="size-3" />
+                                                                                    <span className="sr-only">
+                                                                                        View
+                                                                                    </span>
+                                                                                </Button>
+                                                                                <a
+                                                                                    href={
+                                                                                        capture.download
+                                                                                    }
+                                                                                >
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="rounded-full border-white/10 text-[#94A3B8] hover:border-white/20"
+                                                                                    >
+                                                                                        <Download className="size-3" />
+                                                                                        <span className="sr-only">
+                                                                                            Download
+                                                                                        </span>
+                                                                                    </Button>
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-xs text-[#71717A]">
+                                                                            {
+                                                                                capture.captured_at
+                                                                            }
+                                                                        </p>
+                                                                    </CardContent>
+                                                                </Card>
+                                                            ),
+                                                        )}
+                                                        {consultation.captures
+                                                            .length === 0 && (
                                                             <p className="col-span-2 text-center text-[#71717A]">
-                                                                No media captures available
+                                                                No media
+                                                                captures
+                                                                available
                                                             </p>
                                                         )}
                                                     </div>
 
                                                     <Lightbox
                                                         open={lightboxOpen}
-                                                        close={() => setLightboxOpen(false)}
+                                                        close={() =>
+                                                            setLightboxOpen(
+                                                                false,
+                                                            )
+                                                        }
                                                         slides={lightboxSlides}
                                                         index={lightboxIndex}
                                                     />
                                                 </>
                                             )}
 
-                                            {activeTab === 'notes' && (
+                                            {activeTab === "notes" && (
                                                 <div className="space-y-6">
                                                     <div>
                                                         <div className="flex items-center justify-between mb-2">
                                                             <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
-                                                                Doctor's Clinical Notes
+                                                                Doctor's
+                                                                Clinical Notes
                                                             </h4>
                                                             {saveSuccess && (
                                                                 <span className="text-xs text-white flex items-center gap-1 font-mono">
-                                                                    <CheckCircle2 className="size-3" /> Saved successfully
+                                                                    <CheckCircle2 className="size-3" />{" "}
+                                                                    Saved
+                                                                    successfully
                                                                 </span>
                                                             )}
                                                         </div>
                                                         <textarea
-                                                            value={clinicalNotes}
-                                                            onChange={(e) => setClinicalNotes(e.target.value)}
+                                                            value={
+                                                                clinicalNotes
+                                                            }
+                                                            onChange={(e) =>
+                                                                setClinicalNotes(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
                                                             placeholder="Write your clinical assessment, diagnosis, prescription details, or general notes here..."
                                                             rows={6}
                                                             className="w-full rounded-[14px] border border-white/10 bg-[#000000]/60 p-4 text-sm text-white placeholder:text-[#71717A] focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
@@ -615,121 +963,212 @@ export default function DoctorConsultationShow({
 
                                                     <div>
                                                         <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide mb-3">
-                                                            Follow-up Actions Required
+                                                            Follow-up Actions
+                                                            Required
                                                         </h4>
                                                         <div className="grid gap-2 sm:grid-cols-2">
-                                                            {followUpOptions.map((action) => {
-                                                                const isChecked = followUpActions.includes(action);
-                                                                return (
-                                                                    <button
-                                                                        key={action}
-                                                                        type="button"
-                                                                        onClick={() => toggleFollowUpAction(action)}
-                                                                        className={cn(
-                                                                            'flex items-center gap-3 rounded-[10px] border p-3 text-left text-sm transition-all',
-                                                                            isChecked
-                                                                                ? 'border-white/30 bg-white/10 text-white'
-                                                                                : 'border-white/5 bg-[#000000]/30 text-[#A1A1AA] hover:border-white/15'
-                                                                        )}
-                                                                    >
-                                                                        <div className={cn(
-                                                                            'flex size-4 shrink-0 items-center justify-center rounded border',
-                                                                            isChecked ? 'border-white bg-white text-black' : 'border-white/20'
-                                                                        )}>
-                                                                            {isChecked && <CheckCircle2 className="size-3" />}
-                                                                        </div>
-                                                                        <span className="text-xs">{action}</span>
-                                                                    </button>
-                                                                );
-                                                            })}
+                                                            {followUpOptions.map(
+                                                                (action) => {
+                                                                    const isChecked =
+                                                                        followUpActions.includes(
+                                                                            action,
+                                                                        );
+                                                                    return (
+                                                                        <button
+                                                                            key={
+                                                                                action
+                                                                            }
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                toggleFollowUpAction(
+                                                                                    action,
+                                                                                )
+                                                                            }
+                                                                            className={cn(
+                                                                                "flex items-center gap-3 rounded-[10px] border p-3 text-left text-sm transition-all",
+                                                                                isChecked
+                                                                                    ? "border-white/30 bg-white/10 text-white"
+                                                                                    : "border-white/5 bg-[#000000]/30 text-[#A1A1AA] hover:border-white/15",
+                                                                            )}
+                                                                        >
+                                                                            <div
+                                                                                className={cn(
+                                                                                    "flex size-4 shrink-0 items-center justify-center rounded border",
+                                                                                    isChecked
+                                                                                        ? "border-white bg-white text-black"
+                                                                                        : "border-white/20",
+                                                                                )}
+                                                                            >
+                                                                                {isChecked && (
+                                                                                    <CheckCircle2 className="size-3" />
+                                                                                )}
+                                                                            </div>
+                                                                            <span className="text-xs">
+                                                                                {
+                                                                                    action
+                                                                                }
+                                                                            </span>
+                                                                        </button>
+                                                                    );
+                                                                },
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     <div className="flex items-center gap-3 pt-2">
                                                         <Button
-                                                            onClick={handleSaveNotes}
-                                                            disabled={savingNotes}
+                                                            onClick={
+                                                                handleSaveNotes
+                                                            }
+                                                            disabled={
+                                                                savingNotes
+                                                            }
                                                             className="rounded-full bg-white text-black hover:bg-white/90"
                                                         >
                                                             <Save className="mr-2 size-4" />
-                                                            {savingNotes ? 'Saving...' : 'Save Notes'}
+                                                            {savingNotes
+                                                                ? "Saving..."
+                                                                : "Save Notes"}
                                                         </Button>
 
                                                         {!consultation.is_reviewed && (
                                                             <Button
-                                                                onClick={() => setConfirmDialogOpen(true)}
-                                                                disabled={reviewing}
+                                                                onClick={() =>
+                                                                    setConfirmDialogOpen(
+                                                                        true,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    reviewing
+                                                                }
                                                                 variant="outline"
                                                                 className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
                                                             >
                                                                 <CheckCircle2 className="mr-2 size-4" />
-                                                                {reviewing ? 'Marking...' : 'Mark as Reviewed'}
+                                                                {reviewing
+                                                                    ? "Marking..."
+                                                                    : "Mark as Reviewed"}
                                                             </Button>
                                                         )}
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {activeTab === 'similar' && (
+                                            {activeTab === "similar" && (
                                                 <div className="space-y-4">
                                                     {loadingSimilar ? (
                                                         <Card className="border-white/10 bg-[#0B0B0D]">
-                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
-                                                                <p className="text-[#A1A1AA]">Loading similar cases...</p>
+                                                            <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
+                                                                <p className="text-[#A1A1AA]">
+                                                                    Loading
+                                                                    similar
+                                                                    cases...
+                                                                </p>
                                                             </CardContent>
                                                         </Card>
-                                                    ) : similarCases.length > 0 ? (
+                                                    ) : similarCases.length >
+                                                      0 ? (
                                                         <>
                                                             <p className="text-sm text-[#71717A]">
-                                                                Found {similarCases.length} cases with similar cough patterns (based on acoustic analysis)
+                                                                Found{" "}
+                                                                {
+                                                                    similarCases.length
+                                                                }{" "}
+                                                                cases with
+                                                                similar cough
+                                                                patterns (based
+                                                                on acoustic
+                                                                analysis)
                                                             </p>
                                                             <div className="grid gap-4 sm:grid-cols-2">
-                                                                {similarCases.map((similar: any, idx: number) => (
-                                                                    <Card key={idx} className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors">
-                                                                        <CardContent className="p-5">
-                                                                            <div className="flex items-center justify-between mb-3">
-                                                                                <h4 className="font-medium text-white">
-                                                                                    {similar.patient}
-                                                                                </h4>
-                                                                                {similar.risk_level && (
-                                                                                    <Badge className={cn(
-                                                                                        'rounded-full text-xs',
-                                                                                        similar.risk_level === 'high' ? 'bg-white/30 text-white border-white/40' :
-                                                                                        similar.risk_level === 'medium' ? 'bg-white/20 text-white/80 border-white/30' :
-                                                                                        'bg-white/10 text-white/60 border-white/20'
-                                                                                    )}>
-                                                                                        {similar.risk_level.toUpperCase()}
-                                                                                    </Badge>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="space-y-2 text-sm">
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="text-[#71717A]">Similarity:</span>
-                                                                                    <span className="font-mono text-[#94A3B8]">
-                                                                                        {((1 - similar.distance) * 100).toFixed(1)}%
-                                                                                    </span>
+                                                                {similarCases.map(
+                                                                    (
+                                                                        similar: any,
+                                                                        idx: number,
+                                                                    ) => (
+                                                                        <Card
+                                                                            key={
+                                                                                idx
+                                                                            }
+                                                                            className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors"
+                                                                        >
+                                                                            <CardContent className="p-5">
+                                                                                <div className="flex items-center justify-between mb-3">
+                                                                                    <h4 className="font-medium text-white">
+                                                                                        {
+                                                                                            similar.patient
+                                                                                        }
+                                                                                    </h4>
+                                                                                    {similar.risk_level && (
+                                                                                        <Badge
+                                                                                            className={cn(
+                                                                                                "rounded-full text-xs",
+                                                                                                similar.risk_level ===
+                                                                                                    "high"
+                                                                                                    ? "bg-white/30 text-white border-white/40"
+                                                                                                    : similar.risk_level ===
+                                                                                                        "medium"
+                                                                                                      ? "bg-white/20 text-white/80 border-white/30"
+                                                                                                      : "bg-white/10 text-white/60 border-white/20",
+                                                                                            )}
+                                                                                        >
+                                                                                            {similar.risk_level.toUpperCase()}
+                                                                                        </Badge>
+                                                                                    )}
                                                                                 </div>
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <span className="text-[#71717A]">Consultation ID:</span>
-                                                                                    <Link 
-                                                                                        href={`/doctor/consultations/${similar.consultation_id}`}
-                                                                                        className="font-mono text-xs text-blue-400 hover:text-blue-300"
-                                                                                    >
-                                                                                        #{similar.consultation_id}
-                                                                                    </Link>
+                                                                                <div className="space-y-2 text-sm">
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <span className="text-[#71717A]">
+                                                                                            Similarity:
+                                                                                        </span>
+                                                                                        <span className="font-mono text-[#94A3B8]">
+                                                                                            {(
+                                                                                                (1 -
+                                                                                                    similar.distance) *
+                                                                                                100
+                                                                                            ).toFixed(
+                                                                                                1,
+                                                                                            )}
+                                                                                            %
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <span className="text-[#71717A]">
+                                                                                            Consultation
+                                                                                            ID:
+                                                                                        </span>
+                                                                                        <Link
+                                                                                            href={`/doctor/consultations/${similar.consultation_id}`}
+                                                                                            className="font-mono text-xs text-blue-400 hover:text-blue-300"
+                                                                                        >
+                                                                                            #
+                                                                                            {
+                                                                                                similar.consultation_id
+                                                                                            }
+                                                                                        </Link>
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                ))}
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    ),
+                                                                )}
                                                             </div>
                                                         </>
                                                     ) : (
                                                         <Card className="border-white/10 bg-[#0B0B0D]">
-                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                            <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
                                                                 <AlertTriangle className="size-12 text-[#71717A]" />
-                                                                <p className="mt-4 text-[#FFFFFF]">No similar cases found</p>
-                                                                <p className="mt-1 text-sm text-[#71717A]">This cough pattern is unique or no embeddings available</p>
+                                                                <p className="mt-4 text-[#FFFFFF]">
+                                                                    No similar
+                                                                    cases found
+                                                                </p>
+                                                                <p className="mt-1 text-sm text-[#71717A]">
+                                                                    This cough
+                                                                    pattern is
+                                                                    unique or no
+                                                                    embeddings
+                                                                    available
+                                                                </p>
                                                             </CardContent>
                                                         </Card>
                                                     )}
@@ -744,10 +1183,14 @@ export default function DoctorConsultationShow({
                         <div className="space-y-6">
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
-                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Patient Summary</h3>
+                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                        Patient Summary
+                                    </h3>
                                     <div className="mt-4 space-y-3">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">Review Status</span>
+                                            <span className="text-[#71717A]">
+                                                Review Status
+                                            </span>
                                             {consultation.is_reviewed ? (
                                                 <span className="rounded-full bg-white/10 text-white px-2 py-0.5 text-xs font-mono">
                                                     REVIEWED
@@ -760,47 +1203,81 @@ export default function DoctorConsultationShow({
                                         </div>
                                         {consultation.reviewed_at && (
                                             <div className="flex items-center justify-between text-sm">
-                                                <span className="text-[#71717A]">Reviewed At</span>
+                                                <span className="text-[#71717A]">
+                                                    Reviewed At
+                                                </span>
                                                 <span className="font-mono text-xs text-[#94A3B8]">
-                                                    {consultation.reviewed_at.split(' ')[0]}
+                                                    {
+                                                        consultation.reviewed_at.split(
+                                                            " ",
+                                                        )[0]
+                                                    }
                                                 </span>
                                             </div>
                                         )}
                                         {consultation.reviewer && (
                                             <div className="flex items-center justify-between text-sm">
-                                                <span className="text-[#71717A]">Reviewed By</span>
+                                                <span className="text-[#71717A]">
+                                                    Reviewed By
+                                                </span>
                                                 <span className="text-xs text-[#94A3B8]">
                                                     {consultation.reviewer.name}
                                                 </span>
                                             </div>
                                         )}
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">Email</span>
-                                            <span className="font-mono text-[#94A3B8]">{consultation.patient.email}</span>
+                                            <span className="text-[#71717A]">
+                                                Email
+                                            </span>
+                                            <span className="font-mono text-[#94A3B8]">
+                                                {consultation.patient.email}
+                                            </span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">Status</span>
-                                            <span className={cn(
-                                                'rounded-full px-2 py-0.5 text-xs font-mono',
-                                                consultation.status === 'completed' ? 'bg-white/10 text-white' :
-                                                consultation.status === 'chatting' ? 'bg-white/10 text-white/60' :
-                                                'bg-[#71717A]/10 text-[#71717A]'
-                                            )}>
+                                            <span className="text-[#71717A]">
+                                                Status
+                                            </span>
+                                            <span
+                                                className={cn(
+                                                    "rounded-full px-2 py-0.5 text-xs font-mono",
+                                                    consultation.status ===
+                                                        "completed"
+                                                        ? "bg-white/10 text-white"
+                                                        : consultation.status ===
+                                                            "chatting"
+                                                          ? "bg-white/10 text-white/60"
+                                                          : "bg-[#71717A]/10 text-[#71717A]",
+                                                )}
+                                            >
                                                 {consultation.status}
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">Session Count</span>
-                                            <span className="font-mono text-[#94A3B8]">{consultation.sessions.length}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">Media Captures</span>
-                                            <span className="font-mono text-[#94A3B8]">{consultation.captures.length}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">Consultation</span>
+                                            <span className="text-[#71717A]">
+                                                Session Count
+                                            </span>
                                             <span className="font-mono text-[#94A3B8]">
-                                                {consultation.created_at.split(' ')[0]}
+                                                {consultation.sessions.length}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-[#71717A]">
+                                                Media Captures
+                                            </span>
+                                            <span className="font-mono text-[#94A3B8]">
+                                                {consultation.captures.length}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-[#71717A]">
+                                                Consultation
+                                            </span>
+                                            <span className="font-mono text-[#94A3B8]">
+                                                {
+                                                    consultation.created_at.split(
+                                                        " ",
+                                                    )[0]
+                                                }
                                             </span>
                                         </div>
                                     </div>
@@ -809,26 +1286,46 @@ export default function DoctorConsultationShow({
 
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
-                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Session Timeline</h3>
+                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                        Session Timeline
+                                    </h3>
                                     <div className="mt-4 space-y-4">
-                                        {consultation.sessions.map((session, i) => (
-                                            <div key={session.id} className="relative pl-6">
-                                                {i < consultation.sessions.length - 1 && (
-                                                    <div className="absolute left-[15px] top-6 bottom-0 w-px bg-white/10" />
-                                                )}
-                                                <div className="absolute left-0 top-0 size-3 rounded-full bg-white/10" />
-                                                <div className="space-y-1">
-                                                    <p className="font-mono text-xs text-[#94A3B8]">
-                                                        {session.started_at ? new Date(session.started_at).toLocaleTimeString() : 'N/A'}
-                                                    </p>
-                                                    <p className="text-sm text-[#FFFFFF]">
-                                                        {session.turns.length} turns
-                                                    </p>
+                                        {consultation.sessions.map(
+                                            (session, i) => (
+                                                <div
+                                                    key={session.id}
+                                                    className="relative pl-6"
+                                                >
+                                                    {i <
+                                                        consultation.sessions
+                                                            .length -
+                                                            1 && (
+                                                        <div className="absolute left-3.75 top-6 bottom-0 w-px bg-white/10" />
+                                                    )}
+                                                    <div className="absolute left-0 top-0 size-3 rounded-full bg-white/10" />
+                                                    <div className="space-y-1">
+                                                        <p className="font-mono text-xs text-[#94A3B8]">
+                                                            {session.started_at
+                                                                ? new Date(
+                                                                      session.started_at,
+                                                                  ).toLocaleTimeString()
+                                                                : "N/A"}
+                                                        </p>
+                                                        <p className="text-sm text-[#FFFFFF]">
+                                                            {
+                                                                session.turns
+                                                                    .length
+                                                            }{" "}
+                                                            turns
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ),
+                                        )}
                                         {consultation.sessions.length === 0 && (
-                                            <p className="text-sm text-[#71717A]">No sessions recorded</p>
+                                            <p className="text-sm text-[#71717A]">
+                                                No sessions recorded
+                                            </p>
                                         )}
                                     </div>
                                 </CardContent>
@@ -836,37 +1333,63 @@ export default function DoctorConsultationShow({
 
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
-                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">Cough Analysis</h3>
+                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
+                                        Cough Analysis
+                                    </h3>
                                     <div className="mt-4 space-y-3">
                                         <div className="flex items-center justify-between text-sm">
-                                            <span className="text-[#71717A]">TB Risk</span>
+                                            <span className="text-[#71717A]">
+                                                TB Risk
+                                            </span>
                                             {consultation.cough_risk ? (
-                                                <span className={cn(
-                                                    'rounded-full px-2 py-0.5 text-xs font-mono',
-                                                    consultation.cough_risk === 'high' ? 'bg-white/30 text-white' :
-                                                    consultation.cough_risk === 'medium' ? 'bg-white/20 text-white/80' :
-                                                    consultation.cough_risk === 'low' ? 'bg-white/10 text-white/60' :
-                                                    'bg-[#71717A]/10 text-[#71717A]'
-                                                )}>
+                                                <span
+                                                    className={cn(
+                                                        "rounded-full px-2 py-0.5 text-xs font-mono",
+                                                        consultation.cough_risk ===
+                                                            "high"
+                                                            ? "bg-white/30 text-white"
+                                                            : consultation.cough_risk ===
+                                                                "medium"
+                                                              ? "bg-white/20 text-white/80"
+                                                              : consultation.cough_risk ===
+                                                                  "low"
+                                                                ? "bg-white/10 text-white/60"
+                                                                : "bg-[#71717A]/10 text-[#71717A]",
+                                                    )}
+                                                >
                                                     {consultation.cough_risk.toUpperCase()}
                                                 </span>
                                             ) : (
-                                                <span className="text-[#71717A]">N/A</span>
+                                                <span className="text-[#71717A]">
+                                                    N/A
+                                                </span>
                                             )}
                                         </div>
-                                        {consultation.cough_analysis?.risk_score && (
+                                        {consultation.cough_analysis
+                                            ?.risk_score && (
                                             <div className="flex items-center justify-between text-sm">
-                                                <span className="text-[#71717A]">Risk Score</span>
+                                                <span className="text-[#71717A]">
+                                                    Risk Score
+                                                </span>
                                                 <span className="font-mono text-[#94A3B8]">
-                                                    {consultation.cough_analysis.risk_score.toFixed(2)}
+                                                    {consultation.cough_analysis.risk_score.toFixed(
+                                                        2,
+                                                    )}
                                                 </span>
                                             </div>
                                         )}
-                                        {consultation.cough_analysis?.findings && (
+                                        {consultation.cough_analysis
+                                            ?.findings && (
                                             <div className="mt-3 rounded-[14px] bg-[#000000]/50 p-3">
-                                                <p className="text-xs text-[#71717A]">AI Explanation</p>
+                                                <p className="text-xs text-[#71717A]">
+                                                    AI Explanation
+                                                </p>
                                                 <p className="mt-1 text-sm text-[#FFFFFF]">
-                                                    {consultation.cough_analysis.findings.substring(0, 100)}...
+                                                    {consultation.cough_analysis.findings.substring(
+                                                        0,
+                                                        100,
+                                                    )}
+                                                    ...
                                                 </p>
                                             </div>
                                         )}
@@ -879,7 +1402,10 @@ export default function DoctorConsultationShow({
             </div>
 
             {/* Custom Confirmation Dialog */}
-            <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+            <Dialog
+                open={confirmDialogOpen}
+                onOpenChange={setConfirmDialogOpen}
+            >
                 <DialogContent className="border-white/10 bg-[#0B0B0D] text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl">
@@ -887,30 +1413,42 @@ export default function DoctorConsultationShow({
                             Mark as Reviewed
                         </DialogTitle>
                         <DialogDescription className="text-[#94A3B8] pt-2">
-                            Are you sure you want to mark this consultation as reviewed?
+                            Are you sure you want to mark this consultation as
+                            reviewed?
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="py-4">
                         <div className="rounded-lg border border-white/10 bg-[#000000]/50 p-4 space-y-2">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-[#71717A]">Patient:</span>
-                                <span className="font-medium text-white">{consultation.patient.name}</span>
+                                <span className="font-medium text-white">
+                                    {consultation.patient.name}
+                                </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-[#71717A]">Consultation ID:</span>
-                                <span className="font-mono text-[#94A3B8]">#{consultation.id}</span>
+                                <span className="text-[#71717A]">
+                                    Consultation ID:
+                                </span>
+                                <span className="font-mono text-[#94A3B8]">
+                                    #{consultation.id}
+                                </span>
                             </div>
                             {consultation.cough_risk && (
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-[#71717A]">Risk Level:</span>
-                                    <Badge className={
-                                        consultation.cough_risk === 'high' 
-                                            ? 'bg-white/30 text-white border-white/40' 
-                                            : consultation.cough_risk === 'medium'
-                                            ? 'bg-white/20 text-white/80 border-white/30'
-                                            : 'bg-white/10 text-white/60 border-white/20'
-                                    }>
+                                    <span className="text-[#71717A]">
+                                        Risk Level:
+                                    </span>
+                                    <Badge
+                                        className={
+                                            consultation.cough_risk === "high"
+                                                ? "bg-white/30 text-white border-white/40"
+                                                : consultation.cough_risk ===
+                                                    "medium"
+                                                  ? "bg-white/20 text-white/80 border-white/30"
+                                                  : "bg-white/10 text-white/60 border-white/20"
+                                        }
+                                    >
                                         {consultation.cough_risk.toUpperCase()}
                                     </Badge>
                                 </div>
@@ -931,7 +1469,7 @@ export default function DoctorConsultationShow({
                             disabled={reviewing}
                             className="rounded-full bg-white text-black hover:bg-white/90"
                         >
-                            {reviewing ? 'Processing...' : 'Confirm'}
+                            {reviewing ? "Processing..." : "Confirm"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -942,12 +1480,12 @@ export default function DoctorConsultationShow({
 
 DoctorConsultationShow.layout = {
     breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
+        { title: "Dashboard", href: dashboard() },
         {
-            title: 'Doctor',
+            title: "Doctor",
             href: doctorIndexRoute(),
         },
-        { title: 'Consultation' },
+        { title: "Consultation" },
     ],
 };
 

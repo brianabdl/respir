@@ -10,7 +10,8 @@ RUN pip install uv
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --frozen
+# Install with ML extras to include all ML dependencies
+RUN uv sync --frozen --extra ml
 
 COPY . .
 

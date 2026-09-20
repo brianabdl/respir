@@ -114,7 +114,9 @@ class ConsultationReviewController extends Controller
 
         // Auto-generate briefing if not exists and consultation is completed
         if ($consultation->status === 'completed' && $consultation->report === null) {
-            GenerateClinicianBriefing::dispatch($consultation->id);
+            // Use dispatchAfterResponse to avoid blocking the response
+            // but still generate briefing without needing queue worker
+            GenerateClinicianBriefing::dispatchAfterResponse($consultation->id);
         }
 
         return inertia('doctor/show', [

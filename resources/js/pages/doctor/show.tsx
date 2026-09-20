@@ -1,8 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
-import { useEcho } from '@laravel/echo-react';
-import Lightbox from 'yet-another-react-lightbox';
-import 'yet-another-react-lightbox/styles.css';
+import { Head, Link, router } from "@inertiajs/react";
+import { useState } from "react";
+import { useEcho } from "@laravel/echo-react";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 import {
     Activity,
     AlertTriangle,
@@ -15,10 +15,10 @@ import {
     CheckCircle2,
     Save,
     Maximize2,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     Dialog,
     DialogContent,
@@ -26,11 +26,11 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import { briefing as briefingRoute } from '@/actions/App/Http/Controllers/Doctor/ConsultationReviewController';
-import { dashboard } from '@/routes';
-import { index as doctorIndexRoute } from '@/routes/doctor/consultations';
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { briefing as briefingRoute } from "@/actions/App/Http/Controllers/Doctor/ConsultationReviewController";
+import { dashboard } from "@/routes";
+import { index as doctorIndexRoute } from "@/routes/doctor/consultations";
 
 type Turn = { role: string; text: string };
 
@@ -95,11 +95,11 @@ export default function DoctorConsultationShow({
     };
 }) {
     const [activeTab, setActiveTab] = useState<
-        'briefing' | 'transcript' | 'cough' | 'media' | 'notes' | 'similar'
-    >('briefing');
+        "briefing" | "transcript" | "cough" | "media" | "notes" | "similar"
+    >("briefing");
     const [requestingBriefing, setRequestingBriefing] = useState(false);
     const [clinicalNotes, setClinicalNotes] = useState(
-        consultation.clinical_notes || '',
+        consultation.clinical_notes || "",
     );
     const [followUpActions, setFollowUpActions] = useState<string[]>(
         consultation.follow_up_actions || [],
@@ -114,10 +114,10 @@ export default function DoctorConsultationShow({
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
     useEcho(
-        'doctor-queue',
-        ['.consultation.updated', 'consultation.updated'],
+        "doctor-queue",
+        [".consultation.updated", "consultation.updated"],
         () => {
-            router.reload({ only: ['consultation'] });
+            router.reload({ only: ["consultation"] });
         },
         [],
     );
@@ -128,21 +128,21 @@ export default function DoctorConsultationShow({
             const response = await fetch(
                 briefingRoute.url({ consultation: consultation.id }),
                 {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'X-CSRF-TOKEN':
+                        "X-CSRF-TOKEN":
                             document
                                 .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute('content') ?? '',
+                                ?.getAttribute("content") ?? "",
                     },
                 },
             );
 
             if (!response.ok) {
-                throw new Error('briefing request failed');
+                throw new Error("briefing request failed");
             }
         } catch (error) {
-            console.error('Could not request the briefing', error);
+            console.error("Could not request the briefing", error);
         } finally {
             setRequestingBriefing(false);
         }
@@ -155,13 +155,13 @@ export default function DoctorConsultationShow({
             const response = await fetch(
                 `/doctor/consultations/${consultation.id}/notes`,
                 {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN':
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN":
                             document
                                 .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute('content') ?? '',
+                                ?.getAttribute("content") ?? "",
                     },
                     body: JSON.stringify({
                         clinical_notes: clinicalNotes,
@@ -171,13 +171,13 @@ export default function DoctorConsultationShow({
             );
 
             if (!response.ok) {
-                throw new Error('Failed to save notes');
+                throw new Error("Failed to save notes");
             }
 
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (error) {
-            console.error('Could not save notes', error);
+            console.error("Could not save notes", error);
         } finally {
             setSavingNotes(false);
         }
@@ -191,23 +191,23 @@ export default function DoctorConsultationShow({
             const response = await fetch(
                 `/doctor/consultations/${consultation.id}/review`,
                 {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'X-CSRF-TOKEN':
+                        "X-CSRF-TOKEN":
                             document
                                 .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute('content') ?? '',
+                                ?.getAttribute("content") ?? "",
                     },
                 },
             );
 
             if (!response.ok) {
-                throw new Error('Failed to mark as reviewed');
+                throw new Error("Failed to mark as reviewed");
             }
 
-            router.reload({ only: ['consultation'] });
+            router.reload({ only: ["consultation"] });
         } catch (error) {
-            console.error('Could not mark as reviewed', error);
+            console.error("Could not mark as reviewed", error);
         } finally {
             setReviewing(false);
         }
@@ -221,12 +221,12 @@ export default function DoctorConsultationShow({
             const response = await fetch(
                 `/doctor/consultations/${consultation.id}/similar`,
             );
-            if (!response.ok) throw new Error('Failed to load similar cases');
+            if (!response.ok) throw new Error("Failed to load similar cases");
 
             const data = await response.json();
             setSimilarCases(data.similar || []);
         } catch (error) {
-            console.error('Could not load similar cases', error);
+            console.error("Could not load similar cases", error);
         } finally {
             setLoadingSimilar(false);
         }
@@ -241,12 +241,12 @@ export default function DoctorConsultationShow({
     };
 
     const followUpOptions = [
-        'Order chest X-ray',
-        'TB test (sputum culture)',
-        'Schedule follow-up appointment (2 weeks)',
-        'Refer to pulmonologist',
-        'Prescribe standard antibiotics',
-        'Advise home isolation until test results',
+        "Order chest X-ray",
+        "TB test (sputum culture)",
+        "Schedule follow-up appointment (2 weeks)",
+        "Refer to pulmonologist",
+        "Prescribe standard antibiotics",
+        "Advise home isolation until test results",
     ];
 
     const riskScore = consultation.cough_analysis?.risk_score ?? 0;
@@ -256,8 +256,8 @@ export default function DoctorConsultationShow({
     const lightboxSlides = consultation.captures
         .filter(
             (capture) =>
-                capture.type === 'image' ||
-                capture.mime_type.startsWith('image/'),
+                capture.type === "image" ||
+                capture.mime_type.startsWith("image/"),
         )
         .map((capture) => ({
             src: capture.download,
@@ -303,13 +303,13 @@ export default function DoctorConsultationShow({
                                     REVIEWED
                                 </Badge>
                             )}
-                            {consultation.cough_risk === 'high' && (
+                            {consultation.cough_risk === "high" && (
                                 <Badge className="rounded-full border border-white/40 bg-white/30 text-white">
                                     <Activity className="mr-1 size-3" />
                                     HIGH RISK
                                 </Badge>
                             )}
-                            {consultation.cough_risk === 'medium' && (
+                            {consultation.cough_risk === "medium" && (
                                 <Badge className="rounded-full border border-white/30 bg-white/20 text-white/80">
                                     <Activity className="mr-1 size-3" />
                                     MEDIUM RISK
@@ -331,7 +331,7 @@ export default function DoctorConsultationShow({
                                                 <h2 className="text-2xl font-bold">
                                                     {consultation.patient.name}
                                                 </h2>
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                                                <div className="h-10 w-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
                                                     <span className="text-xl">
                                                         👤
                                                     </span>
@@ -341,14 +341,14 @@ export default function DoctorConsultationShow({
                                                 {consultation.patient.email}
                                             </p>
                                             <p className="mt-1 text-sm text-[#71717A]">
-                                                Consultation:{' '}
+                                                Consultation:{" "}
                                                 {consultation.created_at}
                                             </p>
                                         </div>
 
                                         {!consultation.report &&
                                             consultation.status ===
-                                                'completed' && (
+                                                "completed" && (
                                                 <Button
                                                     onClick={
                                                         handleRequestBriefing
@@ -359,8 +359,8 @@ export default function DoctorConsultationShow({
                                                     className="rounded-full bg-[#94A3B8] text-black hover:bg-[#A1A1AA]"
                                                 >
                                                     {requestingBriefing
-                                                        ? 'Generating...'
-                                                        : 'Generate Briefing'}
+                                                        ? "Generating..."
+                                                        : "Generate Briefing"}
                                                 </Button>
                                             )}
                                     </div>
@@ -368,29 +368,30 @@ export default function DoctorConsultationShow({
                                     <div className="mt-6">
                                         <nav className="flex flex-wrap gap-2">
                                             <Button
-                                                variant={
-                                                    activeTab === 'briefing'
-                                                        ? 'default'
-                                                        : 'ghost'
-                                                }
+                                                variant="outline"
                                                 onClick={() =>
-                                                    setActiveTab('briefing')
+                                                    setActiveTab("briefing")
                                                 }
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "briefing"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <FileText className="mr-2 size-4" />
                                                 AI Briefing
                                             </Button>
+
                                             <Button
-                                                variant={
-                                                    activeTab === 'transcript'
-                                                        ? 'default'
-                                                        : 'ghost'
-                                                }
+                                                variant="outline"
                                                 onClick={() =>
-                                                    setActiveTab('transcript')
+                                                    setActiveTab("transcript")
                                                 }
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "transcript"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Activity className="mr-2 size-4" />
                                                 Transcript (
@@ -398,63 +399,67 @@ export default function DoctorConsultationShow({
                                                     (acc, s) =>
                                                         acc + s.turns.length,
                                                     0,
-                                                )}{' '}
+                                                )}{" "}
                                                 turns)
                                             </Button>
+
                                             <Button
-                                                variant={
-                                                    activeTab === 'cough'
-                                                        ? 'default'
-                                                        : 'ghost'
-                                                }
+                                                variant="outline"
                                                 onClick={() =>
-                                                    setActiveTab('cough')
+                                                    setActiveTab("cough")
                                                 }
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "cough"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Mic className="mr-2 size-4" />
                                                 Cough Analysis
                                             </Button>
+
                                             <Button
-                                                variant={
-                                                    activeTab === 'media'
-                                                        ? 'default'
-                                                        : 'ghost'
-                                                }
+                                                variant="outline"
                                                 onClick={() =>
-                                                    setActiveTab('media')
+                                                    setActiveTab("media")
                                                 }
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "media"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Video className="mr-2 size-4" />
                                                 Media (
                                                 {consultation.captures.length})
                                             </Button>
+
                                             <Button
-                                                variant={
-                                                    activeTab === 'notes'
-                                                        ? 'default'
-                                                        : 'ghost'
-                                                }
+                                                variant="outline"
                                                 onClick={() =>
-                                                    setActiveTab('notes')
+                                                    setActiveTab("notes")
                                                 }
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "notes"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <FileText className="mr-2 size-4" />
                                                 Clinical Notes
                                             </Button>
+
                                             <Button
-                                                variant={
-                                                    activeTab === 'similar'
-                                                        ? 'default'
-                                                        : 'ghost'
-                                                }
+                                                variant="outline"
                                                 onClick={() => {
-                                                    setActiveTab('similar');
+                                                    setActiveTab("similar");
                                                     loadSimilarCases();
                                                 }}
-                                                className="rounded-[14px]"
+                                                className={`rounded-[14px] transition-colors ${
+                                                    activeTab === "similar"
+                                                        ? "bg-white text-black hover:bg-white hover:text-black"
+                                                        : "border-white bg-transparent text-white hover:bg-white hover:text-black"
+                                                }`}
                                             >
                                                 <Activity className="mr-2 size-4" />
                                                 Similar Cases
@@ -462,14 +467,14 @@ export default function DoctorConsultationShow({
                                         </nav>
 
                                         <div className="mt-6">
-                                            {activeTab === 'briefing' && (
+                                            {activeTab === "briefing" && (
                                                 <div className="space-y-6">
                                                     {consultation.report ? (
                                                         <div className="space-y-4">
                                                             {consultation.report
                                                                 .chief_complaint && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                         Chief
                                                                         Complaint
                                                                     </h3>
@@ -485,7 +490,7 @@ export default function DoctorConsultationShow({
                                                             {consultation.report
                                                                 .history_present_illness && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                         History
                                                                         of
                                                                         Present
@@ -503,7 +508,7 @@ export default function DoctorConsultationShow({
                                                             {consultation.report
                                                                 .clinical_impression && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                         Clinical
                                                                         Impression
                                                                     </h3>
@@ -519,13 +524,13 @@ export default function DoctorConsultationShow({
                                                             {consultation.report
                                                                 .recommendations && (
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                         Recommendations
                                                                     </h3>
                                                                     <ul className="mt-2 list-disc space-y-1 pl-6 text-[#FFFFFF]">
                                                                         {consultation.report.recommendations
                                                                             .split(
-                                                                                '\n',
+                                                                                "\n",
                                                                             )
                                                                             .map(
                                                                                 (
@@ -547,15 +552,15 @@ export default function DoctorConsultationShow({
                                                         </div>
                                                     ) : (
                                                         <Card className="border-white/20 bg-white/5">
-                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                            <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
                                                                 <AlertTriangle className="size-12 text-white/60" />
-                                                                <p className="mt-4 font-semibold text-[#FFFFFF]">
+                                                                <p className="mt-4 text-[#FFFFFF] font-semibold">
                                                                     AI Briefing
                                                                     Not
                                                                     Available
                                                                     Yet
                                                                 </p>
-                                                                <p className="mt-2 max-w-md text-center text-sm text-[#71717A]">
+                                                                <p className="mt-2 text-sm text-[#71717A] text-center max-w-md">
                                                                     AI Briefing
                                                                     will be
                                                                     automatically
@@ -566,7 +571,7 @@ export default function DoctorConsultationShow({
                                                                     the
                                                                     consultation:
                                                                 </p>
-                                                                <ul className="mt-3 space-y-1 text-left text-sm text-[#94A3B8]">
+                                                                <ul className="mt-3 text-sm text-[#94A3B8] space-y-1 text-left">
                                                                     <li>
                                                                         ✓ Chat
                                                                         with AI
@@ -575,12 +580,12 @@ export default function DoctorConsultationShow({
                                                                         screening
                                                                     </li>
                                                                     <li>
-                                                                        ✓{' '}
+                                                                        ✓{" "}
                                                                         <strong className="text-white">
                                                                             Record
                                                                             cough
                                                                             audio
-                                                                        </strong>{' '}
+                                                                        </strong>{" "}
                                                                         for AI
                                                                         analysis
                                                                     </li>
@@ -596,8 +601,8 @@ export default function DoctorConsultationShow({
                                                                         consultation
                                                                     </li>
                                                                 </ul>
-                                                                <p className="mt-4 text-center text-xs text-[#71717A]">
-                                                                    Status:{' '}
+                                                                <p className="mt-4 text-xs text-[#71717A] text-center">
+                                                                    Status:{" "}
                                                                     <span className="font-mono text-white/60">
                                                                         {
                                                                             consultation.status
@@ -606,7 +611,7 @@ export default function DoctorConsultationShow({
                                                                     {!consultation.cough_risk && (
                                                                         <span className="ml-2">
                                                                             |
-                                                                            Missing:{' '}
+                                                                            Missing:{" "}
                                                                             <strong className="text-white">
                                                                                 Cough
                                                                                 Recording
@@ -620,7 +625,7 @@ export default function DoctorConsultationShow({
                                                 </div>
                                             )}
 
-                                            {activeTab === 'transcript' && (
+                                            {activeTab === "transcript" && (
                                                 <div className="space-y-4">
                                                     {consultation.sessions.map(
                                                         (session) => (
@@ -661,20 +666,20 @@ export default function DoctorConsultationShow({
                                                                                     i
                                                                                 }
                                                                                 className={cn(
-                                                                                    'flex gap-3',
+                                                                                    "flex gap-3",
                                                                                     turn.role ===
-                                                                                        'user'
-                                                                                        ? 'flex-row-reverse'
-                                                                                        : 'flex-row',
+                                                                                        "user"
+                                                                                        ? "flex-row-reverse"
+                                                                                        : "flex-row",
                                                                                 )}
                                                                             >
                                                                                 <div
                                                                                     className={cn(
-                                                                                        'max-w-[85%] rounded-[14px] px-4 py-2 text-sm',
+                                                                                        "rounded-[14px] px-4 py-2 text-sm max-w-[85%]",
                                                                                         turn.role ===
-                                                                                            'user'
-                                                                                            ? 'bg-white text-black'
-                                                                                            : 'border border-white/10 bg-white/5 text-white',
+                                                                                            "user"
+                                                                                            ? "bg-white text-black"
+                                                                                            : "border border-white/10 bg-white/5 text-white",
                                                                                     )}
                                                                                 >
                                                                                     {
@@ -698,13 +703,13 @@ export default function DoctorConsultationShow({
                                                 </div>
                                             )}
 
-                                            {activeTab === 'cough' &&
+                                            {activeTab === "cough" &&
                                                 consultation.cough_analysis && (
                                                     <div className="space-y-6">
                                                         <div className="rounded-[14px] border border-white/10 bg-[#0B0B0D] p-6">
                                                             <div className="flex items-center justify-between">
                                                                 <div>
-                                                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                         TB Risk
                                                                         Score
                                                                     </h3>
@@ -716,7 +721,7 @@ export default function DoctorConsultationShow({
                                                                     </p>
                                                                 </div>
                                                                 <div className="flex flex-col items-center">
-                                                                    <div className="flex size-32 items-center justify-center rounded-full border-8 border-white/10 bg-gradient-to-br from-[#0B0B0D] to-[#18181B]">
+                                                                    <div className="size-32 rounded-full border-8 border-white/10 flex items-center justify-center bg-linear-to-br from-[#0B0B0D] to-[#18181B]">
                                                                         <div className="text-center">
                                                                             {riskPercentage >=
                                                                                 70 && (
@@ -743,14 +748,14 @@ export default function DoctorConsultationShow({
                                                                     <p className="mt-3 text-sm font-medium">
                                                                         {riskPercentage >=
                                                                         70
-                                                                            ? 'High Risk'
+                                                                            ? "High Risk"
                                                                             : riskPercentage >=
                                                                                 40
-                                                                              ? 'Medium Risk'
+                                                                              ? "Medium Risk"
                                                                               : riskPercentage >
                                                                                   0
-                                                                                ? 'Low Risk'
-                                                                                : 'No Cough Detected'}
+                                                                                ? "Low Risk"
+                                                                                : "No Cough Detected"}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -762,7 +767,7 @@ export default function DoctorConsultationShow({
                                                             <div className="grid gap-4 sm:grid-cols-2">
                                                                 <Card className="border-white/10 bg-[#0B0B0D]">
                                                                     <CardContent className="p-5">
-                                                                        <h4 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                        <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                             Risk
                                                                             Level
                                                                         </h4>
@@ -776,7 +781,7 @@ export default function DoctorConsultationShow({
                                                                     .risk_score && (
                                                                     <Card className="border-white/10 bg-[#0B0B0D]">
                                                                         <CardContent className="p-5">
-                                                                            <h4 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                            <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                                 Risk
                                                                                 Score
                                                                             </h4>
@@ -796,7 +801,7 @@ export default function DoctorConsultationShow({
                                                             .findings && (
                                                             <Card className="border-white/10 bg-[#0B0B0D]">
                                                                 <CardContent className="p-5">
-                                                                    <h4 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                                    <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                         MedGemma
                                                                         Analysis
                                                                     </h4>
@@ -813,10 +818,10 @@ export default function DoctorConsultationShow({
                                                     </div>
                                                 )}
 
-                                            {activeTab === 'cough' &&
+                                            {activeTab === "cough" &&
                                                 !consultation.cough_analysis && (
                                                     <Card className="border-white/10 bg-[#0B0B0D]">
-                                                        <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                        <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
                                                             <p className="text-[#A1A1AA]">
                                                                 No cough
                                                                 analysis data
@@ -826,7 +831,7 @@ export default function DoctorConsultationShow({
                                                     </Card>
                                                 )}
 
-                                            {activeTab === 'media' && (
+                                            {activeTab === "media" && (
                                                 <>
                                                     <div className="grid gap-4 sm:grid-cols-2">
                                                         {consultation.captures.map(
@@ -835,15 +840,15 @@ export default function DoctorConsultationShow({
                                                                     key={
                                                                         capture.id
                                                                     }
-                                                                    className="cursor-pointer border-white/10 bg-[#0B0B0D] transition-colors hover:border-white/20"
+                                                                    className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors cursor-pointer"
                                                                 >
                                                                     <CardContent className="p-5">
-                                                                        <div className="mb-3 flex items-center justify-between">
+                                                                        <div className="flex items-center justify-between mb-3">
                                                                             <div className="flex items-center gap-2">
                                                                                 {capture.type ===
-                                                                                    'video' ||
+                                                                                    "video" ||
                                                                                 capture.mime_type.startsWith(
-                                                                                    'video/',
+                                                                                    "video/",
                                                                                 ) ? (
                                                                                     <Video className="size-5 text-[#94A3B8]" />
                                                                                 ) : (
@@ -924,17 +929,17 @@ export default function DoctorConsultationShow({
                                                 </>
                                             )}
 
-                                            {activeTab === 'notes' && (
+                                            {activeTab === "notes" && (
                                                 <div className="space-y-6">
                                                     <div>
-                                                        <div className="mb-2 flex items-center justify-between">
-                                                            <h4 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                                                 Doctor's
                                                                 Clinical Notes
                                                             </h4>
                                                             {saveSuccess && (
-                                                                <span className="flex items-center gap-1 font-mono text-xs text-white">
-                                                                    <CheckCircle2 className="size-3" />{' '}
+                                                                <span className="text-xs text-white flex items-center gap-1 font-mono">
+                                                                    <CheckCircle2 className="size-3" />{" "}
                                                                     Saved
                                                                     successfully
                                                                 </span>
@@ -957,7 +962,7 @@ export default function DoctorConsultationShow({
                                                     </div>
 
                                                     <div>
-                                                        <h4 className="mb-3 text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                                        <h4 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide mb-3">
                                                             Follow-up Actions
                                                             Required
                                                         </h4>
@@ -980,18 +985,18 @@ export default function DoctorConsultationShow({
                                                                                 )
                                                                             }
                                                                             className={cn(
-                                                                                'flex items-center gap-3 rounded-[10px] border p-3 text-left text-sm transition-all',
+                                                                                "flex items-center gap-3 rounded-[10px] border p-3 text-left text-sm transition-all",
                                                                                 isChecked
-                                                                                    ? 'border-white/30 bg-white/10 text-white'
-                                                                                    : 'border-white/5 bg-[#000000]/30 text-[#A1A1AA] hover:border-white/15',
+                                                                                    ? "border-white/30 bg-white/10 text-white"
+                                                                                    : "border-white/5 bg-[#000000]/30 text-[#A1A1AA] hover:border-white/15",
                                                                             )}
                                                                         >
                                                                             <div
                                                                                 className={cn(
-                                                                                    'flex size-4 shrink-0 items-center justify-center rounded border',
+                                                                                    "flex size-4 shrink-0 items-center justify-center rounded border",
                                                                                     isChecked
-                                                                                        ? 'border-white bg-white text-black'
-                                                                                        : 'border-white/20',
+                                                                                        ? "border-white bg-white text-black"
+                                                                                        : "border-white/20",
                                                                                 )}
                                                                             >
                                                                                 {isChecked && (
@@ -1022,8 +1027,8 @@ export default function DoctorConsultationShow({
                                                         >
                                                             <Save className="mr-2 size-4" />
                                                             {savingNotes
-                                                                ? 'Saving...'
-                                                                : 'Save Notes'}
+                                                                ? "Saving..."
+                                                                : "Save Notes"}
                                                         </Button>
 
                                                         {!consultation.is_reviewed && (
@@ -1041,19 +1046,19 @@ export default function DoctorConsultationShow({
                                                             >
                                                                 <CheckCircle2 className="mr-2 size-4" />
                                                                 {reviewing
-                                                                    ? 'Marking...'
-                                                                    : 'Mark as Reviewed'}
+                                                                    ? "Marking..."
+                                                                    : "Mark as Reviewed"}
                                                             </Button>
                                                         )}
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {activeTab === 'similar' && (
+                                            {activeTab === "similar" && (
                                                 <div className="space-y-4">
                                                     {loadingSimilar ? (
                                                         <Card className="border-white/10 bg-[#0B0B0D]">
-                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                            <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
                                                                 <p className="text-[#A1A1AA]">
                                                                     Loading
                                                                     similar
@@ -1065,10 +1070,10 @@ export default function DoctorConsultationShow({
                                                       0 ? (
                                                         <>
                                                             <p className="text-sm text-[#71717A]">
-                                                                Found{' '}
+                                                                Found{" "}
                                                                 {
                                                                     similarCases.length
-                                                                }{' '}
+                                                                }{" "}
                                                                 cases with
                                                                 similar cough
                                                                 patterns (based
@@ -1085,10 +1090,10 @@ export default function DoctorConsultationShow({
                                                                             key={
                                                                                 idx
                                                                             }
-                                                                            className="border-white/10 bg-[#0B0B0D] transition-colors hover:border-white/20"
+                                                                            className="border-white/10 bg-[#0B0B0D] hover:border-white/20 transition-colors"
                                                                         >
                                                                             <CardContent className="p-5">
-                                                                                <div className="mb-3 flex items-center justify-between">
+                                                                                <div className="flex items-center justify-between mb-3">
                                                                                     <h4 className="font-medium text-white">
                                                                                         {
                                                                                             similar.patient
@@ -1097,14 +1102,14 @@ export default function DoctorConsultationShow({
                                                                                     {similar.risk_level && (
                                                                                         <Badge
                                                                                             className={cn(
-                                                                                                'rounded-full text-xs',
+                                                                                                "rounded-full text-xs",
                                                                                                 similar.risk_level ===
-                                                                                                    'high'
-                                                                                                    ? 'border-white/40 bg-white/30 text-white'
+                                                                                                    "high"
+                                                                                                    ? "bg-white/30 text-white border-white/40"
                                                                                                     : similar.risk_level ===
-                                                                                                        'medium'
-                                                                                                      ? 'border-white/30 bg-white/20 text-white/80'
-                                                                                                      : 'border-white/20 bg-white/10 text-white/60',
+                                                                                                        "medium"
+                                                                                                      ? "bg-white/20 text-white/80 border-white/30"
+                                                                                                      : "bg-white/10 text-white/60 border-white/20",
                                                                                             )}
                                                                                         >
                                                                                             {similar.risk_level.toUpperCase()}
@@ -1151,7 +1156,7 @@ export default function DoctorConsultationShow({
                                                         </>
                                                     ) : (
                                                         <Card className="border-white/10 bg-[#0B0B0D]">
-                                                            <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-8">
+                                                            <CardContent className="flex min-h-50 flex-col items-center justify-center p-8">
                                                                 <AlertTriangle className="size-12 text-[#71717A]" />
                                                                 <p className="mt-4 text-[#FFFFFF]">
                                                                     No similar
@@ -1178,7 +1183,7 @@ export default function DoctorConsultationShow({
                         <div className="space-y-6">
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
-                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                         Patient Summary
                                     </h3>
                                     <div className="mt-4 space-y-3">
@@ -1204,7 +1209,7 @@ export default function DoctorConsultationShow({
                                                 <span className="font-mono text-xs text-[#94A3B8]">
                                                     {
                                                         consultation.reviewed_at.split(
-                                                            ' ',
+                                                            " ",
                                                         )[0]
                                                     }
                                                 </span>
@@ -1234,14 +1239,14 @@ export default function DoctorConsultationShow({
                                             </span>
                                             <span
                                                 className={cn(
-                                                    'rounded-full px-2 py-0.5 font-mono text-xs',
+                                                    "rounded-full px-2 py-0.5 text-xs font-mono",
                                                     consultation.status ===
-                                                        'completed'
-                                                        ? 'bg-white/10 text-white'
+                                                        "completed"
+                                                        ? "bg-white/10 text-white"
                                                         : consultation.status ===
-                                                            'chatting'
-                                                          ? 'bg-white/10 text-white/60'
-                                                          : 'bg-[#71717A]/10 text-[#71717A]',
+                                                            "chatting"
+                                                          ? "bg-white/10 text-white/60"
+                                                          : "bg-[#71717A]/10 text-[#71717A]",
                                                 )}
                                             >
                                                 {consultation.status}
@@ -1270,7 +1275,7 @@ export default function DoctorConsultationShow({
                                             <span className="font-mono text-[#94A3B8]">
                                                 {
                                                     consultation.created_at.split(
-                                                        ' ',
+                                                        " ",
                                                     )[0]
                                                 }
                                             </span>
@@ -1281,7 +1286,7 @@ export default function DoctorConsultationShow({
 
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
-                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                         Session Timeline
                                     </h3>
                                     <div className="mt-4 space-y-4">
@@ -1295,22 +1300,22 @@ export default function DoctorConsultationShow({
                                                         consultation.sessions
                                                             .length -
                                                             1 && (
-                                                        <div className="absolute top-6 bottom-0 left-[15px] w-px bg-white/10" />
+                                                        <div className="absolute left-3.75 top-6 bottom-0 w-px bg-white/10" />
                                                     )}
-                                                    <div className="absolute top-0 left-0 size-3 rounded-full bg-white/10" />
+                                                    <div className="absolute left-0 top-0 size-3 rounded-full bg-white/10" />
                                                     <div className="space-y-1">
                                                         <p className="font-mono text-xs text-[#94A3B8]">
                                                             {session.started_at
                                                                 ? new Date(
                                                                       session.started_at,
                                                                   ).toLocaleTimeString()
-                                                                : 'N/A'}
+                                                                : "N/A"}
                                                         </p>
                                                         <p className="text-sm text-[#FFFFFF]">
                                                             {
                                                                 session.turns
                                                                     .length
-                                                            }{' '}
+                                                            }{" "}
                                                             turns
                                                         </p>
                                                     </div>
@@ -1328,7 +1333,7 @@ export default function DoctorConsultationShow({
 
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
-                                    <h3 className="text-sm font-medium tracking-wide text-[#94A3B8] uppercase">
+                                    <h3 className="text-sm font-medium text-[#94A3B8] uppercase tracking-wide">
                                         Cough Analysis
                                     </h3>
                                     <div className="mt-4 space-y-3">
@@ -1339,17 +1344,17 @@ export default function DoctorConsultationShow({
                                             {consultation.cough_risk ? (
                                                 <span
                                                     className={cn(
-                                                        'rounded-full px-2 py-0.5 font-mono text-xs',
+                                                        "rounded-full px-2 py-0.5 text-xs font-mono",
                                                         consultation.cough_risk ===
-                                                            'high'
-                                                            ? 'bg-white/30 text-white'
+                                                            "high"
+                                                            ? "bg-white/30 text-white"
                                                             : consultation.cough_risk ===
-                                                                'medium'
-                                                              ? 'bg-white/20 text-white/80'
+                                                                "medium"
+                                                              ? "bg-white/20 text-white/80"
                                                               : consultation.cough_risk ===
-                                                                  'low'
-                                                                ? 'bg-white/10 text-white/60'
-                                                                : 'bg-[#71717A]/10 text-[#71717A]',
+                                                                  "low"
+                                                                ? "bg-white/10 text-white/60"
+                                                                : "bg-[#71717A]/10 text-[#71717A]",
                                                     )}
                                                 >
                                                     {consultation.cough_risk.toUpperCase()}
@@ -1407,7 +1412,7 @@ export default function DoctorConsultationShow({
                             <CheckCircle2 className="size-6 text-white" />
                             Mark as Reviewed
                         </DialogTitle>
-                        <DialogDescription className="pt-2 text-[#94A3B8]">
+                        <DialogDescription className="text-[#94A3B8] pt-2">
                             Are you sure you want to mark this consultation as
                             reviewed?
                         </DialogDescription>
@@ -1436,12 +1441,12 @@ export default function DoctorConsultationShow({
                                     </span>
                                     <Badge
                                         className={
-                                            consultation.cough_risk === 'high'
-                                                ? 'border-white/40 bg-white/30 text-white'
+                                            consultation.cough_risk === "high"
+                                                ? "bg-white/30 text-white border-white/40"
                                                 : consultation.cough_risk ===
-                                                    'medium'
-                                                  ? 'border-white/30 bg-white/20 text-white/80'
-                                                  : 'border-white/20 bg-white/10 text-white/60'
+                                                    "medium"
+                                                  ? "bg-white/20 text-white/80 border-white/30"
+                                                  : "bg-white/10 text-white/60 border-white/20"
                                         }
                                     >
                                         {consultation.cough_risk.toUpperCase()}
@@ -1464,7 +1469,7 @@ export default function DoctorConsultationShow({
                             disabled={reviewing}
                             className="rounded-full bg-white text-black hover:bg-white/90"
                         >
-                            {reviewing ? 'Processing...' : 'Confirm'}
+                            {reviewing ? "Processing..." : "Confirm"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1475,12 +1480,12 @@ export default function DoctorConsultationShow({
 
 DoctorConsultationShow.layout = {
     breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
+        { title: "Dashboard", href: dashboard() },
         {
-            title: 'Doctor',
+            title: "Doctor",
             href: doctorIndexRoute(),
         },
-        { title: 'Consultation' },
+        { title: "Consultation" },
     ],
 };
 

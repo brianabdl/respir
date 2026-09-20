@@ -48,9 +48,8 @@ COPY --from=builder /app/.venv /app/.venv
 COPY app ./app
 COPY scripts ./scripts
 
-ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1 \
-    MODEL_DIR=/models
+# Install with ML extras to include all ML dependencies
+RUN uv sync --frozen --extra ml
 
 USER app
 

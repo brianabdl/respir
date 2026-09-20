@@ -6,14 +6,14 @@ deliberately excluded from both.
 
 ## What runs where
 
-| Model | Where it runs | What it is allowed to do |
-| --- | --- | --- |
-| Gemini Live (`gemini-3.1-flash-live-preview`) | Google, from the browser | Speech in/out, transcripts, barge-in, camera presence |
-| HeAR (`google/hear-pytorch`) | Local, `ai-service` | Cough audio → 512-dim health acoustic embedding |
-| TB dual-head (`sach3v/Domain_aware_dual_head_HEar`) | Local, `ai-service` | Embedding → TB risk score |
-| Cough gate (locally trained) | Local, `ai-service` | Reject non-cough audio before scoring |
-| EmbeddingGemma (`google/embeddinggemma-300m`) | Local, `ai-service` | Text embeddings for recall/similarity |
-| MedGemma (`medgemma-4b-it`) | Vertex AI Model Garden | Plain-language explanation, clinician briefing |
+| Model                                               | Where it runs            | What it is allowed to do                              |
+| --------------------------------------------------- | ------------------------ | ----------------------------------------------------- |
+| Gemini Live (`gemini-3.1-flash-live-preview`)       | Google, from the browser | Speech in/out, transcripts, barge-in, camera presence |
+| HeAR (`google/hear-pytorch`)                        | Local, `ai-service`      | Cough audio → 512-dim health acoustic embedding       |
+| TB dual-head (`sach3v/Domain_aware_dual_head_HEar`) | Local, `ai-service`      | Embedding → TB risk score                             |
+| Cough gate (locally trained)                        | Local, `ai-service`      | Reject non-cough audio before scoring                 |
+| EmbeddingGemma (`google/embeddinggemma-300m`)       | Local, `ai-service`      | Text embeddings for recall/similarity                 |
+| MedGemma (`medgemma-4b-it`)                         | Vertex AI Model Garden   | Plain-language explanation, clinician briefing        |
 
 Gemini never sees cough audio, a risk score, or a briefing. That is an
 architectural rule, not a configuration choice — see
@@ -102,11 +102,11 @@ rather than a second inference pass.
 The dual-head classifier scores the embedding, and the score maps to a band
 (`ai-service/app/services/tb_classifier.py`):
 
-| Band | Score |
-| --- | --- |
-| `high` | ≥ 0.66 |
+| Band     | Score  |
+| -------- | ------ |
+| `high`   | ≥ 0.66 |
 | `medium` | ≥ 0.55 |
-| `low` | < 0.55 |
+| `low`    | < 0.55 |
 
 The medium floor was narrowed from the upstream 0.33 because the wider band
 overcalled genuinely low-risk samples. It trades sensitivity for specificity and
@@ -185,15 +185,15 @@ Job characteristics match `AnalyseCough`: queue `ai`, `tries = 3`,
 
 ## Degradation summary
 
-| Condition | Result |
-| --- | --- |
-| No `ml` extras or no weights | `unclear`, `/v1/health` → `degraded` |
-| Near-silent or no burst detected | `unclear`, no model invoked |
-| Gate trained and sample rejected | `unclear` |
-| Gate not trained | Gate skipped, `cough_gate.loaded: false` |
-| No `VERTEX_ENDPOINT_ID` | Fake mode, template prose, `vertex.mode: "fake"` |
-| Vertex error or unparsable output | Repair prompt, then template, `degraded: true` |
-| `ai-service` down | Retries with backoff, then `unclear` — still broadcast |
+| Condition                         | Result                                                 |
+| --------------------------------- | ------------------------------------------------------ |
+| No `ml` extras or no weights      | `unclear`, `/v1/health` → `degraded`                   |
+| Near-silent or no burst detected  | `unclear`, no model invoked                            |
+| Gate trained and sample rejected  | `unclear`                                              |
+| Gate not trained                  | Gate skipped, `cough_gate.loaded: false`               |
+| No `VERTEX_ENDPOINT_ID`           | Fake mode, template prose, `vertex.mode: "fake"`       |
+| Vertex error or unparsable output | Repair prompt, then template, `degraded: true`         |
+| `ai-service` down                 | Retries with backoff, then `unclear` — still broadcast |
 
 ## Clinical status
 

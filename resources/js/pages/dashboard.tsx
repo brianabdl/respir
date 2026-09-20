@@ -53,7 +53,8 @@ type PatientConsultation = {
     updated_at: string;
 };
 
-function riskDotClass(risk?: string | null): string {    if (risk === 'high') {
+function riskDotClass(risk?: string | null): string {
+    if (risk === 'high') {
         return 'bg-white';
     }
 
@@ -70,10 +71,7 @@ function riskDotClass(risk?: string | null): string {    if (risk === 'high') {
 
 const RISK_BAND_CUTOFFS = { medium: 0.55, high: 0.66 } as const;
 
-const RISK_EXPLAINERS: Record<
-    string,
-    { meaning: string; next: string[] }
-> = {
+const RISK_EXPLAINERS: Record<string, { meaning: string; next: string[] }> = {
     low: {
         meaning:
             'No concerning acoustic pattern was heard in this sample. This does not rule out illness — it means this sample looked reassuring.',
@@ -101,9 +99,7 @@ const RISK_EXPLAINERS: Record<
     unclear: {
         meaning:
             'This sample could not be assessed — it may have been too short, too noisy, or the analysis was unavailable.',
-        next: [
-            'Record a new sample in a quiet room, close to the microphone.',
-        ],
+        next: ['Record a new sample in a quiet room, close to the microphone.'],
     },
 };
 
@@ -220,11 +216,7 @@ function journeySteps(consultation: PatientConsultation): JourneyStep[] {
         {
             key: 'analysis',
             label: 'Analysis',
-            state: hasAnalysis
-                ? 'done'
-                : hasSample
-                  ? 'current'
-                  : 'pending',
+            state: hasAnalysis ? 'done' : hasSample ? 'current' : 'pending',
         },
         {
             key: 'review',
@@ -238,18 +230,11 @@ function journeySteps(consultation: PatientConsultation): JourneyStep[] {
     ];
 }
 
-function VisitJourney({
-    consultation,
-}: {
-    consultation: PatientConsultation;
-}) {
+function VisitJourney({ consultation }: { consultation: PatientConsultation }) {
     const steps = journeySteps(consultation);
 
     return (
-        <ol
-            aria-label="Visit journey"
-            className="flex items-start"
-        >
+        <ol aria-label="Visit journey" className="flex items-start">
             {steps.map((step, index) => (
                 <Fragment key={step.key}>
                     {index > 0 && (
@@ -303,10 +288,11 @@ function ScoreTrend({
 }) {
     const points = consultations
         .filter(
-            (c): c is PatientConsultation & {
+            (
+                c,
+            ): c is PatientConsultation & {
                 cough_analysis: { risk_score: number };
-            } =>
-                typeof c.cough_analysis?.risk_score === 'number',
+            } => typeof c.cough_analysis?.risk_score === 'number',
         )
         .reverse();
 
@@ -371,9 +357,7 @@ function ScoreTrend({
             </svg>
             <div className="mt-1 flex justify-between font-mono text-[9px] tracking-widest text-[#71717A] uppercase">
                 <span>{formatDate(points[0].created_at)}</span>
-                <span>
-                    {formatDate(points[points.length - 1].created_at)}
-                </span>
+                <span>{formatDate(points[points.length - 1].created_at)}</span>
             </div>
         </div>
     );
@@ -429,9 +413,7 @@ function HistoryItem({
                 <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4">
                     <Eyebrow>
                         Cough result
-                        {analysis.risk_level
-                            ? ` · ${analysis.risk_level}`
-                            : ''}
+                        {analysis.risk_level ? ` · ${analysis.risk_level}` : ''}
                     </Eyebrow>
                     {typeof analysis.risk_score === 'number' && (
                         <RiskScoreBar score={analysis.risk_score} />
@@ -484,8 +466,8 @@ function HistoryItem({
                         </p>
                     )}
                     <p className="text-xs text-[#71717A] italic">
-                        Screening support only — not a diagnosis. A doctor
-                        must assess you in person.
+                        Screening support only — not a diagnosis. A doctor must
+                        assess you in person.
                     </p>
                 </div>
             ) : (
@@ -739,11 +721,7 @@ function ConsultationsBar({ summary }: { summary: QueueSummary }) {
                                 : ''
                         }
                     />
-                    <Bar
-                        dataKey="count"
-                        fill="#94A3B8"
-                        radius={[4, 4, 0, 0]}
-                    />
+                    <Bar dataKey="count" fill="#94A3B8" radius={[4, 4, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>
         </div>

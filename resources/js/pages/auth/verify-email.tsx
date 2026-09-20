@@ -22,8 +22,8 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         Email verification
                     </h1>
                     <p className="mt-2 text-sm text-[#A1A1AA]">
-                        Please verify your email address by clicking on the
-                        link we just emailed to you.
+                        Please verify your email address by clicking on the link
+                        we just emailed to you.
                     </p>
                 </div>
 

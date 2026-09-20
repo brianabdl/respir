@@ -53,9 +53,9 @@ numbers inside free text before it reaches Vertex.
 
 What actually leaves the host:
 
-| Destination | Receives | Never receives |
-| --- | --- | --- |
-| Gemini Live | Live speech audio and the system instruction for the interview | Cough audio, risk scores, briefings, stored records |
+| Destination     | Receives                                                                     | Never receives                                       |
+| --------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Gemini Live     | Live speech audio and the system instruction for the interview               | Cough audio, risk scores, briefings, stored records  |
 | Vertex MedGemma | De-identified transcript turns, age, sex, risk factors, cough band and score | Names, emails, phone numbers, patient ids, raw audio |
 
 Cough audio and its embeddings never leave the clinic host at all. Embeddings are
@@ -135,12 +135,12 @@ exposed to the internet: the token is an internal boundary, not a public API key
 
 Per authenticated user, defined in `AppServiceProvider`:
 
-| Limiter | Limit | Endpoint |
-| --- | --- | --- |
-| `consult-voice` | 20/min | `POST /consult/{id}/voice` |
-| `consult-chat` | 30/min | `POST /consult/{id}/chat` |
-| `consult-cough` | 10/min | `POST /consult/{id}/cough` |
-| `consult-context` | 8/min | `GET /consult/{id}/context` |
+| Limiter           | Limit  | Endpoint                    |
+| ----------------- | ------ | --------------------------- |
+| `consult-voice`   | 20/min | `POST /consult/{id}/voice`  |
+| `consult-chat`    | 30/min | `POST /consult/{id}/chat`   |
+| `consult-cough`   | 10/min | `POST /consult/{id}/cough`  |
+| `consult-context` | 8/min  | `GET /consult/{id}/context` |
 
 These bound both abuse and cost — each one fronts a paid or compute-heavy path.
 `tests/Feature/Security/RateLimitTest.php` covers them.

@@ -119,21 +119,21 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Technology stack
 
-| Layer | Technology |
-| --- | --- |
-| Backend | Laravel 13 · PHP 8.5 · `laravel/ai` 0.11 · Laravel Fortify |
-| Frontend | Inertia v3 · React 19 · TypeScript · Tailwind CSS 4 · Vite 8 · Wayfinder |
-| Realtime voice | Gemini Live API (`gemini-3.1-flash-live-preview`) — interaction only |
-| Realtime push | Laravel Reverb + `@laravel/echo-react` (no polling) |
-| AI microservice | Python 3.12 · FastAPI · uvicorn |
-| Audio ML | HeAR embeddings · TB dual-head classifier · personal cough gate |
-| Text embeddings | EmbeddingGemma |
-| Clinical LLM | MedGemma on Google Vertex AI (optional; fake/template mode without it) |
-| Data | PostgreSQL 18 + pgvector (HNSW cosine) |
-| Queue & cache | Valkey (Redis-compatible; the `redis` driver name is intentional) |
-| Audio pipeline | ffmpeg — decoding any upload to 16 kHz mono |
-| Testing | Pest 5 · Larastan · Pint · pytest · ruff, both suites in CI |
-| Deployment | Docker Compose — web, app, queue, reverb, ai-service, db, redis |
+| Layer           | Technology                                                               |
+| --------------- | ------------------------------------------------------------------------ |
+| Backend         | Laravel 13 · PHP 8.5 · `laravel/ai` 0.11 · Laravel Fortify               |
+| Frontend        | Inertia v3 · React 19 · TypeScript · Tailwind CSS 4 · Vite 8 · Wayfinder |
+| Realtime voice  | Gemini Live API (`gemini-3.1-flash-live-preview`) — interaction only     |
+| Realtime push   | Laravel Reverb + `@laravel/echo-react` (no polling)                      |
+| AI microservice | Python 3.12 · FastAPI · uvicorn                                          |
+| Audio ML        | HeAR embeddings · TB dual-head classifier · personal cough gate          |
+| Text embeddings | EmbeddingGemma                                                           |
+| Clinical LLM    | MedGemma on Google Vertex AI (optional; fake/template mode without it)   |
+| Data            | PostgreSQL 18 + pgvector (HNSW cosine)                                   |
+| Queue & cache   | Valkey (Redis-compatible; the `redis` driver name is intentional)        |
+| Audio pipeline  | ffmpeg — decoding any upload to 16 kHz mono                              |
+| Testing         | Pest 5 · Larastan · Pint · pytest · ruff, both suites in CI              |
+| Deployment      | Docker Compose — web, app, queue, reverb, ai-service, db, redis          |
 
 ## Repository structure
 
@@ -221,18 +221,18 @@ Both suites run in CI on every push and pull request.
 
 ## Documentation
 
-| Document | Contents |
-| --- | --- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Services, request paths, enforced boundaries |
-| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Native and Docker setup, troubleshooting |
-| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Every environment variable, both services |
-| [docs/API.md](docs/API.md) | HTTP endpoints, WebSocket events, internal AI API |
-| [docs/DATA-MODEL.md](docs/DATA-MODEL.md) | Tables, ERD, pgvector index, retention |
-| [docs/AI-PIPELINE.md](docs/AI-PIPELINE.md) | Cough screening and briefing, thresholds, degradation |
-| [docs/SECURITY.md](docs/SECURITY.md) | Consent, de-identification, audit, limitations |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Compose stack, TLS, Vertex wiring, operations |
-| [docs/TESTING.md](docs/TESTING.md) | Suites, coverage, CI |
-| [docs/THIRD-PARTY.md](docs/THIRD-PARTY.md) | Models, services, libraries, licenses |
+| Document                                       | Contents                                              |
+| ---------------------------------------------- | ----------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)   | Services, request paths, enforced boundaries          |
+| [docs/INSTALLATION.md](docs/INSTALLATION.md)   | Native and Docker setup, troubleshooting              |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Every environment variable, both services             |
+| [docs/API.md](docs/API.md)                     | HTTP endpoints, WebSocket events, internal AI API     |
+| [docs/DATA-MODEL.md](docs/DATA-MODEL.md)       | Tables, ERD, pgvector index, retention                |
+| [docs/AI-PIPELINE.md](docs/AI-PIPELINE.md)     | Cough screening and briefing, thresholds, degradation |
+| [docs/SECURITY.md](docs/SECURITY.md)           | Consent, de-identification, audit, limitations        |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)       | Compose stack, TLS, Vertex wiring, operations         |
+| [docs/TESTING.md](docs/TESTING.md)             | Suites, coverage, CI                                  |
+| [docs/THIRD-PARTY.md](docs/THIRD-PARTY.md)     | Models, services, libraries, licenses                 |
 
 `ai-service/README.md` documents the Python service on its own terms.
 
@@ -256,8 +256,8 @@ Aligned with **SDG 3** (Good Health and Well-being, Target 3.3) and **SDG 9**
 ## Team
 
 Built for the **GAYATAMA 5 International Web Technology Competition**,
-Universitas Negeri Surabaya — theme *"Innovating for a Sustainable Future:
-Empowering Communities through Web Technology."*
+Universitas Negeri Surabaya — theme _"Innovating for a Sustainable Future:
+Empowering Communities through Web Technology."_
 
 - Muhammad Brian Abdillah
 - Candra Febriyanto

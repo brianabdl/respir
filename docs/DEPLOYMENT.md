@@ -8,17 +8,17 @@ For development setup, see [INSTALLATION.md](INSTALLATION.md).
 
 ## Stack
 
-| Service | Image | Role | Published |
-| --- | --- | --- | --- |
-| `web` | `caddy:2-alpine` (build target `web`) | TLS termination, static files, PHP-FastCGI proxy, `/app/*` → Reverb | **80, 443, 443/udp** |
-| `app` | `respir-app` (target `app`) | PHP-FPM | no |
-| `queue` | same image | `queue:work redis --queue=ai,default` | no |
-| `reverb` | same image | `reverb:start` on 8080 | no |
-| `ai-service` | `respir-ai-service` | FastAPI clinical inference | no |
-| `db` | `pgvector/pgvector:pg16` | PostgreSQL + pgvector | no |
-| `redis` | `valkey/valkey:9-alpine` | Queues, cache, sessions | no |
-| `migrate` | app image | One-shot `migrate --force` before `app` starts | — |
-| `ai-models` | ai-service image | One-shot weight download (`--profile setup`) | — |
+| Service      | Image                                 | Role                                                                | Published            |
+| ------------ | ------------------------------------- | ------------------------------------------------------------------- | -------------------- |
+| `web`        | `caddy:2-alpine` (build target `web`) | TLS termination, static files, PHP-FastCGI proxy, `/app/*` → Reverb | **80, 443, 443/udp** |
+| `app`        | `respir-app` (target `app`)           | PHP-FPM                                                             | no                   |
+| `queue`      | same image                            | `queue:work redis --queue=ai,default`                               | no                   |
+| `reverb`     | same image                            | `reverb:start` on 8080                                              | no                   |
+| `ai-service` | `respir-ai-service`                   | FastAPI clinical inference                                          | no                   |
+| `db`         | `pgvector/pgvector:pg16`              | PostgreSQL + pgvector                                               | no                   |
+| `redis`      | `valkey/valkey:9-alpine`              | Queues, cache, sessions                                             | no                   |
+| `migrate`    | app image                             | One-shot `migrate --force` before `app` starts                      | —                    |
+| `ai-models`  | ai-service image                      | One-shot weight download (`--profile setup`)                        | —                    |
 
 Only `web` is reachable from outside. Everything clinical sits on the internal
 `backend` network.
@@ -189,13 +189,13 @@ tag rather than a rebuild of unknown code.
 
 ## Health checks
 
-| Target | Check |
-| --- | --- |
-| Laravel | `GET /up` (internal listener on `:8081` for the container healthcheck) |
-| `ai-service` | `GET /v1/health` with `X-Internal-Token` |
-| PostgreSQL | `pg_isready` |
-| Valkey | `valkey-cli ping` |
-| Reverb | TCP connect on 8080 |
+| Target       | Check                                                                  |
+| ------------ | ---------------------------------------------------------------------- |
+| Laravel      | `GET /up` (internal listener on `:8081` for the container healthcheck) |
+| `ai-service` | `GET /v1/health` with `X-Internal-Token`                               |
+| PostgreSQL   | `pg_isready`                                                           |
+| Valkey       | `valkey-cli ping`                                                      |
+| Reverb       | TCP connect on 8080                                                    |
 
 A `degraded` AI service is a normal state without weights or Vertex, not an
 outage. Distinguish the two by reading `models.*.loaded` and `vertex.mode`.

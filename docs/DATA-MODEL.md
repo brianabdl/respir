@@ -163,14 +163,14 @@ removes its vector too.
 
 Append-only. Written by `AuditLogger::record()`.
 
-| Column | Contents |
-| --- | --- |
-| `actor_id` | Who acted (nullable for system jobs) |
-| `action` | An `AuditAction` case, e.g. `cough.analysed` |
-| `subject_type` / `subject_id` | Polymorphic target, usually a consultation |
-| `destination` | External system touched: `gemini`, `ai-service`, `vertex` |
-| `context` | Small JSONB metadata — counts, ids, flags |
-| `ip_address` / `user_agent` | Request origin |
+| Column                        | Contents                                                  |
+| ----------------------------- | --------------------------------------------------------- |
+| `actor_id`                    | Who acted (nullable for system jobs)                      |
+| `action`                      | An `AuditAction` case, e.g. `cough.analysed`              |
+| `subject_type` / `subject_id` | Polymorphic target, usually a consultation                |
+| `destination`                 | External system touched: `gemini`, `ai-service`, `vertex` |
+| `context`                     | Small JSONB metadata — counts, ids, flags                 |
+| `ip_address` / `user_agent`   | Request origin                                            |
 
 `context` must never contain clinical content. A test asserts this
 (`tests/Feature/Security/AuditLogTest.php`).

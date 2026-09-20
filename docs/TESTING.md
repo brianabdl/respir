@@ -51,22 +51,22 @@ migration.
 
 ### Consultation flow — `tests/Feature/Consult/`
 
-| Test | Covers |
-| --- | --- |
-| `ConsultationFlowTest` | Start a consultation, record consent, the 403s when consent is missing, transcript persistence |
-| `AnalyseCoughJobTest` | The `ai` queue job: persistence, embedding upsert, aggregation, broadcast — including the failure path that still broadcasts `unclear` |
-| `GenerateClinicianBriefingJobTest` | Briefing generation, de-identified payload, `degraded` fallback |
-| `PythonAiClientTest` | HTTP client behavior against a faked service: retries, timeouts, error envelopes |
-| `AiServiceIntegrationTest` | Live contract test — skipped unless `AI_SERVICE_INTEGRATION=1` |
+| Test                               | Covers                                                                                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `ConsultationFlowTest`             | Start a consultation, record consent, the 403s when consent is missing, transcript persistence                                         |
+| `AnalyseCoughJobTest`              | The `ai` queue job: persistence, embedding upsert, aggregation, broadcast — including the failure path that still broadcasts `unclear` |
+| `GenerateClinicianBriefingJobTest` | Briefing generation, de-identified payload, `degraded` fallback                                                                        |
+| `PythonAiClientTest`               | HTTP client behavior against a faked service: retries, timeouts, error envelopes                                                       |
+| `AiServiceIntegrationTest`         | Live contract test — skipped unless `AI_SERVICE_INTEGRATION=1`                                                                         |
 
 ### Security — `tests/Feature/Security/`
 
-| Test | Covers |
-| --- | --- |
-| `AuditLogTest` | Actions are recorded, and audit context carries no clinical content |
-| `CaptureDownloadTest` | Signed URLs, expiry, owner-or-doctor authorization |
-| `RateLimitTest` | `consult-voice`, `consult-chat`, `consult-cough` limits |
-| `TrustedProxyTest` | `X-Forwarded-*` handling behind a proxy |
+| Test                  | Covers                                                              |
+| --------------------- | ------------------------------------------------------------------- |
+| `AuditLogTest`        | Actions are recorded, and audit context carries no clinical content |
+| `CaptureDownloadTest` | Signed URLs, expiry, owner-or-doctor authorization                  |
+| `RateLimitTest`       | `consult-voice`, `consult-chat`, `consult-cough` limits             |
+| `TrustedProxyTest`    | `X-Forwarded-*` handling behind a proxy                             |
 
 ### Doctor console — `tests/Feature/Doctor/`
 
@@ -89,17 +89,17 @@ so this one matters more than its size suggests.
 
 `ai-service/tests/`:
 
-| Test | Covers |
-| --- | --- |
-| `test_health.py` | Health payload, adapter states, Vertex mode reporting |
-| `test_cough.py` | `/v1/cough/analyze` happy path and degraded paths |
-| `test_cough_gate.py` | Gate accept/reject and the untrained-gate skip |
-| `test_audio.py` | ffmpeg decode, audibility floor, burst detection |
-| `test_hear_preprocess.py` | The HeAR front end against reference values |
-| `test_tb_classifier.py` | Score-to-band mapping at the 0.55 / 0.66 cutoffs |
-| `test_briefing.py` | Briefing structure, repair path, template fallback |
-| `test_pseudonymization.py` | `extra="forbid"` rejection and identifier redaction |
-| `test_embeddings.py` | Audio and text embedding endpoints |
+| Test                       | Covers                                                |
+| -------------------------- | ----------------------------------------------------- |
+| `test_health.py`           | Health payload, adapter states, Vertex mode reporting |
+| `test_cough.py`            | `/v1/cough/analyze` happy path and degraded paths     |
+| `test_cough_gate.py`       | Gate accept/reject and the untrained-gate skip        |
+| `test_audio.py`            | ffmpeg decode, audibility floor, burst detection      |
+| `test_hear_preprocess.py`  | The HeAR front end against reference values           |
+| `test_tb_classifier.py`    | Score-to-band mapping at the 0.55 / 0.66 cutoffs      |
+| `test_briefing.py`         | Briefing structure, repair path, template fallback    |
+| `test_pseudonymization.py` | `extra="forbid"` rejection and identifier redaction   |
+| `test_embeddings.py`       | Audio and text embedding endpoints                    |
 
 `tests/stubs.py` replaces the heavy models, so the suite runs in seconds without
 weights, without a GPU, and without Vertex.
@@ -154,10 +154,10 @@ breaks the auth and settings pages.
 
 ## Continuous integration
 
-| Workflow | Trigger | Runs |
-| --- | --- | --- |
-| `.github/workflows/tests.yml` | push to `master`/`main`, all PRs | PostgreSQL 16 + pgvector service, creates the `:memory:` database, builds the frontend, then `composer ci:check` (Pint → PHPStan → Pest) |
-| `.github/workflows/ai-service.yml` | changes under `ai-service/` | `ruff check` and `pytest` with ffmpeg installed |
+| Workflow                           | Trigger                          | Runs                                                                                                                                     |
+| ---------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/tests.yml`      | push to `master`/`main`, all PRs | PostgreSQL 16 + pgvector service, creates the `:memory:` database, builds the frontend, then `composer ci:check` (Pint → PHPStan → Pest) |
+| `.github/workflows/ai-service.yml` | changes under `ai-service/`      | `ruff check` and `pytest` with ffmpeg installed                                                                                          |
 
 ## Writing tests
 

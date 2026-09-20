@@ -14,16 +14,16 @@ the audit log — works.
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| PHP | 8.5 | with `pdo_pgsql`, `redis`, `pcntl` |
-| Composer | 2.x | |
-| Bun | 1.4+ | frontend build (Vite 8) |
-| PostgreSQL | 18 | with the `pgvector` extension available |
-| Valkey | 9+ | or Redis; the `redis` driver name is intentional |
-| Python | 3.12 | managed by [uv](https://docs.astral.sh/uv/) |
-| ffmpeg | any recent | must be on `PATH`; used to decode uploads to 16 kHz mono |
-| Docker | 24+ | only for the Docker path |
+| Tool       | Version    | Notes                                                    |
+| ---------- | ---------- | -------------------------------------------------------- |
+| PHP        | 8.5        | with `pdo_pgsql`, `redis`, `pcntl`                       |
+| Composer   | 2.x        |                                                          |
+| Bun        | 1.4+       | frontend build (Vite 8)                                  |
+| PostgreSQL | 18         | with the `pgvector` extension available                  |
+| Valkey     | 9+         | or Redis; the `redis` driver name is intentional         |
+| Python     | 3.12       | managed by [uv](https://docs.astral.sh/uv/)              |
+| ffmpeg     | any recent | must be on `PATH`; used to decode uploads to 16 kHz mono |
+| Docker     | 24+        | only for the Docker path                                 |
 
 Optional but needed for full clinical behavior:
 
@@ -146,10 +146,13 @@ A healthy no-weights, no-Vertex install reports:
 
 ```json
 {
-  "status": "degraded",
-  "device": "cpu",
-  "models": { "hear": { "loaded": false }, "classifier": { "loaded": false } },
-  "vertex": { "configured": false, "mode": "fake", "model": "medgemma-4b-it" }
+    "status": "degraded",
+    "device": "cpu",
+    "models": {
+        "hear": { "loaded": false },
+        "classifier": { "loaded": false }
+    },
+    "vertex": { "configured": false, "mode": "fake", "model": "medgemma-4b-it" }
 }
 ```
 
@@ -196,15 +199,15 @@ Operational detail — TLS, tunnels, backups, upgrades — is in
 
 ## Troubleshooting
 
-| Symptom | Cause and fix |
-| --- | --- |
-| `SQLSTATE... type "vector" does not exist` | The `vector` extension was not created on that database. Run the `CREATE EXTENSION` step as a superuser — including for the test database named `:memory:`. |
-| Tests fail immediately with a connection error | Pest needs PostgreSQL, not SQLite. Run `DB_CONNECTION=pgsql php artisan test --compact`. |
-| `Unable to locate file in Vite manifest` | Front-end assets were never built. Run `bun run build`, or `composer run dev` while developing. |
-| Cough analysis always returns `unclear` | Expected without weights. Check `/v1/health`: if `models.hear.loaded` is `false`, run `scripts/download_models.py`. |
-| Non-cough audio gets a risk score | The personal cough gate is not trained. See the gate section in [AI-PIPELINE.md](AI-PIPELINE.md). |
-| `401` from the Python service | `AI_SERVICE_TOKEN` differs between the root `.env` and `ai-service/.env`. |
-| `503 gemini_not_configured` on `/live/token` | `GEMINI_API_KEY` is unset. The text fallback still works. |
-| Cough result never reaches the browser | The `ai` queue has no worker, or Reverb is down. `composer run dev` starts both. |
-| PHPStan dies with an out-of-memory error | Run it as `phpstan analyse --memory-limit=1G` (what `composer types:check` does). |
-| `php artisan wayfinder:generate` breaks auth pages | This project generates with form variants: `php artisan wayfinder:generate --with-form`, then `bun run check:fix`. |
+| Symptom                                            | Cause and fix                                                                                                                                               |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SQLSTATE... type "vector" does not exist`         | The `vector` extension was not created on that database. Run the `CREATE EXTENSION` step as a superuser — including for the test database named `:memory:`. |
+| Tests fail immediately with a connection error     | Pest needs PostgreSQL, not SQLite. Run `DB_CONNECTION=pgsql php artisan test --compact`.                                                                    |
+| `Unable to locate file in Vite manifest`           | Front-end assets were never built. Run `bun run build`, or `composer run dev` while developing.                                                             |
+| Cough analysis always returns `unclear`            | Expected without weights. Check `/v1/health`: if `models.hear.loaded` is `false`, run `scripts/download_models.py`.                                         |
+| Non-cough audio gets a risk score                  | The personal cough gate is not trained. See the gate section in [AI-PIPELINE.md](AI-PIPELINE.md).                                                           |
+| `401` from the Python service                      | `AI_SERVICE_TOKEN` differs between the root `.env` and `ai-service/.env`.                                                                                   |
+| `503 gemini_not_configured` on `/live/token`       | `GEMINI_API_KEY` is unset. The text fallback still works.                                                                                                   |
+| Cough result never reaches the browser             | The `ai` queue has no worker, or Reverb is down. `composer run dev` starts both.                                                                            |
+| PHPStan dies with an out-of-memory error           | Run it as `phpstan analyse --memory-limit=1G` (what `composer types:check` does).                                                                           |
+| `php artisan wayfinder:generate` breaks auth pages | This project generates with form variants: `php artisan wayfinder:generate --with-form`, then `bun run check:fix`.                                          |

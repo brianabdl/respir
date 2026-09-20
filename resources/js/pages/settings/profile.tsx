@@ -47,10 +47,7 @@ export default function Profile({
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label
-                                    htmlFor="name"
-                                    className="text-gray-300"
-                                >
+                                <Label htmlFor="name" className="text-gray-300">
                                     Name
                                 </Label>
 

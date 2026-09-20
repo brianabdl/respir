@@ -86,21 +86,21 @@ IPs — never clinical content.
 
 ## Layers
 
-| Layer | Technology | Responsibility |
-| --- | --- | --- |
-| Frontend | Inertia v3, React 19, TypeScript, Tailwind CSS 4, Vite 8, Wayfinder | Patient consult room, doctor console, landing page |
-| Realtime voice | Gemini Live API (`gemini-3.1-flash-live-preview`) | Speech, transcripts, barge-in, tool calling |
-| Realtime push | Laravel Reverb + `@laravel/echo-react` | Cough results and consultation updates; no polling |
-| Backend | Laravel 13, PHP 8.5 | Auth, consent, consultations, queues, broadcasting, audit |
-| Agent SDK | `laravel/ai` | `ConsultAgent` — Sage's turn logic and fallback chat |
-| Clinical inference | Python 3.12, FastAPI, uvicorn | One token-authenticated boundary for all clinical AI |
-| Audio ML | HeAR embeddings, TB dual-head classifier, cough gate | Cough → 512-dim embedding → risk score |
-| Text embeddings | EmbeddingGemma | Similarity search support |
-| Clinical LLM | MedGemma on Vertex AI | Plain-language explanation and clinician briefing |
-| Data | PostgreSQL 18 + pgvector (HNSW cosine) | Records plus vector similarity over cough embeddings |
-| Queue & cache | Valkey (Redis-compatible) | `ai` queue for inference, `default` queue, cache, sessions |
-| Audio decode | ffmpeg | Any upload → 16 kHz mono |
-| Auth | Laravel Fortify | Login, registration, reset, verification |
+| Layer              | Technology                                                          | Responsibility                                             |
+| ------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Frontend           | Inertia v3, React 19, TypeScript, Tailwind CSS 4, Vite 8, Wayfinder | Patient consult room, doctor console, landing page         |
+| Realtime voice     | Gemini Live API (`gemini-3.1-flash-live-preview`)                   | Speech, transcripts, barge-in, tool calling                |
+| Realtime push      | Laravel Reverb + `@laravel/echo-react`                              | Cough results and consultation updates; no polling         |
+| Backend            | Laravel 13, PHP 8.5                                                 | Auth, consent, consultations, queues, broadcasting, audit  |
+| Agent SDK          | `laravel/ai`                                                        | `ConsultAgent` — Sage's turn logic and fallback chat       |
+| Clinical inference | Python 3.12, FastAPI, uvicorn                                       | One token-authenticated boundary for all clinical AI       |
+| Audio ML           | HeAR embeddings, TB dual-head classifier, cough gate                | Cough → 512-dim embedding → risk score                     |
+| Text embeddings    | EmbeddingGemma                                                      | Similarity search support                                  |
+| Clinical LLM       | MedGemma on Vertex AI                                               | Plain-language explanation and clinician briefing          |
+| Data               | PostgreSQL 18 + pgvector (HNSW cosine)                              | Records plus vector similarity over cough embeddings       |
+| Queue & cache      | Valkey (Redis-compatible)                                           | `ai` queue for inference, `default` queue, cache, sessions |
+| Audio decode       | ffmpeg                                                              | Any upload → 16 kHz mono                                   |
+| Auth               | Laravel Fortify                                                     | Login, registration, reset, verification                   |
 
 ## Code map
 
@@ -188,13 +188,13 @@ Details and thresholds are in [AI-PIPELINE.md](AI-PIPELINE.md).
 
 The system degrades instead of blocking a consultation.
 
-| Missing / failing | Behavior |
-| --- | --- |
-| Local model weights | `/v1/cough/analyze` returns `risk_level: "unclear"`; `/v1/health` reports `degraded` |
-| Cough gate not trained | Gate is skipped with a log note; `cough_gate.loaded: false` |
-| `VERTEX_ENDPOINT_ID` unset | MedGemma runs in fake mode; `/v1/health` reports `vertex.mode: "fake"` |
-| Vertex call fails | Template briefing, `degraded: true` |
-| `ai-service` unreachable | `AiServiceUnavailable`; the job retries with backoff and finally persists `unclear` |
-| Gemini key missing | `GET /live/token` returns **503** `gemini_not_configured`; the text fallback still works |
+| Missing / failing          | Behavior                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| Local model weights        | `/v1/cough/analyze` returns `risk_level: "unclear"`; `/v1/health` reports `degraded`     |
+| Cough gate not trained     | Gate is skipped with a log note; `cough_gate.loaded: false`                              |
+| `VERTEX_ENDPOINT_ID` unset | MedGemma runs in fake mode; `/v1/health` reports `vertex.mode: "fake"`                   |
+| Vertex call fails          | Template briefing, `degraded: true`                                                      |
+| `ai-service` unreachable   | `AiServiceUnavailable`; the job retries with backoff and finally persists `unclear`      |
+| Gemini key missing         | `GET /live/token` returns **503** `gemini_not_configured`; the text fallback still works |
 
 Every failure path still broadcasts a final state, so the UI never waits forever.

@@ -1,7 +1,8 @@
 ---
 paths:
-    - package.json
-    - docker-compose.yml
+  - package.json
+  - docker-compose.yml
+  - composer.json
 ---
 
 # General
@@ -19,3 +20,8 @@ docker-compose.yml is the prod stack (Caddy web -> php-fpm app, reverb, queue, m
 - ai-service must never receive an empty GOOGLE_APPLICATION_CREDENTIALS (google-auth treats empty as a file path and breaks ADC); it is passed through unset on purpose.
 - reverb depends on redis being healthy (it polls the cache); bootstrap/app.php trusts proxies so AuditLogger records the real client IP behind Caddy.
 - Model weights are not baked into images: run `docker compose --env-file .env.production --profile setup run --rm ai-models`, then restart ai-service (it runs HF_HUB_OFFLINE=1).
+
+## composer test runs Pest via the @pest script
+`composer test` = Pint + PHPStan + Pest, and `composer ci:check` just calls it. The Pest step is the separate `@pest` script, which sets `DB_CONNECTION=pgsql` before `php artisan test --compact` because phpunit.xml pins the sqlite driver with `DB_DATABASE=":memory:"` (a real Postgres database name here).
+
+Before 2026-09-20 the `test` script stopped after PHPStan, so CI never ran a PHP test. Do not drop `@pest` from it again.

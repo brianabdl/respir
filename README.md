@@ -65,80 +65,9 @@ documented degraded modes, not bugs; see
 > approved by any medical regulator, and its thresholds have not been validated
 > against microbiological reference standards.
 
-## Impact
-
-- **Public health.** The target is the WHO triage-test profile: at least 90%
-  sensitivity at 70% specificity — clearing low-risk coughs without missing real
-  cases, wherever patients first show up.
-- **Economics.** Every molecular cartridge spent on a low-risk patient is one
-  unavailable to a high-risk one. Filtering first lowers cost per detected case.
-- **Health system.** The interview and briefing happen before the visit, so a
-  five-minute consultation starts from structured data instead of a blank page.
-- **Equity.** Commodity microphones, local inference, cloud optional — usable
-  where an X-ray van or a GeneXpert machine is a day's travel away.
-- **Trust.** Consent first, audio processed on the clinic's own hardware, no
-  identifiers to external models.
-
-Aligned with **SDG 3** (Good Health and Well-being, Target 3.3) and **SDG 9**
-(Industry, Innovation and Infrastructure).
-
 ## Architecture
 
 Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## Quick start
-
-Full instructions, including Docker: [docs/INSTALLATION.md](docs/INSTALLATION.md).
-
-**Prerequisites:** PHP 8.5 (`pdo_pgsql`, `redis`, `pcntl`), Composer 2, Bun 1.4+,
-PostgreSQL 18 with pgvector, Valkey, Python 3.12 via [uv](https://docs.astral.sh/uv/),
-and ffmpeg on `PATH`.
-
-```bash
-git clone https://github.com/brianabdl/respir.git respir
-cd respir
-
-composer install && bun install
-cp .env.example .env && php artisan key:generate
-```
-
-Create the database and the extension (superuser, once):
-
-```bash
-sudo -u postgres createdb agen_gemma
-sudo -u postgres psql -d agen_gemma -c 'CREATE EXTENSION IF NOT EXISTS vector;'
-```
-
-Set `AI_SERVICE_TOKEN` in `.env` (any random string), then:
-
-```bash
-php artisan migrate
-php artisan db:seed          # optional demo accounts and consultations
-bun run build
-```
-
-Set up the Python service — `AI_SERVICE_TOKEN` must match the root `.env`:
-
-```bash
-cd ai-service
-cp .env.example .env
-uv sync --extra ml --extra vertex
-HF_TOKEN=... uv run scripts/download_models.py   # gated HeAR weights; optional
-```
-
-Run it, in two terminals:
-
-```bash
-composer run dev                                                  # serve, vite, reverb, pail, queues
-cd ai-service && uv run uvicorn app.main:app --port 9000          # AI service
-```
-
-Seeded demo accounts (local only, password `password`):
-`patient@demo.test` and `doctor@demo.test`.
-
-Respir runs without a Gemini key, without the gated weights, and without Google
-Cloud. In that state cough analysis returns `unclear` and briefings come from a
-template — everything else works.
 
 ## Team
 

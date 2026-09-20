@@ -252,7 +252,7 @@ export default function DoctorConsultations({
 
         setConfirmDialogOpen(false);
         setBulkReviewing(true);
-        
+
         try {
             await Promise.all(
                 selectedIds.map((id) =>
@@ -348,7 +348,7 @@ export default function DoctorConsultations({
                     <div className="flex flex-wrap gap-2">
                         {RISK_FILTERS.map((filter) => {
                             const isActive = riskFilter === filter.value;
-        
+
                             return (
                                 <Button
                                     key={filter.value}
@@ -411,7 +411,9 @@ export default function DoctorConsultations({
                                 <div className="flex gap-2">
                                     <Button
                                         size="sm"
-                                        onClick={() => setConfirmDialogOpen(true)}
+                                        onClick={() =>
+                                            setConfirmDialogOpen(true)
+                                        }
                                         disabled={bulkReviewing}
                                         className="bg-white text-black hover:bg-white/90"
                                     >
@@ -519,29 +521,52 @@ export default function DoctorConsultations({
             </div>
 
             {/* Custom Bulk Review Confirmation Dialog */}
-            <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+            <Dialog
+                open={confirmDialogOpen}
+                onOpenChange={setConfirmDialogOpen}
+            >
                 <DialogContent className="border-white/10 bg-[#0B0B0D] text-white sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl">
-                            <svg className="size-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg
+                                className="size-6 text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                             </svg>
                             Bulk Mark as Reviewed
                         </DialogTitle>
-                        <DialogDescription className="text-[#94A3B8] pt-2">
-                            Are you sure you want to mark {selectedIds.length} consultation(s) as reviewed?
+                        <DialogDescription className="pt-2 text-[#94A3B8]">
+                            Are you sure you want to mark {selectedIds.length}{' '}
+                            consultation(s) as reviewed?
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="py-4">
-                        <div className="rounded-lg border border-white/10 bg-[#000000]/50 p-4 space-y-3">
+                        <div className="space-y-3 rounded-lg border border-white/10 bg-[#000000]/50 p-4">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-[#71717A]">Total Selected:</span>
-                                <span className="font-mono text-lg font-semibold text-white">{selectedIds.length}</span>
+                                <span className="text-[#71717A]">
+                                    Total Selected:
+                                </span>
+                                <span className="font-mono text-lg font-semibold text-white">
+                                    {selectedIds.length}
+                                </span>
                             </div>
-                            <div className="pt-2 border-t border-white/5">
+                            <div className="border-t border-white/5 pt-2">
                                 <p className="text-xs text-[#71717A]">
-                                    Selected consultations will be marked as <strong className="text-white">"Reviewed"</strong> and status badge will appear on the dashboard.
+                                    Selected consultations will be marked as{' '}
+                                    <strong className="text-white">
+                                        "Reviewed"
+                                    </strong>{' '}
+                                    and status badge will appear on the
+                                    dashboard.
                                 </p>
                             </div>
                         </div>

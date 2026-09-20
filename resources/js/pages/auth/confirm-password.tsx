@@ -22,8 +22,8 @@ export default function ConfirmPassword() {
                         Confirm password
                     </h1>
                     <p className="mt-2 text-sm text-[#A1A1AA]">
-                        This is a secure area of the application. Please
-                        confirm your password before continuing.
+                        This is a secure area of the application. Please confirm
+                        your password before continuing.
                     </p>
                 </div>
 

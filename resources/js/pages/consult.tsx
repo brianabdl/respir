@@ -1332,8 +1332,7 @@ export default function Consult({
     const awaitingCough = coughPhase === 'prompted';
     const recordingCough = coughPhase === 'recording';
     const analysisPending = coughPhase === 'processing';
-    const coughBusy =
-        coughPhase === 'recording' || coughPhase === 'processing';
+    const coughBusy = coughPhase === 'recording' || coughPhase === 'processing';
     const showingPreviousAssessment =
         !sessionStarted && Boolean(consultation.cough_analysis);
 
@@ -1400,15 +1399,15 @@ export default function Consult({
                             <ArrowLeft className="size-4" />
                         </Link>
                         <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/40 py-1.5 pr-3 pl-2.5 backdrop-blur">
-                        <img
-                            src="/Respir logo.png"
-                            alt="Respir"
-                            className="h-4 w-auto"
-                        />
-                        <span className="h-3 w-px bg-white/15" />
-                        <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
-                            pre-visit · voice consult
-                        </span>
+                            <img
+                                src="/Respir logo.png"
+                                alt="Respir"
+                                className="h-4 w-auto"
+                            />
+                            <span className="h-3 w-px bg-white/15" />
+                            <span className="font-mono text-[10px] leading-tight tracking-widest text-[#71717A] uppercase">
+                                pre-visit · voice consult
+                            </span>
                         </div>
                     </div>
 
@@ -1531,9 +1530,7 @@ export default function Consult({
                                         variant="ghost"
                                         size="icon"
                                         aria-label="Dismiss result"
-                                        onClick={() =>
-                                            setResultDismissed(true)
-                                        }
+                                        onClick={() => setResultDismissed(true)}
                                         className="rounded-[14px] text-[#A1A1AA] hover:bg-white/10 hover:text-white"
                                     >
                                         <X className="size-5" />
@@ -1616,11 +1613,7 @@ export default function Consult({
                                             <span className="font-medium">
                                                 What this means:{' '}
                                             </span>
-                                            {
-                                                RISK_MEANINGS[
-                                                    analysis.risk_level
-                                                ]
-                                            }
+                                            {RISK_MEANINGS[analysis.risk_level]}
                                         </p>
                                     )}
                                 {analysis.findings && (
@@ -1648,8 +1641,8 @@ export default function Consult({
                                         </p>
                                     )}
                                 <p className="text-xs text-[#71717A] italic">
-                                    This is not a diagnosis. Please see a
-                                    doctor for a clinical assessment.
+                                    This is not a diagnosis. Please see a doctor
+                                    for a clinical assessment.
                                 </p>
                             </div>
 

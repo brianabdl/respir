@@ -3,6 +3,7 @@ name: ai-service
 on:
   push:
     branches:
+      - master
       - main
     paths:
       - 'ai-service/**'

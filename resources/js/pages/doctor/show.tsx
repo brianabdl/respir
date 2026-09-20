@@ -322,7 +322,7 @@ export default function DoctorConsultationShow({
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="space-y-6 lg:col-span-2">
                             <Card className="border-white/10 bg-[#0B0B0D]">
                                 <CardContent className="p-5">
                                     <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-6">
@@ -957,7 +957,7 @@ export default function DoctorConsultationShow({
                                                             }
                                                             placeholder="Write your clinical assessment, diagnosis, prescription details, or general notes here..."
                                                             rows={6}
-                                                            className="w-full rounded-[14px] border border-white/10 bg-[#000000]/60 p-4 text-sm text-white placeholder:text-[#71717A] focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/20"
+                                                            className="w-full rounded-[14px] border border-white/10 bg-[#000000]/60 p-4 text-sm text-white placeholder:text-[#71717A] focus:border-white/20 focus:ring-1 focus:ring-white/20 focus:outline-none"
                                                         />
                                                     </div>
 
@@ -1192,11 +1192,11 @@ export default function DoctorConsultationShow({
                                                 Review Status
                                             </span>
                                             {consultation.is_reviewed ? (
-                                                <span className="rounded-full bg-white/10 text-white px-2 py-0.5 text-xs font-mono">
+                                                <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-xs text-white">
                                                     REVIEWED
                                                 </span>
                                             ) : (
-                                                <span className="rounded-full bg-white/10 text-white/60 px-2 py-0.5 text-xs font-mono">
+                                                <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-xs text-white/60">
                                                     PENDING
                                                 </span>
                                             )}
@@ -1419,7 +1419,7 @@ export default function DoctorConsultationShow({
                     </DialogHeader>
 
                     <div className="py-4">
-                        <div className="rounded-lg border border-white/10 bg-[#000000]/50 p-4 space-y-2">
+                        <div className="space-y-2 rounded-lg border border-white/10 bg-[#000000]/50 p-4">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-[#71717A]">Patient:</span>
                                 <span className="font-medium text-white">

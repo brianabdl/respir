@@ -1,10 +1,7 @@
-#!/bin/bash
-# Clear cached packages.php and services.php to avoid stale service providers
-rm -f /var/www/bootstrap/cache/packages.php
-rm -f /var/www/bootstrap/cache/services.php
+#!/bin/sh
+set -e
 
-# Clear config cache
-php artisan config:clear 2>/dev/null || true
+# Runtime env is only known here, so cache config/routes/views/events per container.
+php artisan optimize
 
-# Execute the main command
 exec "$@"

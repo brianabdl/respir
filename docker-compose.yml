@@ -1,107 +1,339 @@
+# Production stack. Run with the prod env file so ${VARS} below resolve:
+#
+#   docker compose --env-file .env.production up -d --build
+#
+# One-time model download (needs HF_TOKEN in .env.production):
+#
+#   docker compose --env-file .env.production --profile setup run --rm ai-models
+#
+# Only `web` publishes ports; db, redis, ai-service and the PHP containers stay internal.
+
+name: respir
+
+x-logging: &default-logging
+    driver: json-file
+    options:
+        max-size: 10m
+        max-file: '3'
+
+# Vite inlines these at build time, so they must be known when the image is built.
+x-app-build: &app-build
+    context: .
+    dockerfile: Dockerfile
+    args:
+        VITE_APP_NAME: ${APP_NAME:-Laravel}
+        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY:?set REVERB_APP_KEY in .env.production}
+        VITE_REVERB_HOST: ${APP_DOMAIN:?set APP_DOMAIN in .env.production}
+        VITE_REVERB_PORT: '443'
+        VITE_REVERB_SCHEME: https
+
+x-ai-build: &ai-build
+    context: ./ai-service
+    dockerfile: Dockerfile
+
+x-laravel-env: &laravel-env
+    APP_NAME: ${APP_NAME:-Laravel}
+    APP_ENV: production
+    APP_DEBUG: 'false'
+    APP_KEY: ${APP_KEY:?set APP_KEY in .env.production}
+    APP_URL: https://${APP_DOMAIN:?set APP_DOMAIN in .env.production}
+    LOG_CHANNEL: stderr
+    LOG_LEVEL: ${LOG_LEVEL:-warning}
+
+    DB_CONNECTION: pgsql
+    DB_HOST: db
+    DB_PORT: '5432'
+    DB_DATABASE: ${DB_DATABASE:-agen_gemma}
+    DB_USERNAME: ${DB_USERNAME:-agen_gemma}
+    DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env.production}
+
+    SESSION_DRIVER: database
+    SESSION_SECURE_COOKIE: 'true'
+    FILESYSTEM_DISK: local
+
+    # Valkey; Laravel keeps the `redis` driver and REDIS_* names.
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
+    REDIS_CLIENT: phpredis
+    REDIS_HOST: redis
+    REDIS_PORT: '6379'
+    REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env.production}
+    # Must exceed the longest job timeout (AnalyseCough = 300s) or running jobs get re-queued.
+    REDIS_QUEUE_RETRY_AFTER: '360'
+
+    # Server-side pushes go straight to the reverb container; browsers use the public domain
+    # baked in at build time (VITE_REVERB_*).
+    BROADCAST_CONNECTION: reverb
+    REVERB_APP_ID: ${REVERB_APP_ID:?set REVERB_APP_ID in .env.production}
+    REVERB_APP_KEY: ${REVERB_APP_KEY:?set REVERB_APP_KEY in .env.production}
+    REVERB_APP_SECRET: ${REVERB_APP_SECRET:?set REVERB_APP_SECRET in .env.production}
+    REVERB_HOST: reverb
+    REVERB_PORT: '8080'
+    REVERB_SCHEME: http
+    REVERB_SERVER_HOST: 0.0.0.0
+    REVERB_SERVER_PORT: '8080'
+
+    AI_SERVICE_URL: http://ai-service:9000
+    AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?set AI_SERVICE_TOKEN in .env.production}
+    AI_SERVICE_TIMEOUT: ${AI_SERVICE_TIMEOUT:-300}
+    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+
+    MAIL_MAILER: ${MAIL_MAILER:-log}
+    MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
+    MAIL_PORT: ${MAIL_PORT:-2525}
+    MAIL_USERNAME: ${MAIL_USERNAME:-}
+    MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    MAIL_SCHEME: ${MAIL_SCHEME:-}
+    RESEND_API_KEY: ${RESEND_API_KEY:-}
+    MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
+    MAIL_FROM_NAME: ${APP_NAME:-Laravel}
+
+x-laravel: &laravel
+    image: respir-app:${APP_VERSION:-latest}
+    restart: unless-stopped
+    environment: *laravel-env
+    volumes:
+        - app_storage:/var/www/storage
+    networks:
+        - backend
+    cap_drop:
+        - ALL
+    security_opt:
+        - no-new-privileges:true
+    logging: *default-logging
+
 services:
-    app:
+    web:
         build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: respir-app
+            <<: *app-build
+            target: web
+        image: respir-web:${APP_VERSION:-latest}
         restart: unless-stopped
-        working_dir: /var/www
-        volumes:
-            - .:/var/www
-            - ./storage:/var/www/storage
         ports:
-            - '8000:8000'
-        networks:
-            - respir
-        depends_on:
-            - db
-            - redis
+            - '80:80'
+            - '443:443'
+            - '443:443/udp'
         environment:
-            - DB_CONNECTION=pgsql
-            - DB_HOST=db
-            - DB_PORT=5432
-            - DB_DATABASE=agen_gemma
-            - DB_USERNAME=postgres
-            - DB_PASSWORD=postgres
-            - REDIS_HOST=redis
-            - REDIS_PORT=6379
+            APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN in .env.production}
+            ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env.production}
+        volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy_data:/data
+            - caddy_config:/config
+        depends_on:
+            app:
+                condition: service_healthy
+            reverb:
+                condition: service_healthy
+        healthcheck:
+            test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8081/up']
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 20s
+        networks:
+            - edge
+        security_opt:
+            - no-new-privileges:true
+        logging: *default-logging
+
+    app:
+        <<: *laravel
+        build:
+            <<: *app-build
+            target: app
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'php',
+                    '-r',
+                    'exit(@fsockopen("127.0.0.1", 9000) ? 0 : 1);',
+                ]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 20s
+        networks:
+            - edge
+            - backend
+
+    # php artisan queue:work handles SIGTERM by finishing the current job, so give it
+    # the full job timeout before Docker sends SIGKILL.
+    queue:
+        <<: *laravel
+        command: php artisan queue:work redis --queue=ai,default --tries=3 --timeout=300 --sleep=3 --max-time=3600
+        stop_grace_period: 330s
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+
+    reverb:
+        <<: *laravel
+        command: php artisan reverb:start --host=0.0.0.0 --port=8080
+        ulimits:
+            nofile:
+                soft: 10000
+                hard: 10000
+        # reverb polls the cache (Valkey) for restart signals, so wait for it.
+        depends_on:
+            redis:
+                condition: service_healthy
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'php',
+                    '-r',
+                    'exit(@fsockopen("127.0.0.1", 8080) ? 0 : 1);',
+                ]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 15s
+        networks:
+            - edge
+            - backend
+
+    migrate:
+        <<: *laravel
+        command: php artisan migrate --force
+        restart: 'no'
+        depends_on:
+            db:
+                condition: service_healthy
+
+    ai-service:
+        build: *ai-build
+        image: respir-ai-service:${APP_VERSION:-latest}
+        restart: unless-stopped
+        environment:
+            AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?set AI_SERVICE_TOKEN in .env.production}
+            AI_DEVICE: ${AI_DEVICE:-auto}
+            PRELOAD_MODELS: hear,classifier,embeddings,gate
+            MODEL_DIR: /models
+            # Personal cough gate (optional): docker compose cp cough_gate.joblib ai-service:/models/
+            COUGH_GATE_MODEL: /models/cough_gate.joblib
+            # Weights come from the ai-models job; never reach out to Hugging Face at request time.
+            HF_HUB_OFFLINE: '1'
+            # Vertex is optional; without VERTEX_ENDPOINT_ID the service runs MedGemma in fake mode.
+            VERTEX_PROJECT: ${VERTEX_PROJECT:-}
+            VERTEX_LOCATION: ${VERTEX_LOCATION:-us-central1}
+            VERTEX_ENDPOINT_ID: ${VERTEX_ENDPOINT_ID:-}
+            VERTEX_MEDGEMMA_MODEL: ${VERTEX_MEDGEMMA_MODEL:-medgemma-4b-it}
+            # No value on purpose: passed through only when set, because an empty value breaks ADC.
+            GOOGLE_APPLICATION_CREDENTIALS:
+        volumes:
+            - ai_models:/models
+            # Service-account key file on the host; /dev/null when using ADC / workload identity.
+            - ${VERTEX_CREDENTIALS_FILE:-/dev/null}:/run/secrets/vertex-sa.json:ro
+        healthcheck:
+            test:
+                - CMD
+                - python
+                - -c
+                - >-
+                    import os, urllib.request as u;
+                    u.urlopen(u.Request('http://127.0.0.1:9000/v1/health',
+                    headers={'X-Internal-Token': os.environ['AI_SERVICE_TOKEN']}), timeout=5)
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 180s
+        networks:
+            - backend
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges:true
+        logging: *default-logging
+
+    # One-shot: docker compose --profile setup run --rm ai-models
+    ai-models:
+        build: *ai-build
+        image: respir-ai-service:${APP_VERSION:-latest}
+        profiles:
+            - setup
+        restart: 'no'
+        command: python scripts/download_models.py
+        environment:
+            HF_TOKEN: ${HF_TOKEN:-}
+            MODEL_DIR: /models
+            # Keep the hub's own cache (xet chunks, up to ~10GB) on the models volume, not the container layer.
+            HF_HOME: /models/.hf
+        volumes:
+            - ai_models:/models
+        networks:
+            - backend
 
     db:
         image: pgvector/pgvector:pg16
-        container_name: respir-db
         restart: unless-stopped
         environment:
-            POSTGRES_DB: agen_gemma
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: ${DB_DATABASE:-agen_gemma}
+            POSTGRES_USER: ${DB_USERNAME:-agen_gemma}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env.production}
         volumes:
             - postgres_data:/var/lib/postgresql/data
-        ports:
-            - '5432:5432'
+        shm_size: 256mb
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
         networks:
-            - respir
+            - backend
+        security_opt:
+            - no-new-privileges:true
+        logging: *default-logging
 
+    # noeviction: evicting queued jobs or sessions would silently lose data.
     redis:
-        image: redis:7-alpine
-        container_name: respir-redis
+        image: valkey/valkey:9-alpine
         restart: unless-stopped
-        ports:
-            - '6379:6379'
-        networks:
-            - respir
-
-    reverb:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: respir-reverb
-        restart: unless-stopped
-        working_dir: /var/www
-        volumes:
-            - .:/var/www
-        ports:
-            - '8080:8080'
-        networks:
-            - respir
-        depends_on:
-            - app
-        command: php artisan reverb:start --host=0.0.0.0 --port=8080
-
-    queue:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: respir-queue
-        restart: unless-stopped
-        working_dir: /var/www
-        volumes:
-            - .:/var/www
-        networks:
-            - respir
-        depends_on:
-            - app
-            - redis
-        command: php artisan queue:work --tries=3
-
-    ai-service:
-        build:
-            context: ./ai-service
-            dockerfile: Dockerfile
-        container_name: respir-ai-service
-        restart: unless-stopped
-        working_dir: /app
-        volumes:
-            - ./ai-service:/app
-        ports:
-            - '9000:9000'
-        networks:
-            - respir
+        command:
+            - sh
+            - -c
+            - exec valkey-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory-policy noeviction
         environment:
-            - AI_SERVICE_TOKEN=change-me
+            REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env.production}
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'valkey-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - backend
+        security_opt:
+            - no-new-privileges:true
+        logging: *default-logging
 
 networks:
-    respir:
-        driver: bridge
+    edge:
+    backend:
 
 volumes:
+    app_storage:
     postgres_data:
+    redis_data:
+    ai_models:
+    caddy_data:
+    caddy_config:

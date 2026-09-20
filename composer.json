@@ -10,7 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "barryvdh/laravel-dompdf": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/ai": "^0.11.2",
         "laravel/chisel": "^0.1.0",
@@ -18,7 +18,8 @@
         "laravel/framework": "^13.17",
         "laravel/reverb": "^1.11",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "resend/resend-php": "^1.15"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -63,8 +64,6 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "@lint:check",
-            "@types:check",
             "@test"
         ],
         "types:check": [
@@ -73,7 +72,13 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
-            "@types:check"
+            "@types:check",
+            "@pest"
+        ],
+        "pest": [
+            "Composer\\Config::disableProcessTimeout",
+            "@putenv DB_CONNECTION=pgsql",
+            "@php artisan test --compact"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

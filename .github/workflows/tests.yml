@@ -3,6 +3,7 @@ name: tests
 on:
   push:
     branches:
+      - master
       - main
   pull_request:
 
@@ -12,6 +13,32 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # pgvector is mandatory: cough similarity search is a vector column.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: respir
+          POSTGRES_PASSWORD: respir
+          POSTGRES_DB: respir
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      # phpunit.xml pins DB_DATABASE to ":memory:" — under pgsql that is a
+      # database name, not SQLite, so it has to exist.
+      DB_DATABASE: ':memory:'
+      DB_USERNAME: respir
+      DB_PASSWORD: respir
 
     steps:
       - name: Checkout code
@@ -23,16 +50,28 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
+          extensions: pdo_pgsql, pcntl
           tools: composer:v2
           coverage: none
 
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22'
+          bun-version: '1.4'
 
-      - name: Setup Application
+      - name: Create the test database
+        run: |
+          PGPASSWORD=respir createdb -h 127.0.0.1 -U respir ':memory:'
+          PGPASSWORD=respir psql -h 127.0.0.1 -U respir -d ':memory:' \
+            -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+
+      - name: Setup application
         run: composer setup
 
-      - name: Run CI Checks
+      - name: Build frontend assets
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
+      - name: Run CI checks (Pint, PHPStan, Pest)
         run: composer ci:check

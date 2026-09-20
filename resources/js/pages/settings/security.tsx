@@ -27,8 +27,8 @@ export default function Security(props: Props) {
                     Security
                 </p>
                 <h2 className="mt-1 text-lg font-semibold text-white">
-                    Ensure your account is using a long, random password to
-                    stay secure
+                    Ensure your account is using a long, random password to stay
+                    secure
                 </h2>
 
                 <Form

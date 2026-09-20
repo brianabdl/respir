@@ -37,3 +37,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 ai-service/models/
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Vite dev-only font manifest
+/public/fonts-manifest.dev.json

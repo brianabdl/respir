@@ -253,6 +253,8 @@ services:
     environment:
       HF_TOKEN: ${HF_TOKEN:-}
       MODEL_DIR: /models
+      # Keep the hub's own cache (xet chunks, up to ~10GB) on the models volume, not the container layer.
+      HF_HOME: /models/.hf
     volumes:
       - ai_models:/models
     networks:

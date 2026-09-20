@@ -38,6 +38,7 @@ Notes that matter in practice:
 | **Google Vertex AI** (Model Garden)                   | Hosts the MedGemma endpoint                                     | Google Cloud Platform Terms of Service                                                      |
 | **Let's Encrypt** (via Caddy)                         | TLS certificates                                                | ISRG subscriber agreement                                                                   |
 | **Hugging Face Hub**                                  | Weight distribution                                             | Hugging Face terms; per-model licenses apply                                                |
+| **Resend**                                            | Transactional email (verification, password reset), optional    | Resend terms of service                                                                     |
 
 Both Google services are optional. Without them the app runs with a text
 fallback for the interview and template briefings.
@@ -54,6 +55,7 @@ fallback for the interview and template briefings.
 | `laravel/tinker`, `laravel/chisel` | MIT                          |
 | `inertiajs/inertia-laravel` 3      | MIT                          |
 | `barryvdh/laravel-dompdf`          | MIT (wraps dompdf, LGPL-3.0) |
+| `resend/resend-php`                | MIT                          |
 
 Dev: `pestphp/pest` 5, `larastan/larastan`, `laravel/pint`, `laravel/pail`,
 `laravel/boost`, `laravel/pao`, `laravel/sail`, `mockery/mockery`,

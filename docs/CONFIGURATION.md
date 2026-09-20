@@ -109,7 +109,8 @@ The Compose stack reads one file for both services. Beyond the variables above:
 | `ACME_EMAIL`              | Let's Encrypt registration address                                                                                                 |
 | `APP_VERSION`             | Image tag. Bump per release so rollback is possible                                                                                |
 | `VERTEX_CREDENTIALS_FILE` | Host path to a service-account key, mounted read-only at `/run/secrets/vertex-sa.json`                                             |
-| `MAIL_*`                  | Verification and password-reset delivery. `MAIL_MAILER=log` writes to stderr instead of sending                                    |
+| `MAIL_*`                  | Verification and password-reset delivery. `MAIL_MAILER=resend` sends through Resend; `log` writes to stderr instead of sending     |
+| `RESEND_API_KEY`          | Resend API key, read when `MAIL_MAILER=resend`. `MAIL_FROM_ADDRESS` must be on a domain verified in Resend                         |
 
 Compose fails fast on missing required values — entries use the
 `${VAR:?message}` form, so a missing `DB_PASSWORD` stops the run with a message

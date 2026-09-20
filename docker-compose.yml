@@ -84,6 +84,7 @@ x-laravel-env: &laravel-env
     MAIL_USERNAME: ${MAIL_USERNAME:-}
     MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     MAIL_SCHEME: ${MAIL_SCHEME:-}
+    RESEND_API_KEY: ${RESEND_API_KEY:-}
     MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
     MAIL_FROM_NAME: ${APP_NAME:-Laravel}
 

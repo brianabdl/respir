@@ -21,8 +21,6 @@
   <img alt="License MIT" src="https://img.shields.io/badge/License-MIT-green">
 </p>
 
----
-
 ## The problem
 
 Indonesia carries about 10% of the global tuberculosis burden, second only to
@@ -67,24 +65,24 @@ documented degraded modes, not bugs; see
 > approved by any medical regulator, and its thresholds have not been validated
 > against microbiological reference standards.
 
-## Architecture at a glance
+## Impact
 
-```
-Browser (Inertia React SPA)
-  · Gemini Live — voice, transcripts, barge-in, camera presence
-  · MediaRecorder cough capture · useEcho (Reverb) live updates
-         │ Inertia / JSON                        ▲ Reverb WebSocket
-         ▼                                       │
-Laravel 13 — consent · consultations · queues · broadcasting · audit
-         │ HTTP (X-Internal-Token)
-         ▼
-Python FastAPI (ai-service)
-  · /v1/cough/analyze   HeAR + TB dual-head + MedGemma explanation
-  · /v1/briefing        de-identified clinician briefing
-         │                         │ HTTPS (ADC)
-         ▼                         ▼
-PostgreSQL 18 + pgvector    Vertex AI Model Garden (MedGemma)
-```
+- **Public health.** The target is the WHO triage-test profile: at least 90%
+  sensitivity at 70% specificity — clearing low-risk coughs without missing real
+  cases, wherever patients first show up.
+- **Economics.** Every molecular cartridge spent on a low-risk patient is one
+  unavailable to a high-risk one. Filtering first lowers cost per detected case.
+- **Health system.** The interview and briefing happen before the visit, so a
+  five-minute consultation starts from structured data instead of a blank page.
+- **Equity.** Commodity microphones, local inference, cloud optional — usable
+  where an X-ray van or a GeneXpert machine is a day's travel away.
+- **Trust.** Consent first, audio processed on the clinic's own hardware, no
+  identifiers to external models.
+
+Aligned with **SDG 3** (Good Health and Well-being, Target 3.3) and **SDG 9**
+(Industry, Innovation and Infrastructure).
+
+## Architecture at a glance
 
 Four rules the codebase enforces:
 
@@ -135,23 +133,6 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Testing         | Pest 5 · Larastan · Pint · pytest · ruff, both suites in CI              |
 | Deployment      | Docker Compose — web, app, queue, reverb, ai-service, db, redis          |
 
-## Repository structure
-
-```
-app/
-├── Ai/Agents/            ConsultAgent — Sage's conversation and turn logic
-├── Domain/
-│   ├── Audit/            AuditLogger · AuditAction
-│   └── Consult/          Actions · DTOs · Enums · Events · Jobs · Services
-├── Http/Controllers/     Consult (patient flow) · Doctor (review console)
-└── Models/               Consultation · ConsultCapture · ConsultSessionLog · …
-ai-service/               Python FastAPI microservice — all clinical inference
-resources/js/             Inertia React SPA — consult room, doctor console, landing
-database/migrations/      Schema, including the pgvector column and HNSW index
-tests/                    Feature, security, and contract tests
-docs/                     Technical documentation (start at docs/README.md)
-```
-
 ## Quick start
 
 Full instructions, including Docker: [docs/INSTALLATION.md](docs/INSTALLATION.md).
@@ -161,7 +142,7 @@ PostgreSQL 18 with pgvector, Valkey, Python 3.12 via [uv](https://docs.astral.sh
 and ffmpeg on `PATH`.
 
 ```bash
-git clone https://github.com/brianabdl/agentic-med-gemma.git respir
+git clone https://github.com/brianabdl/respir.git respir
 cd respir
 
 composer install && bun install
@@ -205,53 +186,6 @@ Seeded demo accounts (local only, password `password`):
 Respir runs without a Gemini key, without the gated weights, and without Google
 Cloud. In that state cough analysis returns `unclear` and briefings come from a
 template — everything else works.
-
-## Testing
-
-```bash
-composer test                                   # Pint + PHPStan + Pest
-composer pest                                   # Pest only (129 tests)
-cd ai-service && uv run pytest && uv run ruff check .
-bun run types:check && bun run check
-```
-
-Pest runs against a real PostgreSQL database — see
-[docs/TESTING.md](docs/TESTING.md) for the one-time `:memory:` database setup.
-Both suites run in CI on every push and pull request.
-
-## Documentation
-
-| Document                                       | Contents                                              |
-| ---------------------------------------------- | ----------------------------------------------------- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)   | Services, request paths, enforced boundaries          |
-| [docs/INSTALLATION.md](docs/INSTALLATION.md)   | Native and Docker setup, troubleshooting              |
-| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Every environment variable, both services             |
-| [docs/API.md](docs/API.md)                     | HTTP endpoints, WebSocket events, internal AI API     |
-| [docs/DATA-MODEL.md](docs/DATA-MODEL.md)       | Tables, ERD, pgvector index, retention                |
-| [docs/AI-PIPELINE.md](docs/AI-PIPELINE.md)     | Cough screening and briefing, thresholds, degradation |
-| [docs/SECURITY.md](docs/SECURITY.md)           | Consent, de-identification, audit, limitations        |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)       | Compose stack, TLS, Vertex wiring, operations         |
-| [docs/TESTING.md](docs/TESTING.md)             | Suites, coverage, CI                                  |
-| [docs/THIRD-PARTY.md](docs/THIRD-PARTY.md)     | Models, services, libraries, licenses                 |
-
-`ai-service/README.md` documents the Python service on its own terms.
-
-## Impact
-
-- **Public health.** The target is the WHO triage-test profile: at least 90%
-  sensitivity at 70% specificity — clearing low-risk coughs without missing real
-  cases, wherever patients first show up.
-- **Economics.** Every molecular cartridge spent on a low-risk patient is one
-  unavailable to a high-risk one. Filtering first lowers cost per detected case.
-- **Health system.** The interview and briefing happen before the visit, so a
-  five-minute consultation starts from structured data instead of a blank page.
-- **Equity.** Commodity microphones, local inference, cloud optional — usable
-  where an X-ray van or a GeneXpert machine is a day's travel away.
-- **Trust.** Consent first, audio processed on the clinic's own hardware, no
-  identifiers to external models.
-
-Aligned with **SDG 3** (Good Health and Well-being, Target 3.3) and **SDG 9**
-(Industry, Innovation and Infrastructure).
 
 ## Team
 

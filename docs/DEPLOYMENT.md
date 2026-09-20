@@ -26,7 +26,7 @@ Only `web` is reachable from outside. Everything clinical sits on the internal
 ## First deployment
 
 ```bash
-git clone https://github.com/brianabdl/agentic-med-gemma.git respir
+git clone https://github.com/brianabdl/respir.git respir
 cd respir
 
 cp .env.production.example .env.production

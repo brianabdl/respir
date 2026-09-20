@@ -38,7 +38,7 @@ Optional but needed for full clinical behavior:
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/brianabdl/agentic-med-gemma.git respir
+git clone https://github.com/brianabdl/respir.git respir
 cd respir
 
 composer install

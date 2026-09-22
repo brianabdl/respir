@@ -29,3 +29,4 @@ phpstan.neon
 pint.json
 ai-service
 docker-compose*.yml
+data

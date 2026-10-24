@@ -1,9 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG PHP_VERSION=8.5
-
 # ---- Shared PHP runtime: extensions + production php.ini / php-fpm pool ----
-FROM php:${PHP_VERSION}-fpm-bookworm AS base
+FROM php:8.5.12-fpm-bookworm AS base
 
 COPY --from=ghcr.io/mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
 RUN install-php-extensions bcmath exif gd opcache pcntl pdo_pgsql pgsql redis
@@ -16,6 +14,7 @@ memory_limit = 256M
 max_execution_time = 120
 upload_max_filesize = 64M
 post_max_size = 66M
+session.upload_progress.enabled = 0
 opcache.enable = 1
 opcache.validate_timestamps = 0
 opcache.memory_consumption = 192
